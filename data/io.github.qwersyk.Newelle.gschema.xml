@@ -81,7 +81,7 @@
 	        <default>"{}"</default>
         </key>
 	      <key name="embedding-model" type="s">
-            <default>"model2vec"</default>
+            <default>"openaiembedding"</default>
         </key>
 	      <key name="embedding-settings" type="s">
             <default>"{}"</default>

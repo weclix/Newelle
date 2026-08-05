@@ -2,15 +2,11 @@ from copy import deepcopy
 from .handlers.llm import OpenAIHandler, NewelleAPIHandler
 from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, CustomOpenAITTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
 from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
-from .handlers.embeddings import WordLlamaHandler, OpenAIEmbeddingHandler, GeminiEmbeddingHanlder, OllamaEmbeddingHandler, Model2VecHandler, LlamaCPPEmbeddingHandler
+from .handlers.embeddings import OpenAIEmbeddingHandler
 from .handlers.memory import MemoripyHandler, UserSummaryHandler, SummaryMemoripyHanlder, LlamaIndexMemoryHandler, AgenticMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler, DDGSeachHandler, TavilyHandler, TinyFishHandler
 from .handlers.image_generator import ImageGeneratorHandler, PollinationsHandler, StableDiffusionCPPHandler, OpenAIImageHandler, OpenRouterImageHandler
-from .handlers.interfaces.interface import Interface
-from .handlers.interfaces.api_handler import APIInterface
-from .handlers.interfaces.gui_api_handler import GUIAPIInterface
-from .handlers.interfaces.telegram_handler import TelegramInterface
 from .integrations.website_reader import WebsiteReader
 from .integrations.websearch import WebsearchIntegration
 from .integrations.mcp import MCPIntegration
@@ -216,43 +212,14 @@ AVAILABLE_TTS = {
 }
 
 AVAILABLE_EMBEDDINGS = {
-    "wordllama": {
-        "key": "wordllama",
-        "title": _("WordLlama"),
-        "description": _("Light local embedding model based on llama. Works offline, very low resources usage"),
-        "class": WordLlamaHandler,
-    },
-    "model2vec": {
-        "key": "model2vec",
-        "title": _("Model2Vec"),
-        "description": _("State of art light local embedding model. Works offline, very low resource usage. Suggested for multilingual"),
-        "class": Model2VecHandler,
-    },
-    "ollamaembedding": {
-        "key": "ollamaembedding",
-        "title": _("Ollama Embedding"),
-        "description": _("Use Ollama models for Embedding. Works offline, very low resources usage"),
-        "class": OllamaEmbeddingHandler,
-    },
-    "llamacppembedding": {
-        "key": "llamacppembedding",
-        "title": _("LlamaCPP Embedding"),
-        "description": _("Run embedding models locally using LlamaCPP with hardware acceleration support"),
-        "class": LlamaCPPEmbeddingHandler,
-    },
     "openaiembedding": {
         "key": "openaiembedding",
         "title": _("OpenAI API"),
         "description": _("OpenAI API"),
         "class": OpenAIEmbeddingHandler,
-    },
-    "geminiembedding": {
-        "key": "geminiembedding",
-        "title": _("Google Gemini API"),
-        "description": _("Use Google Gemini API to get embeddings"),
-        "class": GeminiEmbeddingHanlder,
     }
 }
+
 
 AVAILABLE_MEMORIES = {
     "user-summary": {
@@ -322,27 +289,6 @@ AVAILABLE_WEBSEARCH = {
         "description": _("TinyFish web search API"),
         "class": TinyFishHandler,
     }
-}
-
-AVAILABLE_INTERFACES = {
-    "api": {
-        "key": "api",
-        "title": _("OpenAI Compatible API"),
-        "description": _("Expose the current LLM as an OpenAI-compatible API server"),
-        "class": APIInterface,
-    },
-    "gui-api": {
-        "key": "gui-api",
-        "title": _("Newelle GUI API"),
-        "description": _("Full REST API for building a WebUI, exposing chats, messages, tools, settings and more"),
-        "class": GUIAPIInterface,
-    },
-    "telegram": {
-        "key": "telegram",
-        "title": _("Telegram Bot"),
-        "description": _("Use Newelle as a Telegram bot with message streaming, voice transcription, tools and more"),
-        "class": TelegramInterface,
-    },
 }
 
 PROMPTS = {
@@ -665,12 +611,11 @@ DEFAULT_AVAILABLE_EMBEDDING = AVAILABLE_EMBEDDINGS.copy()
 DEFAULT_AVAILABLE_MEMORIES = AVAILABLE_MEMORIES.copy()
 DEFAULT_AVAILABLE_RAG = AVAILABLE_RAGS.copy()
 DEFAULT_AVAILABLE_WEBSEARCH = AVAILABLE_WEBSEARCH.copy()
-DEFAULT_AVAILABLE_INTERFACES = AVAILABLE_INTERFACES.copy()
 DEFAULT_AVAILABLE_IMAGE_GENERATORS = AVAILABLE_IMAGE_GENERATORS.copy()
 DEFAULT_AVAILABLE_PROMPTS = AVAILABLE_PROMPTS.copy()
 
 def restore_handlers():
-    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_INTERFACES, AVAILABLE_PROMPTS, AVAILABLE_IMAGE_GENERATORS
+    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_PROMPTS, AVAILABLE_IMAGE_GENERATORS
     AVAILABLE_PROMPTS.clear()
     AVAILABLE_LLMS.clear()
     AVAILABLE_TTS.clear()
@@ -679,7 +624,6 @@ def restore_handlers():
     AVAILABLE_MEMORIES.clear()
     AVAILABLE_RAGS.clear()
     AVAILABLE_WEBSEARCH.clear()
-    AVAILABLE_INTERFACES.clear()
     AVAILABLE_IMAGE_GENERATORS.clear()
     AVAILABLE_PROMPTS += deepcopy(DEFAULT_AVAILABLE_PROMPTS)
     AVAILABLE_LLMS.update(deepcopy(DEFAULT_AVAILABLE_LLM))
@@ -689,7 +633,6 @@ def restore_handlers():
     AVAILABLE_MEMORIES.update(deepcopy(DEFAULT_AVAILABLE_MEMORIES))
     AVAILABLE_RAGS.update(deepcopy(DEFAULT_AVAILABLE_RAG))
     AVAILABLE_WEBSEARCH.update(deepcopy(DEFAULT_AVAILABLE_WEBSEARCH))
-    AVAILABLE_INTERFACES.update(deepcopy(DEFAULT_AVAILABLE_INTERFACES))
     AVAILABLE_IMAGE_GENERATORS.update(deepcopy(DEFAULT_AVAILABLE_IMAGE_GENERATORS))
 
 SETTINGS_GROUPS = {

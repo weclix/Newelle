@@ -16,7 +16,6 @@ from ..handlers import Handler
 from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, AVAILABLE_TTS, AVAILABLE_STT, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
 from ..utility.pip import install_module
 from .extension import ExtensionPage
-from .interfaces import InterfacesPage
 from .extra_settings import ExtraSettingsBuilder
 from .widgets import ComboRowHelper, CopyBox 
 from .widgets import MultilineEntry
@@ -697,19 +696,11 @@ class Settings(Adw.Window):
         self.developer.add(row)
         
         if self.popup:
-            self.InterfacesPage = Adw.PreferencesPage(
-                icon_name="controls-big-symbolic",
-                title=_("Interfaces"),
-            )
             self.ExtensionsPage = Adw.PreferencesPage(
                 icon_name="extension-symbolic",
                 title=_("Extensions"),
             )
         else:
-            self.InterfacesPage = InterfacesPage(
-                self.app,
-                self.controller,
-            )
             self.ExtensionsPage = ExtensionPage(
                 self.app,
                 self.controller,
@@ -742,7 +733,6 @@ class Settings(Adw.Window):
             ("Permissions", _("Permissions"), "key-symbolic", self.PermissionsPage),
             ("Skills", _("Skills"), "skills-symbolic", self.SkillsPage),
             ("MCP", _("MCP Servers"), "internet-symbolic", self.MCPPage),
-            ("Interfaces", _("Interfaces"), "controls-big-symbolic", self.InterfacesPage),
             ("Extensions", _("Extensions"), "extension-symbolic", self.ExtensionsPage),
         ]
         self.navigation_pages = {

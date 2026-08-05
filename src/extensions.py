@@ -476,7 +476,7 @@ class ExtensionLoader:
         for tool in extension.get_tools():
             tool_registry.remove_tool(tool.name)
 
-    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_INTERFACES=None, AVAILABLE_IMAGE_GENERATORS=None):
+    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
         """Add the handlers of each extension to the available handlers
 
         Args:
@@ -487,7 +487,6 @@ class ExtensionLoader:
             AVAILABLE_EMBEDDINGS (): list of available embeddings
             AVAILABLE_RAG (): list of available rags
             AVAILABLE_WEBSEARCH (): list of available websearch
-            AVAILABLE_INTERFACES (): list of available interfaces
         """
         for extension in self.extensions:
             if extension in self.disabled_extensions:
@@ -513,10 +512,6 @@ class ExtensionLoader:
             handlers = extension.get_websearch_handlers()
             for handler in handlers:
                 AVAILABLE_WEBSEARCH[handler["key"]] = handler
-            if AVAILABLE_INTERFACES is not None:
-                handlers = extension.get_interface_handlers()
-                for handler in handlers:
-                    AVAILABLE_INTERFACES[handler["key"]] = handler
             if AVAILABLE_IMAGE_GENERATORS is not None:
                 handlers = extension.get_image_generator_handlers()
                 for handler in handlers:

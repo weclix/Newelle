@@ -10,7 +10,6 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('GtkSource', '5')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, Gdk, GLib
-from .ui_controller import HeadlessController 
 from .ui.settings import Settings
 from .window import MainWindow
 from .ui.shortcuts import Shortcuts
@@ -260,9 +259,6 @@ class MyApp(Adw.Application):
         action = Gio.SimpleAction.new("extension", None)
         action.connect('activate', self.extension_action)
         self.add_action(action)
-        action = Gio.SimpleAction.new("interfaces", None)
-        action.connect('activate', self.interfaces_action)
-        self.add_action(action)
         action = Gio.SimpleAction.new("export_current_chat", None)
         action.connect('activate', self.export_current_chat_action)
         self.add_action(action)
@@ -329,8 +325,7 @@ class MyApp(Adw.Application):
     def extension_action(self, *a):
         self.settings_action_paged("Extensions")
 
-    def interfaces_action(self, *a):
-        self.settings_action_paged("Interfaces")
+
     
     def export_current_chat_action(self, *a):
         """Export the current chat"""
@@ -473,51 +468,6 @@ class MyApp(Adw.Application):
     def debug(self, *a):
         self.pretty_print_chat()
         print(convert_history_openai(self.win.chat, [], True))
-
-def run_headless(interface_key, version):
-    """Start an interface without the GUI."""
-    from .controller import NewelleController
-    from .constants import AVAILABLE_INTERFACES
-
-    if interface_key not in AVAILABLE_INTERFACES:
-        available = ", ".join(AVAILABLE_INTERFACES.keys())
-        print(f"Unknown interface '{interface_key}'. Available: {available}", file=sys.stderr)
-        return 1
-
-    info = AVAILABLE_INTERFACES[interface_key]
-    print(f"Starting {info['title']} (headless)...")
-
-    controller = NewelleController(sys.path)
-    controller.ui_init()
-    controller.handlers.load_handlers()
-    controller.handlers.select_handlers(controller.newelle_settings, skip_auto_start_interfaces=True)
-    ui_controller = HeadlessController(controller)
-    controller.set_ui_controller(ui_controller)
-
-    from .utility.replacehelper import ReplaceHelper
-    ReplaceHelper.set_controller(controller)
-
-    iface = controller.handlers.get_object(AVAILABLE_INTERFACES, interface_key, False)
-    if iface is None:
-        print(f"Failed to initialize interface '{interface_key}'", file=sys.stderr)
-        return 1
-
-    iface.start()
-    if not iface.is_running():
-        print(f"Interface '{interface_key}' failed to start", file=sys.stderr)
-        return 1
-
-    print(f"{info['title']} is running. Press Ctrl+C to stop.")
-
-    # Run a GLib_MainLoop so GLib.idle_add (used by tool execution, etc.) works
-    loop = GLib.MainLoop()
-    try:
-        loop.run()
-    except KeyboardInterrupt:
-        print("\nStopping interface...")
-        iface.stop()
-    return 0
-
 
 def main(version):
     app = MyApp(application_id="io.github.qwersyk.Newelle", version = version)
