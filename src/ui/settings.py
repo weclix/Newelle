@@ -13,7 +13,7 @@ from ..utility.util import PerformanceMonitor
 
 from ..handlers import Handler
 
-from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, AVAILABLE_TTS, AVAILABLE_STT, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
+from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH
 from ..utility.pip import install_module
 from .extension import ExtensionPage
 from .extra_settings import ExtraSettingsBuilder
@@ -157,192 +157,15 @@ class Settings(Adw.Window):
         for key in AVAILABLE_WEBSEARCH:
            row = self.build_row(AVAILABLE_WEBSEARCH, key, selected, group) 
            tts_program.add_row(row)
-        # Build the Image Generator settings
-        image_generator_row = Adw.ExpanderRow(title=_('Image Generator'), subtitle=_("Choose which image generation engine to use"))
-        self.KNOWLEDGE.add(image_generator_row)
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("image-generator")
-        for key in AVAILABLE_IMAGE_GENERATORS:
-           row = self.build_row(AVAILABLE_IMAGE_GENERATORS, key, selected, group)
-           image_generator_row.add_row(row)
+
         # Build the RAG settings
         self.build_rag_settings()
 
         # Build the TTS settings
         self.Voicegroup = Adw.PreferencesGroup(title=_('Voice'))
         self.VoicePage.add(self.Voicegroup)
-        tts_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("tts-on", tts_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
-        tts_program = Adw.ExpanderRow(title=_('Text To Speech Program'), subtitle=_("Choose which text to speech to use"))
-        tts_program.add_action(tts_enabled)
-        self.Voicegroup.add(tts_program)
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("tts")
-        for tts_key in AVAILABLE_TTS:
-           row = self.build_row(AVAILABLE_TTS, tts_key, selected, group) 
-           tts_program.add_row(row)
-        # Build the Speech to Text settings
-        stt_engine = Adw.ExpanderRow(title=_('Speech To Text Engine'), subtitle=_("Choose which speech recognition engine you want"))
-        self.Voicegroup.add(stt_engine)
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("stt-engine")
-        for stt_key in AVAILABLE_STT:
-            if AVAILABLE_STT[stt_key].get("primary", True):
-                row = self.build_row(AVAILABLE_STT, stt_key, selected, group)
-                stt_engine.add_row(row)
 
-        # Automatic STT settings
-        self.auto_stt = Adw.ExpanderRow(title=_('Automatic Speech To Text'), subtitle=_("Automatically restart speech to text at the end of a text/TTS"))
-        self.build_auto_stt()
-        self.Voicegroup.add(self.auto_stt)
-        # Wakeword Detection
-        self.wakeword_row = Adw.ExpanderRow(
-            title=_('Wakeword Detection'),
-            subtitle=_("Detect wakeword to send voice commands")
-        )
-        wakeword_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("wakeword-on", wakeword_enabled, 'active',
-                           Gio.SettingsBindFlags.DEFAULT)
-        self.wakeword_row.add_action(wakeword_enabled)
 
-        # Wakeword mode toggle group
-        mode_row = Adw.ActionRow(title=_('Detection Method'), subtitle=_("Choose wakeword detection method"))
-        mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, valign=Gtk.Align.CENTER)
-        
-        current_mode = self.settings.get_string("wakeword-mode")
-        self.wakeword_mode_secondary = Gtk.ToggleButton(label=_("Secondary STT"), active=(current_mode == "secondary-stt"))
-        self.wakeword_mode_secondary.add_css_class("flat")
-        self.wakeword_mode_wakeword = Gtk.ToggleButton(label=_("Wakeword Model"), group=self.wakeword_mode_secondary, active=(current_mode == "openwakeword"))
-        self.wakeword_mode_wakeword.add_css_class("flat")
-        
-        mode_box.append(self.wakeword_mode_secondary)
-        mode_box.append(self.wakeword_mode_wakeword)
-        mode_row.add_suffix(mode_box)
-        self.wakeword_row.add_row(mode_row)
-
-        # Secondary STT mode rows (visible when secondary-stt mode is selected)
-        self.secondary_stt_rows = []
-        
-        # Secondary STT engine selection
-        secondary_stt_engine = Adw.ExpanderRow(
-            title=_('Secondary STT Engine'),
-            subtitle=_("Fast STT for quick wakeword detection")
-        )
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("secondary-stt-engine")
-        for stt_key in AVAILABLE_STT:
-            if "secondary" in AVAILABLE_STT[stt_key] and AVAILABLE_STT[stt_key]["secondary"]:
-                row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
-                secondary_stt_engine.add_row(row)
-        self.wakeword_row.add_row(secondary_stt_engine)
-        self.secondary_stt_rows.append(secondary_stt_engine)
-
-        # Wakeword text entry (for secondary STT mode)
-        wakeword_entry = Adw.EntryRow(title=_('Wakeword'))
-        wakeword_entry.set_tooltip_text(_("Word or phrase to detect (multiple separated by comma)"))
-        self.settings.bind("wakeword", wakeword_entry, 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
-        self.wakeword_row.add_row(wakeword_entry)
-        self.secondary_stt_rows.append(wakeword_entry)
-
-        # Wakeword engine mode rows (visible when openwakeword mode is selected)
-        self.wakeword_engine_rows = []
-        
-        # Wakeword engine selection (handlers with "wakeword": True)
-        wakeword_engine = Adw.ExpanderRow(
-            title=_('Wakeword Engine'),
-            subtitle=_("Model specialized for wakeword detection")
-        )
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("wakeword-engine")
-        for stt_key in AVAILABLE_STT:
-            if AVAILABLE_STT[stt_key].get("wakeword", False):
-                row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
-                wakeword_engine.add_row(row)
-        self.wakeword_row.add_row(wakeword_engine)
-        self.wakeword_engine_rows.append(wakeword_engine)
-
-        # Pre-buffer duration
-        pre_buffer_adj = Gtk.Adjustment(
-            lower=0.1,
-            upper=2.0,
-            step_increment=0.1,
-            page_increment=0.5
-        )
-        pre_buffer_adj.set_value(self.settings.get_double("wakeword-pre-buffer-duration"))
-        pre_buffer_row = Adw.SpinRow(
-            title=_('Pre-buffer Duration'),
-            subtitle=_("Seconds of audio to capture before speech"),
-            adjustment=pre_buffer_adj,
-            digits=1
-        )
-        def update_pre_buffer(spin, input):
-            self.settings.set_double("wakeword-pre-buffer-duration", spin.get_value())
-            return False
-        pre_buffer_row.connect("input", update_pre_buffer)
-        self.wakeword_row.add_row(pre_buffer_row)
-
-        # Silence duration
-        silence_adj = Gtk.Adjustment(
-            lower=0.1,
-            upper=5.0,
-            step_increment=0.05,
-            page_increment=0.5
-        )
-        silence_adj.set_value(self.settings.get_double("wakeword-silence-duration"))
-        silence_row = Adw.SpinRow(
-            title=_('Silence Timeout'),
-            subtitle=_("Seconds of silence to end speech segment"),
-            adjustment=silence_adj,
-            digits=2
-        )
-        def update_silence(spin, input):
-            self.settings.set_double("wakeword-silence-duration", spin.get_value())
-            return False
-        silence_row.connect("input", update_silence)
-        self.wakeword_row.add_row(silence_row)
-
-        # Energy threshold
-        energy_adj = Gtk.Adjustment(
-            lower=0,
-            upper=1000,
-            step_increment=50,
-            page_increment=100
-        )
-        energy_adj.set_value(self.settings.get_int("wakeword-energy-threshold"))
-        energy_row = Adw.SpinRow(
-            title=_('Noise Threshold'),
-            subtitle=_("Audio energy level to ignore (higher = less sensitive, 0-1000)"),
-            adjustment=energy_adj,
-            digits=0
-        )
-        def update_energy(spin, input):
-            self.settings.set_int("wakeword-energy-threshold", int(spin.get_value()))
-            return False
-        energy_row.connect("input", update_energy)
-        self.wakeword_row.add_row(energy_row)
-
-        # Toggle visibility based on mode
-        def on_wakeword_mode_changed(btn):
-            is_wakeword = self.wakeword_mode_wakeword.get_active()
-            mode = "openwakeword" if is_wakeword else "secondary-stt"
-            self.settings.set_string("wakeword-mode", mode)
-            for row in self.secondary_stt_rows:
-                row.set_visible(not is_wakeword)
-            for row in self.wakeword_engine_rows:
-                row.set_visible(is_wakeword)
-        
-        self.wakeword_mode_secondary.connect("toggled", on_wakeword_mode_changed)
-        self.wakeword_mode_wakeword.connect("toggled", on_wakeword_mode_changed)
-        
-        # Set initial visibility
-        is_wakeword_mode = current_mode == "openwakeword"
-        for row in self.secondary_stt_rows:
-            row.set_visible(not is_wakeword_mode)
-        for row in self.wakeword_engine_rows:
-            row.set_visible(is_wakeword_mode)
-
-        self.Voicegroup.add(self.wakeword_row)
         # Build prompts settings 
         self.prompt = Adw.PreferencesGroup(title=_('Prompt control'))
         add_prompt_btn = Gtk.Button(icon_name="list-add-symbolic")
@@ -2527,48 +2350,6 @@ class Settings(Adw.Window):
             parent_expander.add_row(folder_row)
             self.custom_folder_rows.append(folder_row)
 
-    def build_auto_stt(self):
-        auto_stt_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("automatic-stt", auto_stt_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
-        self.auto_stt.add_suffix(auto_stt_enabled) 
-        def update_scale(scale, label, setting_value, type):
-            value = scale.get_value()
-            if type is float:
-                self.settings.set_double(setting_value, value)
-            elif type is int:
-                value = int(value)
-                self.settings.set_int(setting_value, value)
-            label.set_text(str(value))
-
-        # Silence Threshold
-        silence_threshold = Adw.ActionRow(title=_("Silence threshold"), subtitle=_("Silence threshold in seconds, percentage of the volume to be considered silence"))
-        threshold = Gtk.Scale(digits=0, round_digits=2)
-        threshold.set_range(0, 0.5)
-        threshold.set_size_request(120, -1)
-        th = self.settings.get_double("stt-silence-detection-threshold")
-        label = Gtk.Label(label=str(th))
-        threshold.set_value(th)
-        threshold.connect("value-changed", update_scale, label, "stt-silence-detection-threshold", float)
-        box = Gtk.Box()
-        box.append(threshold)
-        box.append(label)
-        silence_threshold.add_suffix(box)
-        # Silence time 
-        silence_time = Adw.ActionRow(title=_("Silence time"), subtitle=_("Silence time in seconds before recording stops automatically"))
-        time_scale = Gtk.Scale(digits=0, round_digits=0)
-        time_scale.set_range(0, 10)
-        time_scale.set_size_request(120, -1)
-        value = self.settings.get_int("stt-silence-detection-duration")
-        time_scale.set_value(value)
-        label = Gtk.Label(label=str(value))
-        time_scale.connect("value-changed", update_scale, label, "stt-silence-detection-duration", int)
-        box = Gtk.Box()
-        box.append(time_scale)
-        box.append(label)
-        silence_time.add_suffix(box)
-        self.auto_stt.add_row(silence_threshold) 
-        self.auto_stt.add_row(silence_time)
-
     def update_prompt(self, switch: Gtk.Switch, state, key: str):
         """Update the prompt in the settings
 
@@ -2720,13 +2501,6 @@ class Settings(Adw.Window):
                 setting_name = "secondary-language-model"
             else:
                 setting_name = "language-model"
-        elif constants == AVAILABLE_TTS:
-            setting_name = "tts"
-        elif constants == AVAILABLE_STT:
-            if secondary:
-                setting_name = "secondary-stt-engine"
-            else:
-                setting_name = "stt-engine"
         elif constants == AVAILABLE_MEMORIES:
             setting_name = "memory-model"
         elif constants == AVAILABLE_EMBEDDINGS:
@@ -2735,8 +2509,6 @@ class Settings(Adw.Window):
             setting_name = "rag-model"
         elif constants == AVAILABLE_WEBSEARCH:
             setting_name = "websearch-model"
-        elif constants == AVAILABLE_IMAGE_GENERATORS:
-            setting_name = "image-generator"
         else:
             return
 

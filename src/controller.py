@@ -14,19 +14,16 @@ from .utility.message_chunk import get_message_chunks
 
 from .extensions import NewelleExtension
 from .handlers.llm import LLMHandler
-from .handlers.tts import TTSHandler
-from .handlers.stt import STTHandler
 from .handlers.rag import RAGHandler
 from .handlers.memory import MemoryHandler
 from .handlers.embeddings import EmbeddingHandler
 from .handlers.websearch import WebSearchHandler
-from .handlers.image_generator import ImageGeneratorHandler
 
 from .utility.system import is_flatpak
 from .utility.pip import install_module
 from .utility.profile_settings import get_settings_dict_by_groups
 from .utility.source_attribution import format_source_context
-from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_STT, AVAILABLE_TTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers
+from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers
 import threading
 import pickle
 import tempfile
@@ -64,8 +61,6 @@ EXTENSIONS: Reload EXTENSIONS
     """
     NONE = 0
     LLM = 1
-    TTS = 2
-    STT = 3
     PROMPTS = 4
     RAG = 5
     MEMORIES = 6
@@ -77,7 +72,7 @@ EXTENSIONS: Reload EXTENSIONS
     WEBSEARCH = 12
     OFFERS = 13
     TOOLS = 14
-    WAKEWORD = 15
+
     IMAGE_GENERATOR = 16 
     COMPACT_MODE = 17
 
@@ -940,7 +935,7 @@ class NewelleController:
                                                    extension_cache=self.extensions_cache, settings=self.settings)
             self.extensionloader.load_extensions()
             restore_handlers()
-            self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
+            self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, )
             self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
             self.newelle_settings.load_prompts()
             if hasattr(self, "mode_manager"):
@@ -958,7 +953,7 @@ class NewelleController:
             self.handlers.select_handlers(self.newelle_settings)
             if self.newelle_settings.use_secondary_language_model:
                 GLib.timeout_add(100,threading.Thread(target=self.handlers.secondary_llm.load_model, args=(None,)).start)
-        elif reload_type in [ReloadType.TTS, ReloadType.STT, ReloadType.MEMORIES]:
+        elif reload_type in [ReloadType.MEMORIES]:
             if ReloadType.MEMORIES:
                 self.require_tool_update()
             self.handlers.select_handlers(self.newelle_settings)
@@ -1067,7 +1062,7 @@ class NewelleController:
         self.extensionloader = ExtensionLoader(self.extension_path, pip_path=self.pip_path,
                                                extension_cache=self.extensions_cache, settings=self.settings)
         self.extensionloader.load_extensions()
-        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
+        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, )
         self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
         self.extensionloader.add_tools(self.tools)
         self.set_ui_controller(self.ui_controller)
@@ -1350,9 +1345,7 @@ class NewelleController:
                     return True
                 else:
                     return False
-        if name == "tts_on":
-            return self.newelle_settings.tts_enabled
-        elif name == "virtualization_on":
+        if name == "virtualization_on":
             return self.newelle_settings.virtualization and is_flatpak()
         elif name == "auto_run":
             return self.newelle_settings.auto_run
@@ -1362,15 +1355,11 @@ class NewelleController:
             return self.newelle_settings.rag_on_documents
         elif name == "local_folder":
             return self.newelle_settings.rag_on
-        elif name == "automatic_stt":
-            return self.newelle_settings.automatic_stt
         elif name == "profile_name":
             return self.newelle_settings.current_profile
         elif name == "external_browser":
             return self.newelle_settings.external_browser
         elif name == "call":
-            return self.is_call_request
-        elif name == "skills_available":
             if hasattr(self, "skill_manager"):
                 return len(self.skill_manager.get_enabled_skills()) > 0
             return False
@@ -1990,7 +1979,6 @@ class NewelleSettings:
             self.profile_settings[self.current_profile] = {"settings": {}, "picture": None, "settings_groups": []}
 
         # Init variables
-        self.automatic_stt_status = False
         settings = self.settings
        
         # Get settings variables
@@ -2006,17 +1994,7 @@ class NewelleSettings:
         self.auto_run = settings.get_boolean("auto-run")
         self.display_latex = settings.get_boolean("display-latex")
         self.compact_mode = settings.get_boolean("compact-mode")
-        self.tts_enabled = settings.get_boolean("tts-on")
-        self.tts_program = settings.get_string("tts")
-        self.tts_voice = settings.get_string("tts-voice")
-        self.stt_engine = settings.get_string("stt-engine")
-        self.stt_settings = settings.get_string("stt-settings")
-        self.secondary_stt_engine = settings.get_string("secondary-stt-engine")
-        self.secondary_stt_settings = settings.get_string("stt-secondary-settings")
         self.external_terminal = settings.get_string("external-terminal")
-        self.automatic_stt = settings.get_boolean("automatic-stt")
-        self.stt_silence_detection_threshold = settings.get_double("stt-silence-detection-threshold")
-        self.stt_silence_detection_duration = settings.get_int("stt-silence-detection-duration")
         self.embedding_model = self.settings.get_string("embedding-model")
         self.embedding_settings = self.settings.get_string("embedding-settings")
         self.memory_on = self.settings.get_boolean("memory-on")
@@ -2057,15 +2035,6 @@ class NewelleSettings:
         self.file_permissions = self.settings.get_string("file-permissions")
         self.file_permissions_list = json.loads(self.file_permissions)
         self.scheduled_tasks = self.settings.get_string("scheduled-tasks")
-        self.wakeword_enabled = settings.get_boolean("wakeword-on")
-        self.wakeword_mode = settings.get_string("wakeword-mode")
-        self.wakeword_engine = settings.get_string("wakeword-engine")
-        self.wakeword_engine_settings = settings.get_string("wakeword-engine-settings")
-        self.wakeword = settings.get_string("wakeword")
-        self.wakeword_vad_aggressiveness = settings.get_int("wakeword-vad-aggressiveness")
-        self.wakeword_pre_buffer_duration = settings.get_double("wakeword-pre-buffer-duration")
-        self.wakeword_silence_duration = settings.get_double("wakeword-silence-duration")
-        self.wakeword_energy_threshold = settings.get_int("wakeword-energy-threshold")
         self.context_mode = settings.get_string("context-mode")
         self.context_max = settings.get_int("context-max")
         self.context_suggested = settings.get_int("context-suggested")
@@ -2076,8 +2045,6 @@ class NewelleSettings:
         self.monospace_font_family = settings.get_string("monospace-font-family")
         self.monospace_font_size = settings.get_int("monospace-font-size")
         self.monospace_line_height = settings.get_double("monospace-line-height")
-        self.image_generator = self.settings.get_string("image-generator")
-        self.image_generator_settings = self.settings.get_string("image-generator-settings")
         self.hide_warning = settings.get_boolean("hide-warning")
         self.load_prompts()
         # Adjust paths
@@ -2162,15 +2129,9 @@ class NewelleSettings:
         if self.secondary_language_model != new_settings.secondary_language_model or self.use_secondary_language_model != new_settings.use_secondary_language_model or self.use_secondary_language_model_for_vision != new_settings.use_secondary_language_model_for_vision or self.secondary_language_model_settings != new_settings.secondary_language_model_settings:
             reloads.append(ReloadType.SECONDARY_LLM)
         
-        if self.tts_program != new_settings.tts_program:
-            reloads.append(ReloadType.TTS)
 
-        if self.stt_engine != new_settings.stt_engine:
-            reloads.append(ReloadType.STT)
 
-        if self.automatic_stt != new_settings.automatic_stt:
-            if self.wakeword_enabled:
-                reloads.append(ReloadType.WAKEWORD)
+
 
         if self.embedding_model != new_settings.embedding_model or self.embedding_settings != new_settings.embedding_settings:
             reloads.append(ReloadType.EMBEDDINGS)
@@ -2191,25 +2152,12 @@ class NewelleSettings:
             reloads.append(ReloadType.WEBSEARCH)
         if self.mcp_servers != new_settings.mcp_servers or self.tools_settings != new_settings.tools_settings or self.skills_settings != new_settings.skills_settings:
             reloads.append(ReloadType.TOOLS)
-        # Check wakeword settings
-        if (self.wakeword_enabled != new_settings.wakeword_enabled or
-            self.wakeword != new_settings.wakeword or
-            self.wakeword_mode != new_settings.wakeword_mode or
-            self.wakeword_engine != new_settings.wakeword_engine or
-            self.wakeword_engine_settings != new_settings.wakeword_engine_settings or
-            self.wakeword_vad_aggressiveness != new_settings.wakeword_vad_aggressiveness or
-            self.wakeword_pre_buffer_duration != new_settings.wakeword_pre_buffer_duration or
-            self.wakeword_silence_duration != new_settings.wakeword_silence_duration or
-            self.wakeword_energy_threshold != new_settings.wakeword_energy_threshold or
-            self.secondary_stt_engine != new_settings.secondary_stt_engine or
-            self.secondary_stt_settings != new_settings.secondary_stt_settings):
-            reloads.append(ReloadType.WAKEWORD)
         # Check prompts
         if len(self.prompts) != len(new_settings.prompts):
             reloads.append(ReloadType.PROMPTS)
         if self.offers != new_settings.offers:
             reloads.append(ReloadType.OFFERS)
-        if self.image_generator != new_settings.image_generator or self.image_generator_settings != new_settings.image_generator_settings:
+        if False:
             reloads.append(ReloadType.IMAGE_GENERATOR)
         if self.hide_warning != new_settings.hide_warning:
             reloads.append(ReloadType.RELOAD_CHAT)
@@ -2246,8 +2194,6 @@ class HandlersManager:
         self.handlers_cached.acquire()
         self.integrationsloader = integrations
         self.installing_handlers = installing_handlers
-        self.secondary_stt = None
-        self.wakeword_handler = None
         self.controller = controller
 
     def destroy(self):
@@ -2270,35 +2216,8 @@ class HandlersManager:
             newelle_settings.memory_model = list(AVAILABLE_MEMORIES.keys())[0]
         if newelle_settings.rag_model not in AVAILABLE_RAGS:
             newelle_settings.rag_model = list(AVAILABLE_RAGS.keys())[0]
-        if newelle_settings.tts_program not in AVAILABLE_TTS:
-            newelle_settings.tts_program = list(AVAILABLE_TTS.keys())[0]
-        if newelle_settings.stt_engine not in AVAILABLE_STT:
-            newelle_settings.stt_engine = list(AVAILABLE_STT.keys())[0]
-        if newelle_settings.secondary_stt_engine not in AVAILABLE_STT:
-            # Find first secondary-capable STT
-            for key in AVAILABLE_STT:
-                if "secondary" in AVAILABLE_STT[key] and AVAILABLE_STT[key]["secondary"]:
-                    newelle_settings.secondary_stt_engine = key
-                    break
-            else:
-                # Fallback to first STT if none are marked as secondary
-                newelle_settings.secondary_stt_engine = list(AVAILABLE_STT.keys())[0]
-        if newelle_settings.wakeword_engine not in AVAILABLE_STT:
-            # Find first wakeword-capable STT
-            for key in AVAILABLE_STT:
-                if AVAILABLE_STT[key].get("wakeword", False):
-                    newelle_settings.wakeword_engine = key
-                    break
-            else:
-                # Fallback to openwakeword if available, or first STT
-                if "openwakeword" in AVAILABLE_STT:
-                    newelle_settings.wakeword_engine = "openwakeword"
-                else:
-                    newelle_settings.wakeword_engine = list(AVAILABLE_STT.keys())[0]
         if newelle_settings.websearch_model not in AVAILABLE_WEBSEARCH:
             newelle_settings.websearch_model = list(AVAILABLE_WEBSEARCH.keys())[0]
-        if newelle_settings.image_generator not in AVAILABLE_IMAGE_GENERATORS:
-            newelle_settings.image_generator = list(AVAILABLE_IMAGE_GENERATORS.keys())[0]
       
     def set_ui_controller(self, ui_controller):
         self.ui_controller = ui_controller
@@ -2316,28 +2235,17 @@ class HandlersManager:
             self.secondary_llm : LLMHandler = self.get_object(AVAILABLE_LLMS, newelle_settings.secondary_language_model, True)
         else:
             self.secondary_llm : LLMHandler = self.llm
-        self.stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.stt_engine)
-        # Set wakeword handler based on mode
-        if newelle_settings.wakeword_mode == "secondary-stt":
-            self.secondary_stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.secondary_stt_engine, True)
-            self.wakeword_handler : STTHandler = None
-        else:  # openwakeword mode
-            self.wakeword_handler : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.wakeword_engine, True)
-            self.secondary_stt : STTHandler = None
-        self.tts : TTSHandler = self.get_object(AVAILABLE_TTS, newelle_settings.tts_program)
         self.embedding : EmbeddingHandler= self.get_object(AVAILABLE_EMBEDDINGS, newelle_settings.embedding_model)
         self.memory : MemoryHandler = self.get_object(AVAILABLE_MEMORIES, newelle_settings.memory_model)
         self.memory.set_memory_size(newelle_settings.memory)
         self.rag : RAGHandler = self.get_object(AVAILABLE_RAGS, newelle_settings.rag_model)
         self.websearch : WebSearchHandler = self.get_object(AVAILABLE_WEBSEARCH, newelle_settings.websearch_model)
-        self.image_generator : ImageGeneratorHandler = self.get_object(AVAILABLE_IMAGE_GENERATORS, newelle_settings.image_generator)
         # Assign handlers 
-        self.integrationsloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
-        self.extensionloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
+        self.integrationsloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
+        self.extensionloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
         self.memory.set_handlers(self.secondary_llm, self.embedding, self.rag)
 
         self.rag.set_handlers(self.llm, self.embedding)
-        #self.image_generator.set_ui_controller(self.controller.ui_controller)
         threading.Thread(target=self.install_missing_handlers).start()
 
     def set_error_func(self, func):
@@ -2353,9 +2261,6 @@ class HandlersManager:
             for tool in self.memory.get_tools():
                 tools.register_tool(tool)
         for tool in self.rag.get_tools():
-            tools.register_tool(tool)
-        if self.image_generator is not None:
-            for tool in self.image_generator.get_tools():
                 tools.register_tool(tool)
 
     def load_handlers(self):
@@ -2370,8 +2275,8 @@ class HandlersManager:
 
     def install_missing_handlers(self):
         """Install selected handlers that are not installed. Assumes that select_handlers has been called""" 
-        handlers = [self.llm, self.stt, self.tts, self.memory, 
-                    self.embedding, self.rag, self.websearch, self.image_generator]
+        handlers = [self.llm, self.memory, 
+                    self.embedding, self.rag, self.websearch]
         for handler in handlers:
             if not handler.is_installed():
                 self.set_installing(handler, True)
@@ -2384,18 +2289,11 @@ class HandlersManager:
 
     def cache_handlers(self):
         """Cache handlers"""
-        for key in AVAILABLE_TTS:
-            self.handlers[(key, self.convert_constants(AVAILABLE_TTS), False)] = self.get_object(AVAILABLE_TTS, key)
-        for key in AVAILABLE_STT:
-            self.handlers[(key, self.convert_constants(AVAILABLE_STT), False)] = self.get_object(AVAILABLE_STT, key)
         for key in AVAILABLE_LLMS:
             self.handlers[(key, self.convert_constants(AVAILABLE_LLMS), False)] = self.get_object(AVAILABLE_LLMS, key)
         # Secondary LLMs
         for key in AVAILABLE_LLMS:
             self.handlers[(key, self.convert_constants(AVAILABLE_LLMS), True)] = self.get_object(AVAILABLE_LLMS, key, True)
-        # Secondary STTs
-        for key in AVAILABLE_STT:
-            self.handlers[(key, self.convert_constants(AVAILABLE_STT), True)] = self.get_object(AVAILABLE_STT, key, True)
         for key in AVAILABLE_MEMORIES:
             self.handlers[(key, self.convert_constants(AVAILABLE_MEMORIES), False)] = self.get_object(AVAILABLE_MEMORIES, key)
         for key in AVAILABLE_RAGS:
@@ -2404,8 +2302,6 @@ class HandlersManager:
             self.handlers[(key, self.convert_constants(AVAILABLE_EMBEDDINGS), False)] = self.get_object(AVAILABLE_EMBEDDINGS, key)
         for key in AVAILABLE_WEBSEARCH:
             self.handlers[(key, self.convert_constants(AVAILABLE_WEBSEARCH), False)] = self.get_object(AVAILABLE_WEBSEARCH, key)
-        for key in AVAILABLE_IMAGE_GENERATORS:
-            self.handlers[(key, self.convert_constants(AVAILABLE_IMAGE_GENERATORS), False)] = self.get_object(AVAILABLE_IMAGE_GENERATORS, key)
         self.handlers_cached.release()
     
     def convert_constants(self, constants: str | dict[str, Any]) -> (str | dict):
@@ -2423,10 +2319,6 @@ class HandlersManager:
         """
         if type(constants) is str:
             match constants:
-                case "tts":
-                    return AVAILABLE_TTS
-                case "stt":
-                    return AVAILABLE_STT
                 case "llm":
                     return AVAILABLE_LLMS
                 case "memory":
@@ -2437,8 +2329,6 @@ class HandlersManager:
                     return AVAILABLE_RAGS
                 case "websearch":
                     return AVAILABLE_WEBSEARCH
-                case "image_generator":
-                    return AVAILABLE_IMAGE_GENERATORS
                 case "extension":
                     return self.extensionloader.extensionsmap
                 case _:
@@ -2446,10 +2336,6 @@ class HandlersManager:
         else:
             if constants == AVAILABLE_LLMS:
                 return "llm"
-            elif constants == AVAILABLE_STT:
-                return "stt"
-            elif constants == AVAILABLE_TTS:
-                return "tts"
             elif constants == AVAILABLE_MEMORIES:
                 return "memory"
             elif constants == AVAILABLE_EMBEDDINGS:
@@ -2458,8 +2344,6 @@ class HandlersManager:
                 return "rag"
             elif constants == AVAILABLE_WEBSEARCH:
                 return "websearch"
-            elif constants == AVAILABLE_IMAGE_GENERATORS:
-                return "image_generator"
             elif constants == self.extensionloader.extensionsmap:
                 return "extension"
             else:
@@ -2485,10 +2369,8 @@ class HandlersManager:
         if constants == AVAILABLE_LLMS:
             model = constants[key]["class"](self.settings, self.directory)
             model.set_secondary_settings(secondary)
-        elif constants == AVAILABLE_STT:
             model = constants[key]["class"](self.settings,self.directory)
             model.set_secondary_settings(secondary)
-        elif constants == AVAILABLE_TTS:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_MEMORIES:
             model = constants[key]["class"](self.settings, self.directory)
@@ -2498,7 +2380,6 @@ class HandlersManager:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_WEBSEARCH:
             model = constants[key]["class"](self.settings, self.directory)
-        elif constants == AVAILABLE_IMAGE_GENERATORS:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == self.extensionloader.extensionsmap:
             model = self.extensionloader.extensionsmap[key]
@@ -2520,11 +2401,7 @@ class HandlersManager:
 
         Returns: AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_TTS based on the type of the handler 
         """
-        if issubclass(type(handler), TTSHandler):
-            return AVAILABLE_TTS
-        elif issubclass(type(handler), STTHandler):
-            return AVAILABLE_STT
-        elif issubclass(type(handler), LLMHandler):
+        if issubclass(type(handler), LLMHandler):
             return AVAILABLE_LLMS
         elif issubclass(type(handler), NewelleExtension):
             return self.extensionloader.extensionsmap
@@ -2536,8 +2413,6 @@ class HandlersManager:
             return AVAILABLE_RAGS
         elif issubclass(type(handler), WebSearchHandler):
             return AVAILABLE_WEBSEARCH
-        elif issubclass(type(handler), ImageGeneratorHandler):
-            return AVAILABLE_IMAGE_GENERATORS
         else:
             raise Exception("Unknown handler")
     

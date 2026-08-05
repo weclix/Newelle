@@ -34,7 +34,6 @@ from .chat_history import ChatHistory
 from .chat_tab import ChatTab
 from .mode_switcher import ModeButton
 from .mode_editor import ModeEditorDialog
-from .call import CallPanel
 
 __all__ = [
     "ProfileRow",
@@ -80,5 +79,4 @@ __all__ = [
     "ChatTab",
     "ModeButton",
     "ModeEditorDialog",
-    "CallPanel"
 ]

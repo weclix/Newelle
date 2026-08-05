@@ -432,8 +432,6 @@ class MyApp(Adw.Application):
         else:
             self.win.stop_recording(tab.recording_button)
 
-    def stop_tts(self,*a):
-        self.win.mute_tts(self.win.mute_tts_button)
 
     def stop_chat(self, *a):
         if hasattr(self, "win") and not self.win.status:
@@ -477,7 +475,7 @@ def main(version):
     app.create_action('focus_message', app.focus_message, ['<primary>l'])
     app.create_action('start_recording', app.start_recording, ['<primary>g'])
     app.create_action('stop_chat', app.stop_chat, ['<primary>q'])
-    app.create_action('stop_tts', app.stop_tts, ['<primary>k'])
+
     app.create_action('save', app.save, ['<primary>s'])
     app.create_action('zoom', app.zoom, ['<primary>plus'])
     app.create_action('zoom', app.zoom, ['<primary>equal'])

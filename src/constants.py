@@ -1,12 +1,9 @@
 from copy import deepcopy
 from .handlers.llm import OpenAIHandler, NewelleAPIHandler
-from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, CustomOpenAITTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
-from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
 from .handlers.memory import MemoripyHandler, UserSummaryHandler, SummaryMemoripyHanlder, LlamaIndexMemoryHandler, AgenticMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
-from .handlers.websearch import SearXNGHandler, DDGSeachHandler, TavilyHandler, TinyFishHandler
-from .handlers.image_generator import ImageGeneratorHandler, PollinationsHandler, StableDiffusionCPPHandler, OpenAIImageHandler, OpenRouterImageHandler
+from .handlers.websearch import SearXNGHandler
 from .integrations.website_reader import WebsiteReader
 from .integrations.websearch import WebsearchIntegration
 from .integrations.mcp import MCPIntegration
@@ -21,34 +18,6 @@ DIR_NAME = "Newelle"
 SCHEMA_ID = 'io.github.qwersyk.Newelle'
 
 AVAILABLE_INTEGRATIONS = [WebsiteReader, WebsearchIntegration, MermaidIntegration, MCPIntegration, SkillsIntegration, DefaultToolsIntegration, AgentToolsIntegration, FileEditingIntegration, TodoListIntegration]
-
-AVAILABLE_IMAGE_GENERATORS = {
-    "stablediffusioncpp": {
-        "key": "stablediffusioncpp",
-        "title": _("Stable Diffusion (Local)"),
-        "description": _("Run Stable Diffusion locally using stable-diffusion.cpp, with hardware acceleration support (CUDA, Vulkan, ROCm)."),
-        "class": StableDiffusionCPPHandler,
-    },
-    "pollinations": {
-        "key": "pollinations",
-        "title": _("Pollinations AI"),
-        "description": _("Generate images using Pollinations AI. Multiple models available, supports advanced parameters."),
-        "class": PollinationsHandler,
-    },
-    "openai-image": {
-        "key": "openai-image",
-        "title": _("OpenAI Compatible"),
-        "description": _("Generate images using OpenAI-compatible APIs (OpenAI DALL-E, and compatible services)."),
-        "class": OpenAIImageHandler,
-    },
-    "openrouter-image": {
-        "key": "openrouter-image",
-        "title": _("OpenRouter"),
-        "description": _("Generate images using OpenRouter's Chat Completions endpoint with the modalities parameter. Supports image-capable models like Gemini, Flux, Recraft, Sourceful and more."),
-        "class": OpenRouterImageHandler,
-        "website": "https://openrouter.ai/models?output_modalities=image",
-    },
-}
 
 AVAILABLE_LLMS = {
     "newelle": {
@@ -65,160 +34,10 @@ AVAILABLE_LLMS = {
     },
 }
 
-AVAILABLE_STT = {
-    "whispercpp": {
-        "key": "whispercpp",
-        "title": _("Whisper C++"),
-        "description": _("Works offline. Optimized Whisper impelementation written in C++"),
-        "website": "https://github.com/ggerganov/whisper.cpp",
-        "class": WhisperCPPHandler,
-        "secondary": True,
-    },
-    "openwakeword": {
-        "key": "openwakeword",
-        "title": _("OpenWakeWord"),
-        "description": _("Works offline. Model optimized for wakeword detection. Will output any wakeword listed if detected by the model"),
-        "class": OpenWakeWordHandler,
-        "secondary": False,
-        "primary": False,
-        "wakeword": True,
-    },
-    "sphinx": {
-        "key": "sphinx",
-        "title": _("CMU Sphinx"),
-        "description": _("Works offline. Only English supported"),
-        "website": "https://cmusphinx.github.io/wiki/",
-        "class": SphinxHandler,
-        "secondary": True,
-    },
-    "google_sr": {
-        "key": "google_sr",
-        "title": _("Google Speech Recognition"),
-        "description": _("Google Speech Recognition online"),
-        "class": GoogleSRHandler,
-        "secondary": True,
-    },
-    "groq_sr": {
-        "key": "groq_sr",
-        "title": _("Groq Speech Recognition"),
-        "description": _("Speech regnition on Groq"),
-        "class": GroqSRHandler,
-        "secondary": True,
-    },
-    "witai": {
-        "key": "witai",
-        "title": _("Wit AI"),
-        "description": _("wit.ai speech recognition free API (language chosen on the website)"),
-        "website": "https://wit.ai",
-        "class": WitAIHandler,
-        "secondary": True,
-    },
-    "vosk": {
-        "key": "vosk",
-        "title": _("Vosk API"),
-        "description": _("Works Offline"),
-        "website": "https://github.com/alphacep/vosk-api/",
-        "class": VoskHandler,
-        "secondary": True,
-    },
-    "openai_sr": {
-        "key": "openai_sr",
-        "title": _("Whisper API"),
-        "description": _("Uses OpenAI Whisper API"),
-        "website": "https://platform.openai.com/docs/guides/speech-to-text",
-        "class": OpenAISRHandler,
-        "secondary": True,
-    },
-    "mistral_sr": {
-        "key": "mistral_sr",
-        "title": _("Mistral Speech Recognition"),
-        "description": _("Uses Mistral's Voxtral speech recognition API"),
-        "website": "https://docs.mistral.ai/studio-api/audio/speech_to_text",
-        "class": MistralSTTHandler,
-        "secondary": True,
-    },
-   "custom_command": {
-        "key": "custom_command",
-        "title": _("Custom command"),
-        "description": _("Runs a custom command"),
-        "class": CustomSRHandler,
-        "secondary": True,
-    }
-}
 
 
-AVAILABLE_TTS = {
-    "gtts": {
-        "key": "gtts",
-        "title": _("Google TTS"),
-        "description": _("Google's text to speech"),
-        "class": gTTSHandler,
-    },
-    "kokoro": {
-        "key": "kokoro",
-        "title": _("Kokoro TTS"),
-        "description": _("Lightweight and fast open source TTS engine. ~3GB dependencies, 400MB model"),
-        "class": KokoroTTSHandler,
-    },
-    "edge_tts": {
-        "key": "edge_tts",
-        "title": _("Edge TTS"),
-        "description": _("Use Microsoft Edge online TTS without any API Key"),
-        "class": EdgeTTSHandler,
-    },
-    "elevenlabs": {
-        "key": "elevenlabs",
-        "title": _("ElevenLabs TTS"),
-        "description": _("Natural sounding TTS"),
-        "class": ElevenLabs,
-    },
-    "openai_tts": {
-        "key": "openai_tts",
-        "title": _("OpenAI TTS"),
-        "description": _("OpenAI TTS"),
-        "class": OpenAITTSHandler,
-    },
-    "groq_tts": {
-        "key": "groq_tts",
-        "title": _("Groq TTS"),
-        "description": _("Groq TTS API"),
-        "class": GroqTTSHandler,
-    },
-    "mistral_tts": {
-        "key": "mistral_tts",
-        "title": _("Mistral Voxtral TTS"),
-        "description": _("Mistral's Voxtral text-to-speech with zero-shot voice cloning"),
-        "website": "https://docs.mistral.ai/studio-api/audio/text_to_speech",
-        "class": MistralTTSHandler,
-    },
-    "custom_openai_tts": {
-        "key": "custom_openai_tts",
-        "title": _("Custom OpenAI TTS"),
-        "description": _("Custom OpenAI TTS"),
-        "class": CustomOpenAITTSHandler,
-    },
-    "espeak": {
-        "key": "espeak",
-        "title": _("Espeak TTS"),
-        "description": _("Offline TTS"),
-        "class": EspeakHandler,
-    },
-    "custom_command": {
-        "key": "custom_command",
-        "title": _("Custom Command"),
-        "description": _("Use a custom command as TTS, {0} will be replaced with the text"),
-        "class": CustomTTSHandler,
-    }
-}
 
-AVAILABLE_EMBEDDINGS = {
-    "openaiembedding": {
-        "key": "openaiembedding",
-        "title": _("OpenAI API"),
-        "description": _("OpenAI API"),
-        "class": OpenAIEmbeddingHandler,
-    }
-}
+
 
 
 AVAILABLE_MEMORIES = {
@@ -263,31 +82,21 @@ AVAILABLE_RAGS = {
     },
 }
 
+AVAILABLE_EMBEDDINGS = {
+    "openaiembedding": {
+        "key": "openaiembedding",
+        "title": _("OpenAI API"),
+        "description": _("OpenAI API"),
+        "class": OpenAIEmbeddingHandler,
+    }
+}
+
 AVAILABLE_WEBSEARCH = {
     "searxng": {
         "key": "searxng",
         "title": _("SearXNG"),
         "description": _("SearXNG - Private and selfhostable search engine"),
         "class": SearXNGHandler,
-    },
-    "ddgsearch": {
-        "key": "ddgsearch",
-        "title": _("DuckDuckGo"),
-        "description": _("DuckDuckGo search"),
-        "class": DDGSeachHandler,
-    },
-    "tavily": {
-        "key": "tavily",
-        "title": _("Tavily"),
-        "description": _("Tavily search"),
-        "website": "https://tavily.com/",
-        "class": TavilyHandler,
-    },
-    "tinyfish": {
-        "key": "tinyfish",
-        "title": _("TinyFish"),
-        "description": _("TinyFish web search API"),
-        "class": TinyFishHandler,
     }
 }
 
@@ -605,51 +414,32 @@ AVAILABLE_PROMPTS = [
 
 # Available handlers without extensions
 DEFAULT_AVAILABLE_LLM = AVAILABLE_LLMS.copy()
-DEFAULT_AVAILABLE_TTS = AVAILABLE_TTS.copy()
-DEFAULT_AVAILABLE_STT = AVAILABLE_STT.copy()
 DEFAULT_AVAILABLE_EMBEDDING = AVAILABLE_EMBEDDINGS.copy()
 DEFAULT_AVAILABLE_MEMORIES = AVAILABLE_MEMORIES.copy()
 DEFAULT_AVAILABLE_RAG = AVAILABLE_RAGS.copy()
 DEFAULT_AVAILABLE_WEBSEARCH = AVAILABLE_WEBSEARCH.copy()
-DEFAULT_AVAILABLE_IMAGE_GENERATORS = AVAILABLE_IMAGE_GENERATORS.copy()
 DEFAULT_AVAILABLE_PROMPTS = AVAILABLE_PROMPTS.copy()
 
 def restore_handlers():
-    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_PROMPTS, AVAILABLE_IMAGE_GENERATORS
+    global AVAILABLE_LLMS, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_PROMPTS
     AVAILABLE_PROMPTS.clear()
     AVAILABLE_LLMS.clear()
-    AVAILABLE_TTS.clear()
-    AVAILABLE_STT.clear()
     AVAILABLE_EMBEDDINGS.clear()
     AVAILABLE_MEMORIES.clear()
     AVAILABLE_RAGS.clear()
     AVAILABLE_WEBSEARCH.clear()
-    AVAILABLE_IMAGE_GENERATORS.clear()
     AVAILABLE_PROMPTS += deepcopy(DEFAULT_AVAILABLE_PROMPTS)
     AVAILABLE_LLMS.update(deepcopy(DEFAULT_AVAILABLE_LLM))
-    AVAILABLE_TTS.update(deepcopy(DEFAULT_AVAILABLE_TTS))
-    AVAILABLE_STT.update(deepcopy(DEFAULT_AVAILABLE_STT))
     AVAILABLE_EMBEDDINGS.update(deepcopy(DEFAULT_AVAILABLE_EMBEDDING))
     AVAILABLE_MEMORIES.update(deepcopy(DEFAULT_AVAILABLE_MEMORIES))
     AVAILABLE_RAGS.update(deepcopy(DEFAULT_AVAILABLE_RAG))
     AVAILABLE_WEBSEARCH.update(deepcopy(DEFAULT_AVAILABLE_WEBSEARCH))
-    AVAILABLE_IMAGE_GENERATORS.update(deepcopy(DEFAULT_AVAILABLE_IMAGE_GENERATORS))
 
 SETTINGS_GROUPS = {
         "LLM": {
             "title": _("LLM"),
             "settings": ["secondary-llm-on", "secondary-llm-vision", "secondary-language-model", "language-model", "llm-settings", "llm-secondary-settings"],
             "description": _("LLM and Secondary LLM settings"),
-        },
-        "TTS": {
-            "title": _("TTS"),
-            "settings": ["tts-on", "tts", "tts-voice"],
-            "description": _("Text to Speech settings"),
-        },
-        "STT": {
-            "title": _("STT"),
-            "settings": ["stt-engine", "stt-settings", "automatic-stt", "stt-silence-detection-threshold", "stt-silence-detection-duration"],
-            "description": _("Speech to Text settings"),
         },
         "Embedding": {
             "title": _("Embedding"),
@@ -665,11 +455,6 @@ SETTINGS_GROUPS = {
             "title": _("Websearch"),
             "settings": ["websearch-on", "websearch-settings", "websearch-model"],
             "description": _("Websearch settings"),
-        },
-        "image_generator": {
-            "title": _("Image Generator"),
-            "settings": ["image-generator", "image-generator-settings"],
-            "description": _("Image generation settings"),
         },
         "rag": {
             "title": _("RAG"),
@@ -701,12 +486,5 @@ SETTINGS_GROUPS = {
             "settings": ["tools-settings", "mcp-servers", "skills-settings", "file-permissions"],
             "description": _("Tools settings, tools groups..."),
         },
-        "wakeword": {
-            "title": _("Wakeword"),
-            "settings": ["wakeword-on", "wakeword-mode", "wakeword-engine", "wakeword-engine-settings", "wakeword",
-                         "wakeword-pre-buffer-duration", "wakeword-silence-duration", "wakeword-energy-threshold",
-                         "secondary-stt-on", "secondary-stt-engine", "stt-secondary-settings"],
-            "description": _("Wakeword detection settings"),
-        }
 
 }

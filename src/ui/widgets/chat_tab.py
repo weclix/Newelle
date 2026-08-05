@@ -23,7 +23,6 @@ from .documents_reader import DocumentReaderWidget
 from .message import Message
 from .. import apply_css_to_widget
 from ...utility.strings import (
-    clean_message_tts,
     convert_think_codeblocks,
     remove_markdown,
     remove_emoji,
@@ -466,7 +465,6 @@ class ChatTab(Gtk.Box):
         entries = [
             {"setting_name": "rag-on", "title": _("Local Documents")},
             {"setting_name": "memory-on", "title": _("Long Term Memory")},
-            {"setting_name": "tts-on", "title": _("TTS")},
             {"setting_name": "websearch-on", "title": _("Web search")},
         ]
         
@@ -636,14 +634,7 @@ class ChatTab(Gtk.Box):
         return self.controller.get_vision_model()
     
     @property
-    def tts(self):
-        """Get the TTS handler."""
-        return self.controller.handlers.tts
-    
     @property
-    def tts_enabled(self) -> bool:
-        """Check if TTS is enabled."""
-        return self.controller.newelle_settings.tts_enabled
     
     @property
     def rag_handler(self):
@@ -964,25 +955,8 @@ class ChatTab(Gtk.Box):
         if self.controller.newelle_settings.auto_generate_name and len(self.chat) == 2:
             GLib.idle_add(self.generate_chat_name)
         
-        # TTS
-        tts_thread = None
-        if self.tts_enabled:
-            message = clean_message_tts(message_label)
-            if message.strip() and not message.isspace():
-                tts_thread = threading.Thread(
-                    target=self.tts.play, args=(message,)
-                )
-                tts_thread.start()
-        
-        # Wait for TTS to finish before restarting recording
-        def restart_recording():
-            if not self.window.automatic_stt_status:
-                return
-            if tts_thread is not None:
-                tts_thread.join()
             GLib.idle_add(self.start_recording, self.recording_button)
         
-        if self.controller.newelle_settings.automatic_stt:
             threading.Thread(target=restart_recording).start()
 
         return GLib.SOURCE_REMOVE

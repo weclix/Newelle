@@ -622,6 +622,5 @@ class DefaultToolsIntegration(NewelleExtension):
                 tools_group=_("Media Display")
 
             ),
-            create_io_tool("speech_to_text","Recognize audio files and return their text.",  self.speech_to_text, default_on=False, tools_group=_("Audio")),
-            create_io_tool("text_to_speech", "Convert text to speech. Can save to a file and/or speak aloud.", self.text_to_speech, default_on=False, tools_group=_("Audio")),
+
         ]

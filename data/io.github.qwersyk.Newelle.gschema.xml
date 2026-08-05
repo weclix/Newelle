@@ -65,21 +65,6 @@
 	      <key name="llm-secondary-settings" type="s">
             <default>"{}"</default>
         </key>
-	      <key name="tts-on" type="b">
-            <default>false</default>
-        </key>
-	      <key name="tts" type="s">
-            <default>"gtts"</default>
-        </key>
-	      <key name="tts-voice" type="s">
-            <default>"{}"</default>
-        </key>
-	      <key name="stt-engine" type="s">
-            <default>"google_sr"</default>
-        </key>
-	      <key name="stt-settings" type="s">
-	        <default>"{}"</default>
-        </key>
 	      <key name="embedding-model" type="s">
             <default>"openaiembedding"</default>
         </key>
@@ -119,15 +104,6 @@
         <key name="documents-context-limit" type="i">
           <default>5000</default>
         </key>
-        <key name="automatic-stt" type="b">
-          <default>false</default>
-        </key>
-        <key name="stt-silence-detection-threshold" type="d">
-          <default>0.07</default>
-        </key>
-        <key name="stt-silence-detection-duration" type="i">
-          <default>3</default>
-          </key> 
         <key name="welcome-screen-shown" type="b"> 
           <default>false</default> 
         </key>
@@ -219,42 +195,6 @@
             <default>[]</default>
         </key>
         <!-- Wakeword settings -->
-        <key name="wakeword-on" type="b">
-            <default>false</default>
-        </key>
-        <key name="wakeword-mode" type="s">
-            <default>"secondary-stt"</default>
-        </key>
-        <key name="wakeword-engine" type="s">
-            <default>"openwakeword"</default>
-        </key>
-        <key name="wakeword-engine-settings" type="s">
-            <default>"{}"</default>
-        </key>
-        <key name="wakeword" type="s">
-            <default>"hello, hi, newelle, computer"</default>
-        </key>
-        <key name="wakeword-vad-aggressiveness" type="i">
-            <default>1</default>
-        </key>
-        <key name="wakeword-pre-buffer-duration" type="d">
-            <default>0.8</default>
-        </key>
-        <key name="wakeword-silence-duration" type="d">
-            <default>0.6</default>
-        </key>
-        <key name="wakeword-energy-threshold" type="i">
-            <default>300</default>
-        </key>
-        <key name="secondary-stt-on" type="b">
-            <default>false</default>
-        </key>
-        <key name="secondary-stt-engine" type="s">
-            <default>"whispercpp"</default>
-        </key>
-        <key name="stt-secondary-settings" type="s">
-            <default>"{}"</default>
-        </key>
         <key name="file-permissions" type="s">
             <default>'[{"path": "*", "read": "allow", "write": "ask"}, {"path": "{{main_path}}", "read": "allow", "write": "ask"}]'</default>
         </key>
@@ -301,12 +241,6 @@
         <key name="monospace-line-height" type="d">
             <default>1.45</default>
         </key>
-        <key name="image-generator" type="s">
-            <default>"pollinations"</default>
-        </key>
-        <key name="image-generator-settings" type="s">
-            <default>"{}"</default>
-        </key>    
         <key name="hide-warning" type="b">
             <default>false</default>
         </key>

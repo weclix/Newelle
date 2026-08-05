@@ -19,7 +19,7 @@ from .ui.settings import Settings
 
 from .ui.profile import ProfileDialog
 from .ui.presentation import PresentationWindow
-from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, BrowserWidget, Terminal, CodeEditorWidget, ToolWidget, CallPanel
+from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, BrowserWidget, Terminal, CodeEditorWidget, ToolWidget
 from .ui.explorer import ExplorerPanel
 from .ui.widgets import MultilineEntry, ProfileRow, DisplayLatex, InlineLatex, ThinkingWidget, Message, ChatRow, FolderRow, ChatHistory, ChatTab
 from .ui.stdout_monitor import StdoutMonitorDialog
@@ -40,7 +40,6 @@ from .utility.strings import (
 )
 from .utility.replacehelper import PromptFormatter, replace_variables, ReplaceHelper, replace_variables_dict
 from .utility.profile_settings import get_settings_dict, get_settings_dict_by_groups, restore_settings_from_dict, restore_settings_from_dict_by_groups
-from .utility.audio_recorder import AudioRecorder
 from .utility.media import extract_supported_files
 from .ui.screenrecorder import ScreenRecorder
 from .handlers import ErrorSeverity
@@ -76,16 +75,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def build_main_window(self):
         # UI things
-        self.automatic_stt_status = False
         self.model_loading_spinner_button = None
         self.model_loading_spinner_separator = None
         self.model_loading_status = False
         self.last_generation_time = None
         self.last_token_num = None
         self.last_update = 0
-        # Wakeword detector
-        self.wakeword_detector = None
-        self.wakeword_listening = False
         # Breakpoint - Collapse the sidebar when the window is too narrow
         breakpoint = Adw.Breakpoint(condition=Adw.BreakpointCondition.new_length(Adw.BreakpointConditionLengthType.MAX_WIDTH, 1000, Adw.LengthUnit.PX))
         breakpoint.add_setter(self.main_program_block, "collapsed", True)
@@ -180,12 +175,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Header box - Contains the buttons that must go in the left side of the header
         self.headerbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        # Mute TTS Button
-        self.mute_tts_button = Gtk.Button(
-            css_classes=["flat"], icon_name="audio-volume-muted-symbolic", visible=False
-        )
-        self.mute_tts_button.connect("clicked", self.mute_tts)
-        self.headerbox.append(self.mute_tts_button)
         # Flap button
         self.flap_button_left = Gtk.ToggleButton.new()
         self.flap_button_left.set_icon_name(icon_name="sidebar-show-right-symbolic")
@@ -367,8 +356,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _cleanup_on_destroy(self, window):
         """Clean up resources when window is destroyed"""
-        # Stop wakeword detection
-        self.stop_wakeword_detection()
         # Stop stdout monitoring
         if self.stdout_monitor_dialog:
             self.stdout_monitor_dialog.stop_monitoring_external()
@@ -415,8 +402,6 @@ class MainWindow(Adw.ApplicationWindow):
             (_("Explorer Tab"), "folder-symbolic", self.add_explorer_tab),
             (_("Terminal Tab"), "gnome-terminal-symbolic", self.add_terminal_tab),
             (_("Browser Tab"), "internet-symbolic", self.add_browser_tab),
-            (_("Start Call"), "call-start-symbolic", self.start_call_tab),
-            (_("Image Generator"), "insert-image-symbolic", self.add_image_generator_tab),
         ]
         menu_entries += self.extensionloader.get_add_tab_buttons()
         
@@ -796,7 +781,6 @@ class MainWindow(Adw.ApplicationWindow):
     def update_toggles(self, *_):
         """Update the quick toggles"""
         reloads = self.controller.update_settings()
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
         self.rag_on = self.controller.newelle_settings.rag_on
         self.memory_on = self.controller.newelle_settings.memory_on
         self.virtualization = self.controller.newelle_settings.virtualization
@@ -807,7 +791,6 @@ class MainWindow(Adw.ApplicationWindow):
         """Update settings from the quick settings"""
         reloads = self.controller.update_settings()
         self.model = self.controller.handlers.llm
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
         self.rag_on = self.controller.newelle_settings.rag_on
         self.rag_on_documents = self.controller.newelle_settings.rag_on_documents
         self.memory_on = self.controller.newelle_settings.memory_on
@@ -819,8 +802,6 @@ class MainWindow(Adw.ApplicationWindow):
         """Update settings, run every time the program is started or settings dialog closed"""
         reloads = self.controller.update_settings()
         self.update_font_settings()
-        if ReloadType.WAKEWORD in reloads:
-            self.controller.handlers.select_handlers(self.controller.newelle_settings)
         if self.first_load:
             # Load handlers with a timeout in order to not freeze the program
             def load_handlers_async():
@@ -843,12 +824,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.profile_settings = self.controller.newelle_settings.profile_settings
         self.memory_on = self.controller.newelle_settings.memory_on
         self.rag_on = self.controller.newelle_settings.rag_on
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
         self.virtualization = self.controller.newelle_settings.virtualization
         self.prompts = self.controller.newelle_settings.prompts
         # Handlers
-        self.tts = self.controller.handlers.tts
-        self.stt = self.controller.handlers.stt
         self.model = self.controller.handlers.llm
         self.secondary_model = self.controller.handlers.secondary_llm
         self.embeddings = self.controller.handlers.embedding
@@ -861,34 +839,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.show_chat()
         if ReloadType.RELOAD_CHAT_LIST in reloads:
             self.update_history()
-        # Setup TTS
-        self.tts.connect(
-            "start", lambda: GLib.idle_add(self.mute_tts_button.set_visible, True)
-        )
-        self.tts.connect(
-            "stop", lambda: GLib.idle_add(self.mute_tts_button.set_visible, False)
-        )
-        # Handle wakeword detection
-        # Check if we need to restart wakeword detector
-        should_be_listening = self.controller.newelle_settings.wakeword_enabled
-        is_listening = self.wakeword_listening
-
-        needs_restart = (
-            should_be_listening != is_listening or
-            (ReloadType.STT in reloads and should_be_listening) or
-            (ReloadType.WAKEWORD in reloads and should_be_listening)
-        )
-
-        if needs_restart:
-            # State changed, STT reloaded, or wakeword settings changed - restart detector
-            if is_listening:
-                self.stop_wakeword_detection()
-
-            if should_be_listening:
-                self.start_wakeword_detection()
-        if ReloadType.LLM in reloads or ReloadType.SECONDARY_LLM in reloads:
-            self.reload_buttons() 
-            self.update_model_popup()
+        self.reload_buttons() 
+        self.update_model_popup()
         if ReloadType.TOOLS in reloads:
             self.model_popup_settings.refresh_tools_list()
 
@@ -1243,8 +1195,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.controller.handlers.handlers_cached.release()
         GLib.idle_add(show_presentation)
 
-    def mute_tts(self, button: Gtk.Button):
-        """Mute the TTS"""
         self.focus_input()
         if self.tts_enabled:
             self.tts.stop()
@@ -1314,40 +1264,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         GLib.idle_add(update_ui)
 
-    def on_wakeword_detected(self, command_text):
-        """Callback when wakeword is detected
-
-        Args:
-            command_text: The transcribed text with wakeword removed
-        """
-        tab = self.get_active_chat_tab()
-        if tab is None:
-            return
-
-        if command_text and len(command_text.strip()) > 0:
-            # Set text and send
-            tab.input_panel.set_text(command_text)
-            tab.on_entry_activate(tab.input_panel)
-        else:
-            # Just wakeword, no command
-            self.notification_block.add_toast(
-                Adw.Toast(title=_("Wakeword detected, no command"), timeout=2)
-            )
-
-    def on_wakeword_speech_started(self):
-        """Callback when speech is detected during wakeword listening."""
-        tab = self.get_active_chat_tab()
-        if tab is not None:
-            GLib.idle_add(tab.set_mic_warning)
-
-    def on_wakeword_transcribing(self):
-        """Callback when transcription starts during wakeword listening."""
-        tab = self.get_active_chat_tab()
-        if tab is not None:
-            GLib.idle_add(tab.set_mic_transcribing)
-
-    def on_wakeword_transcribing_done(self):
-        """Callback when transcription completes during wakeword listening."""
         tab = self.get_active_chat_tab()
         if tab is not None:
             GLib.idle_add(tab.set_mic_normal)
@@ -1614,10 +1530,6 @@ class MainWindow(Adw.ApplicationWindow):
             if group == "LLM":
                 reload_types.add(ReloadType.LLM)
                 reload_types.add(ReloadType.SECONDARY_LLM)
-            elif group == "TTS":
-                reload_types.add(ReloadType.TTS)
-            elif group == "STT":
-                reload_types.add(ReloadType.STT)
             elif group == "Embedding":
                 reload_types.add(ReloadType.EMBEDDINGS)
             elif group == "memory":
@@ -1649,7 +1561,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.offers = newsettings.offers
         self.memory_on = newsettings.memory_on
         self.rag_on = newsettings.rag_on
-        self.tts_enabled = newsettings.tts_enabled
         self.virtualization = newsettings.virtualization
         self.prompts = newsettings.prompts
 
@@ -1657,8 +1568,6 @@ class MainWindow(Adw.ApplicationWindow):
         self._batch_reload(reload_types)
 
         # Update handler references after reload
-        self.tts = self.controller.handlers.tts
-        self.stt = self.controller.handlers.stt
         self.model = self.controller.handlers.llm
         self.secondary_model = self.controller.handlers.secondary_llm
         self.embeddings = self.controller.handlers.embedding
@@ -1682,12 +1591,6 @@ class MainWindow(Adw.ApplicationWindow):
         if ReloadType.TOOLS in reload_types:
             self.model_popup_settings.refresh_tools_list()
 
-        self.tts.connect(
-            "start", lambda: GLib.idle_add(self.mute_tts_button.set_visible, True)
-        )
-        self.tts.connect(
-            "stop", lambda: GLib.idle_add(self.mute_tts_button.set_visible, False)
-        )
 
         if ReloadType.LLM in reload_types:
             send_on_enter = not newsettings.send_on_enter
@@ -1727,9 +1630,9 @@ class MainWindow(Adw.ApplicationWindow):
             reload_types.discard(ReloadType.LLM)
 
         # Call select_handlers ONCE for all remaining handler types
-        handler_types = {ReloadType.SECONDARY_LLM, ReloadType.TTS, ReloadType.STT,
+        handler_types = {ReloadType.SECONDARY_LLM,
                 ReloadType.MEMORIES, ReloadType.EMBEDDINGS, ReloadType.RAG,
-                ReloadType.WEBSEARCH, ReloadType.WAKEWORD}
+                ReloadType.WEBSEARCH}
         if reload_types & handler_types:
             self.controller.handlers.select_handlers(self.controller.newelle_settings)
 
@@ -1775,67 +1678,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     # Voice Recording
     def start_recording(self, button):
-        """Start recording voice for Speech to Text"""
-        path = os.path.join(self.controller.cache_dir, "recording.wav")
-        if os.path.exists(path):
-            os.remove(path)
-        self.recording = True
-        self.recording_button = button  # Store the button for auto_stop_recording
-        if self.controller.newelle_settings.automatic_stt:
-            self.automatic_stt_status = True
-        # button.set_child(Gtk.Spinner(spinning=True))
-        button.set_icon_name("media-playback-stop-symbolic")
-        try:
-            button.disconnect_by_func(self.start_recording)
-        except TypeError:
-            # Handler was not connected to this function
-            pass
-        button.remove_css_class("suggested-action")
-        button.add_css_class("error")
-        button.connect("clicked", self.stop_recording)
-        self.recorder = AudioRecorder(
-            auto_stop=True,
-            stop_function=self.auto_stop_recording,
-            silence_duration=self.controller.newelle_settings.stt_silence_detection_duration,
-            silence_threshold_percent=self.controller.newelle_settings.stt_silence_detection_threshold,
-        )
-        t = threading.Thread(target=self.recorder.start_recording, args=(path,))
-        t.start()
-
-    def auto_stop_recording(self, button=False):
-        """Stop recording after an auto stop signal"""
-        GLib.idle_add(self.stop_recording_ui, self.recording_button)
-        threading.Thread(
-            target=self.stop_recording_async, args=(self.recording_button,)
-        ).start()
-
-    def stop_recording(self, button=False):
-        """Stop a recording manually"""
-        self.recording = False
-        self.automatic_stt_status = False
-        self.recorder.stop_recording(
-            os.path.join(self.controller.cache_dir, "recording.wav")
-        )
-        # self.auto_stop_recording()
-
-    def stop_recording_ui(self, button):
-        """Update the UI to show that the recording has been stopped"""
-        button.set_child(None)
-        button.set_icon_name("audio-input-microphone-symbolic")
-        button.add_css_class("suggested-action")
-        button.remove_css_class("error")
-        try:
-            button.disconnect_by_func(self.stop_recording)
-        except TypeError:
-            pass
-        # Reconnect to the active chat tab's start_recording method
-        tab = self.get_active_chat_tab()
-        if tab is not None:
-            button.connect("clicked", tab.start_recording)
-
-    def stop_recording_async(self, button=False):
-        """Stop recording and save the file"""
-        recognizer = self.stt
         result = recognizer.recognize_file(
             os.path.join(self.controller.cache_dir, "recording.wav")
         )
@@ -3005,40 +2847,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_sidebar()
         return tab
     
-    def start_call_tab(self, tabview=None, file=None):
-        profile_name = self.current_profile
-        profile_picture = self.profile_settings.get(profile_name, {}).get("picture")
-        
-        call_panel = CallPanel(self.controller, profile_name, profile_picture)
-        
-        tab = self.canvas_tabs.append(call_panel)
-        tab.set_title(_("Call"))
-        tab.set_icon(Gio.ThemedIcon(name="call-start-symbolic"))
-         
-        def on_convert_to_chat(call_panel):
-            self.controller.chats[call_panel.chat_id]["call"] = False
-            self.controller.save_chats()
-            self.update_history()
-            self.show_sidebar()
-        
-        call_panel.connect("convert-to-chat", on_convert_to_chat)
-        
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab 
 
-    def add_image_generator_tab(self, tabview=None, file=None):
-        from .constants import AVAILABLE_IMAGE_GENERATORS
-        handler = self.controller.handlers.image_generator
-        if handler is None:
-            return
-        mini_app = handler.get_mini_app(AVAILABLE_IMAGE_GENERATORS)
-        tab = self.canvas_tabs.append(mini_app)
-        tab.set_title(_("Image Generator"))
-        tab.set_icon(Gio.ThemedIcon(name="insert-image-symbolic"))
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab
 
     def edit_copybox(self, id_message, id_codeblock, new_content, editor=None):
         message_content = self.chat[id_message]["Message"]

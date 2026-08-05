@@ -11,8 +11,6 @@ from gi.repository import Gtk, Adw
 from .handlers import Handler
 
 from .handlers.llm import LLMHandler
-from .handlers.stt import STTHandler
-from .handlers.tts import TTSHandler
 from .handlers.rag import RAGHandler
 from .handlers.memory import MemoryHandler
 from .handlers.embeddings import EmbeddingHandler
@@ -45,21 +43,17 @@ class NewelleExtension(Handler):
         self.schema_key = "extensions-settings"
         pass
 
-    def set_handlers(self, llm: LLMHandler, stt: STTHandler, tts:TTSHandler|None, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler):
+    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler):
         """Set the handlers for the extension
 
         Args:
             llm: LLMHandler 
-            stt: STTHandler 
-            tts: TTSHandler|None if disabled None is given 
             secondary_llm: LLMHandler (if disabled, is the same of LLMHandler) 
             embedding: EmbeddingHandler 
             rag: RAGHandler|None if disabled None is given 
             memory: MemoryHandler|None if disabled None is given 
         """
         self.llm = llm 
-        self.stt = stt
-        self.tts = tts
         self.secondary_llm = secondary_llm
         self.embedding = embedding
         self.rag = rag
@@ -80,67 +74,6 @@ class NewelleExtension(Handler):
             } 
         """
         return [] 
-
-    def get_tts_handlers(self) -> list[dict]:
-        """
-        Returns the list of TTS handlers
-
-        Returns: 
-            list: list of TTS handlers in this format
-            {
-                "key": "key of the handler",
-                "title": "title of the handler",
-                "description": "description of the handler",
-                "class": TTSHandler - The class of the handler,
-            }
-            
-        """
-        return [] 
-
-    def get_stt_handlers(self) -> list[dict]:
-        """
-        Returns the list of STT handlers
-
-        Returns:
-            list: list of STT handlers in this format
-            {
-                "key": "key of the handler",
-                "title": "title of the handler",
-                "description": "description of the handler",
-                "class": STTHandler - The class of the handler,
-            }
-        """
-        return [] 
-
-    def get_memory_handlers(self) -> list[dict]:
-        """
-        Returns the list of memory handlers
-
-        Returns:
-            list: list of memory handlers in this format
-            {
-                "key": "key of the handler",
-                "title": "title of the handler",
-                "description": "description of the handler",
-                "class": MemoryHandler - The class of the handler,
-            }
-        """
-        return []
-
-    def get_embedding_handlers(self) -> list[dict]:
-        """
-        Returns the list of embedding handlers
-
-        Returns:
-            list: list of embedding handlers in this format
-            {
-                "key": "key of the handler",
-                "title": "title of the handler",
-                "description": "description of the handler",
-                "class": EmbeddingHandler - The class of the handler,
-            }
-        """
-        return []
 
     def get_rag_handlers(self) -> list[dict]:
         """
@@ -187,21 +120,7 @@ class NewelleExtension(Handler):
         """
         return []
 
-    def get_image_generator_handlers(self) -> list[dict]:
-        """
-        Returns list of image generator handlers
 
-        Returns:
-            list: list of image generator handlers in this format
-            {
-                "key": "key of handler",
-                "title": "title of handler",
-                "description": "description of handler",
-                "class": ImageGeneratorHandler - The class of handler,
-            }
-        """
-        return []
-    
     def get_additional_prompts(self) -> list:
         """
         Returns the list of additional prompts
@@ -452,9 +371,9 @@ class ExtensionLoader:
             
         sys.path.remove(self.project_dir)
 
-    def set_handlers(self, llm: LLMHandler, stt: STTHandler, tts:TTSHandler|None, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None):
+    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None):
         for extension in self.extensions:
-            extension.set_handlers(llm, stt, tts, secondary_llm, embedding, rag, memory, websearch)
+            extension.set_handlers(llm, secondary_llm, embedding, rag, memory, websearch)
     
     def add_tools(self, tool_registry):
         for extension in self.extensions:
@@ -476,13 +395,11 @@ class ExtensionLoader:
         for tool in extension.get_tools():
             tool_registry.remove_tool(tool.name)
 
-    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
+    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
         """Add the handlers of each extension to the available handlers
 
         Args:
             AVAILABLE_LLMS (): list of available llms
-            AVAILABLE_TTS (): list of available tts
-            AVAILABLE_STT (): list of available stt
             AVAILABLE_MEMORIES (): list of available memories
             AVAILABLE_EMBEDDINGS (): list of available embeddings
             AVAILABLE_RAG (): list of available rags
@@ -494,12 +411,6 @@ class ExtensionLoader:
             handlers = extension.get_llm_handlers()
             for handler in handlers:
                 AVAILABLE_LLMS[handler["key"]] = handler
-            handlers = extension.get_tts_handlers()
-            for handler in handlers:
-                AVAILABLE_TTS[handler["key"]] = handler
-            handlers = extension.get_stt_handlers()
-            for handler in handlers:
-                AVAILABLE_STT[handler["key"]] = handler
             handlers = extension.get_memory_handlers()
             for handler in handlers:
                 AVAILABLE_MEMORIES[handler["key"]] = handler
@@ -512,10 +423,6 @@ class ExtensionLoader:
             handlers = extension.get_websearch_handlers()
             for handler in handlers:
                 AVAILABLE_WEBSEARCH[handler["key"]] = handler
-            if AVAILABLE_IMAGE_GENERATORS is not None:
-                handlers = extension.get_image_generator_handlers()
-                for handler in handlers:
-                    AVAILABLE_IMAGE_GENERATORS[handler["key"]] = handler
 
     def add_prompts(self, PROMPTS, AVAILABLE_PROMPTS):
         """Add the prompts of each extension to the available prompts
@@ -548,23 +455,15 @@ class ExtensionLoader:
             if modes:
                 mode_manager.add_modes(modes)
 
-    def remove_handlers(self, extension, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
+    def remove_handlers(self, extension, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
         """Remove handlers of an extension
 
         Args:
             AVAILABLE_LLMS (): list of available llms 
-            AVAILABLE_TTS (): list of available tts
-            AVAILABLE_STT (): list of available stt
         """
         handlers = extension.get_llm_handlers()
         for handler in handlers:
             AVAILABLE_LLMS.pop(handler["key"])
-        handlers = extension.get_tts_handlers()
-        for handler in handlers:
-            AVAILABLE_TTS.pop(handler["key"])
-        handlers = extension.get_stt_handlers()
-        for handler in handlers:
-            AVAILABLE_STT.pop(handler["key"])
         handlers = extension.get_memory_handlers()
         for handler in handlers:
             AVAILABLE_MEMORIES.pop(handler["key"])
@@ -684,12 +583,7 @@ class ExtensionLoader:
         for h in extension.get_llm_handlers():
             if not self.check_handler(h, LLMHandler):
                 return False
-        for h in extension.get_tts_handlers():
-            if not self.check_handler(h, TTSHandler):
-                return False
-        for h in extension.get_stt_handlers():
-            if not self.check_handler(h, STTHandler):
-                return False
+
         for p in extension.get_additional_prompts():
             if not self.check_prompt(p):
                 return False
