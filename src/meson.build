@@ -131,20 +131,8 @@ handler_sources = [
 llm_sources = [
   'handlers/llm/__init__.py',
   'handlers/llm/llm.py',
-  'handlers/llm/claude_handler.py',
-  'handlers/llm/custom_handler.py',
-  'handlers/llm/g4f_handler.py',
-  'handlers/llm/gemini_handler.py',
-  'handlers/llm/gpt3any_handler.py',
-  'handlers/llm/groq_handler.py',
-  'handlers/llm/mistral_handler.py',
   'handlers/llm/newelle_handler.py',
-  'handlers/llm/ollama_handler.py',
-  'handlers/llm/ollama_cloud_handler.py',
   'handlers/llm/openai_handler.py',
-  'handlers/llm/openrouter_handler.py',
-  'handlers/llm/deepseek_handler.py',
-  'handlers/llm/llama_cpp_handler.py',
   ]
 
 tts_sources = [
