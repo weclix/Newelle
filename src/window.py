@@ -395,6 +395,7 @@ class MainWindow(Adw.ApplicationWindow):
         menu_entries = [
             (_("Terminal Tab"), "gnome-terminal-symbolic", self.add_terminal_tab),
         ]
+        menu_entries += self.controller.integrationsloader.get_add_tab_buttons()
         menu_entries += self.extensionloader.get_add_tab_buttons()
         
         # Create custom popover with ListBox
