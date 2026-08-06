@@ -86,7 +86,7 @@ class WebsearchIntegration(NewelleExtension):
         for title, link, favicon in tuple(sources):
             widget.add_website(title, link, favicon)
         widget.finish(result)
-        widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link, False, not self.settings.get_boolean("external-browser")))
+        widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link))
         return widget 
 
     def restore_gtk_widget(self, codeblock: str, lang: str, tool_uuid) -> Gtk.Widget | None:
@@ -103,7 +103,7 @@ class WebsearchIntegration(NewelleExtension):
     def get_gtk_widget(self, codeblock: str, lang: str, tool_uuid) -> Gtk.Widget | None:
         self.tool_uuid = tool_uuid
         search_widget = WebSearchWidget(search_term=codeblock)
-        search_widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link, False, not self.settings.get_boolean("external-browser")))
+        search_widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link))
         self.widgets[codeblock] = search_widget 
         if tool_uuid:
             tool_uuid = str(tool_uuid)

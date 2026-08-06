@@ -19,8 +19,7 @@ from .ui.settings import Settings
 
 from .ui.profile import ProfileDialog
 from .ui.presentation import PresentationWindow
-from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, BrowserWidget, Terminal, CodeEditorWidget, ToolWidget
-from .ui.explorer import ExplorerPanel
+from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, Terminal, CodeEditorWidget, ToolWidget
 from .ui.widgets import MultilineEntry, ProfileRow, DisplayLatex, InlineLatex, ThinkingWidget, Message, ChatRow, FolderRow, ChatHistory, ChatTab
 from .ui.stdout_monitor import StdoutMonitorDialog
 from .utility.stdout_capture import StdoutMonitor
@@ -41,7 +40,6 @@ from .utility.strings import (
 from .utility.replacehelper import PromptFormatter, replace_variables, ReplaceHelper, replace_variables_dict
 from .utility.profile_settings import get_settings_dict, get_settings_dict_by_groups, restore_settings_from_dict, restore_settings_from_dict_by_groups
 from .utility.media import extract_supported_files
-from .ui.screenrecorder import ScreenRecorder
 from .handlers import ErrorSeverity
 from .controller import NewelleController, ReloadType, NewelleSettings
 from .ui_controller import UIController
@@ -88,8 +86,6 @@ class MainWindow(Adw.ApplicationWindow):
        
         # Streams
         self.check_streams = {"folder": False, "chat": False}
-        # if it is recording
-        self.recording = False
         # Stdout monitoring - Initialize and start from program start
         self.stdout_monitor_dialog = None
         self._init_stdout_monitoring()
@@ -309,7 +305,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.add_chat_button.connect("clicked", lambda *_: self._on_create_chat_tab(None))
         self.chat_header.pack_start(self.add_chat_button)
 
-        # Explorer panel 
         self.main_program_block.set_show_sidebar(False)
 
         # Add the initial chat tab
@@ -380,7 +375,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas_tab_bar = Adw.TabBar(autohide=True, view=self.canvas_tabs, css_classes=["inline"])
         self.canvas_overview = Adw.TabOverview(view=self.canvas_tabs, child=self.canvas_tabs, show_end_title_buttons=False, show_start_title_buttons=False, enable_new_tab=True)
         self.canvas_button.connect("clicked", lambda x:  self.canvas_overview.set_open(not self.canvas_overview.get_open()))
-        self.canvas_overview.connect("create-tab", self.add_explorer_tab)
         
         # Add new tab menu button
         self.new_tab_button = Gtk.MenuButton(css_classes=["flat"])
@@ -399,9 +393,7 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Create custom menu entries: Title, Icon, Callable
         menu_entries = [
-            (_("Explorer Tab"), "folder-symbolic", self.add_explorer_tab),
             (_("Terminal Tab"), "gnome-terminal-symbolic", self.add_terminal_tab),
-            (_("Browser Tab"), "internet-symbolic", self.add_browser_tab),
         ]
         menu_entries += self.extensionloader.get_add_tab_buttons()
         
@@ -451,7 +443,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas_box.append(self.canvas_header)
         self.canvas_box.append(self.canvas_tab_bar)
         self.canvas_box.append(self.canvas_overview)
-        self.add_explorer_tab(None, self.main_path)
         bin = Adw.BreakpointBin(child=self.main, width_request=300, height_request=300)
         breakpoint = Adw.Breakpoint(condition=Adw.BreakpointCondition.new_length(Adw.BreakpointConditionLengthType.MAX_WIDTH, 900, Adw.LengthUnit.PX))
         breakpoint.add_setter(self.main, "collapsed", True)
@@ -859,13 +850,6 @@ class MainWindow(Adw.ApplicationWindow):
             child = page.get_child()
             if isinstance(child, ChatTab):
                 child._update_attach_visibility()
-                if not vision_model.supports_video_vision():
-                    if child.video_recorder is not None:
-                        child.video_recorder.stop()
-                        child.video_recorder = None
-                child.screen_record_button.set_visible(
-                    vision_model.supports_video_vision() and not child.attached_image_data
-                )
                 # Refresh the Mode switcher label and the thinking control so
                 # they follow the active LLM's capabilities.
                 child.refresh_mode_and_thinking()
@@ -1199,74 +1183,6 @@ class MainWindow(Adw.ApplicationWindow):
         if self.tts_enabled:
             self.tts.stop()
         return False
-
-    def start_wakeword_detection(self):
-        """Start continuous wakeword detection"""
-        if self.wakeword_detector is not None:
-            return  # Already running
-
-        try:
-            from .utility.wakeword_detector import WakewordDetector
-        except ImportError as e:
-            print(f"WakewordDetector: Cannot import - {e}")
-            self.notification_block.add_toast(
-                Adw.Toast(title=_("Wakeword detection requires pysilero-vad and pyaudio"), timeout=5)
-            )
-            return
-
-        try:
-            self.wakeword_detector = WakewordDetector(
-                stt_handler=self.stt,
-                wakeword=self.controller.newelle_settings.wakeword,
-                vad_aggressiveness=self.controller.newelle_settings.wakeword_vad_aggressiveness,
-                pre_buffer_duration=self.controller.newelle_settings.wakeword_pre_buffer_duration,
-                silence_duration=self.controller.newelle_settings.wakeword_silence_duration,
-                energy_threshold=self.controller.newelle_settings.wakeword_energy_threshold,
-                callback=self.on_wakeword_detected,
-                on_speech_started=self.on_wakeword_speech_started,
-                on_transcribing=self.on_wakeword_transcribing,
-                on_transcribing_done=self.on_wakeword_transcribing_done,
-                secondary_stt_handler=self.controller.handlers.secondary_stt,
-                wakeword_handler=self.controller.handlers.wakeword_handler
-            )
-
-            # Start in background thread
-            t = threading.Thread(target=self.wakeword_detector.start, daemon=True)
-            t.start()
-            self.wakeword_listening = True
-
-            # Update UI
-            def update_ui():
-                if hasattr(self, 'recording_button'):
-                    self.recording_button.set_icon_name("audio-input-microphone-symbolic")
-                    self.recording_button.add_css_class("success")
-                    self.recording_button.set_tooltip_text(_("Wakeword detection active"))
-
-            GLib.idle_add(update_ui)
-        except Exception as e:
-            print(f"WakewordDetector: Failed to start - {e}")
-            self.notification_block.add_toast(
-                Adw.Toast(title=_("Failed to start wakeword detection: {}").format(str(e)), timeout=5)
-            )
-
-    def stop_wakeword_detection(self):
-        """Stop wakeword detection"""
-        if self.wakeword_detector is not None:
-            self.wakeword_detector.stop()
-            self.wakeword_detector = None
-            self.wakeword_listening = False
-
-        # Reset UI
-        def update_ui():
-            if hasattr(self, 'recording_button'):
-                self.recording_button.remove_css_class("success")
-                self.recording_button.set_tooltip_text("")
-
-        GLib.idle_add(update_ui)
-
-        tab = self.get_active_chat_tab()
-        if tab is not None:
-            GLib.idle_add(tab.set_mic_normal)
 
     def focus_input(self):
         """Focus the input box of the active chat tab."""
@@ -1677,49 +1593,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.refresh_profiles_box()
 
     # Voice Recording
-    def start_recording(self, button):
-        result = recognizer.recognize_file(
-            os.path.join(self.controller.cache_dir, "recording.wav")
-        )
 
-        def idle_record():
-            tab = self.get_active_chat_tab()
-            if tab is None:
-                return
-            if (
-                result is not None
-                and "stop" not in result.lower()
-                and len(result.replace(" ", "")) > 2
-            ):
-                tab.input_panel.set_text(result)
-                tab.on_entry_activate(tab.input_panel)
-            else:
-                self.notification_block.add_toast(
-                    Adw.Toast(title=_("Could not recognize your voice"), timeout=2)
-                )
 
-        GLib.idle_add(idle_record)
 
-    # Screen recording
-    def start_screen_recording(self, button):
-        """Start screen recording"""
-        if self.video_recorder is None:
-            self.video_recorder = ScreenRecorder(self)
-            self.video_recorder.start()
-            if self.video_recorder.recording:
-                self.screen_record_button.set_icon_name("media-playback-stop-symbolic")
-                self.screen_record_button.set_css_classes(
-                    ["destructive-action", "circular"]
-                )
-            else:
-                self.video_recorder = None
-        else:
-            self.screen_record_button.set_visible(False)
-            self.video_recorder.stop()
-            self.screen_record_button.set_icon_name("media-record-symbolic")
-            self.screen_record_button.set_css_classes(["flat"])
-            self.add_file(file_path=self.video_recorder.output_path + ".mp4")
-            self.video_recorder = None
 
     # File attachment
     def attach_file(self, button):
@@ -1892,7 +1768,6 @@ class MainWindow(Adw.ApplicationWindow):
         if tab is not None:
             tab.on_entry_button_clicked()
 
-    # Explorer code
     def handle_file_drag(self, DropTarget, data, x, y):
         """Handle file drag and drop
 
@@ -1996,15 +1871,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_continue_requested(self, chat_history):
         """Handle continue-requested signal from ChatHistory - deprecated, now handled by ChatTab."""
-        pass
 
     def _on_regenerate_requested(self, chat_history):
         """Handle regenerate-requested signal from ChatHistory - deprecated, now handled by ChatTab."""
-        pass
 
     def _on_stop_requested(self, chat_history):
         """Handle stop-requested signal from ChatHistory - deprecated, now handled by ChatTab."""
-        pass
 
     def _on_files_dropped(self, chat_history, data):
         """Handle files-dropped signal from ChatHistory (file drag and drop)."""
@@ -2657,13 +2529,7 @@ class MainWindow(Adw.ApplicationWindow):
             if "cd " in t:
                 txt += t
                 p = (t.split("cd "))[min(len(t.split("cd ")), 1)]
-                explorer = self.get_current_explorer_panel()
-                if explorer is not None:
-                    v = explorer.get_target_directory(path, p)
-                    if not v[0]:
-                        Adw.Toast(title=_("Wrong folder path"), timeout=2)
-                    else:
-                        path = v[1]
+                pass
             else:
                 txt += console_permissions + " " + t
         process = subprocess.Popen(
@@ -2701,43 +2567,12 @@ class MainWindow(Adw.ApplicationWindow):
         if os.path.exists(os.path.expanduser(path)):
             os.chdir(os.path.expanduser(path))
             self.main_path = path
-            explorer = self.get_current_explorer_panel()
-            if explorer is not None:
-                explorer.main_path = path
-            GLib.idle_add(self.update_explorer_panels)
         else:
             Adw.Toast(title=_("Failed to open the folder"), timeout=2)
         if len(outputs[0][1]) > 1000:
             new_value = outputs[0][1][0:1000] + "..."
             outputs = ((outputs[0][0], new_value),)
         return outputs[0]
-
-    def update_explorer_panels(self):
-        tabs = self.canvas_tabs.get_n_pages()
-        for i in range(tabs):
-            page = self.canvas_tabs.get_nth_page(i)
-            child = page.get_child()
-            if child is not None and hasattr(child, "main_path"):
-                child.update_folder()
-    
-    def get_current_explorer_panel(self) -> ExplorerPanel | None:
-        """Get the current explorer panel if focused
-
-        Returns:
-            the current explorer panel 
-        """
-        tab = self.canvas_tabs.get_selected_page()
-        if tab is not None and hasattr(tab.get_child(), "main_path"):
-            return tab.get_child()
-
-    def get_current_browser_panel(self) -> BrowserWidget | None:
-        """Get the current browser panel if focused
-
-        Returns: the current browser panel 
-        """
-        tab = self.canvas_tabs.get_selected_page()
-        if tab is not None and hasattr(tab.get_child(), "webview"):
-            return tab.get_child()
 
     def show_sidebar(self):
         self.main_program_block.set_name("visible")
@@ -2763,63 +2598,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_sidebar()
         return tab
 
-    def add_browser_tab(self, action=None, param=None, url=None):
-        """Add a browser tab"""
-        if url is None:
-            url = self.controller.newelle_settings.initial_browser_page
-        if self.controller.newelle_settings.browser_session_persist:
-            session = self.controller.config_dir + "/bsession.json"
-        else:
-            session = None
-        browser = BrowserWidget(url,self.controller.newelle_settings.browser_search_string, session)
-        
-        # Add the tab
-        tab = self.canvas_tabs.append(browser)
-        tab.set_title("Browser")
-        tab.set_icon(Gio.ThemedIcon(name="internet-symbolic"))
-        # Update tab title when page changes
-        def on_page_changed(browser, url, title, favicon):
-            if title:
-                tab.set_title(title)
-            if favicon:
-                tab.set_icon(favicon)
-        
-        browser.connect("page-changed", on_page_changed)
-        browser.connect("attach-clicked", self._on_attach_clicked)
-        def update_favicon():
-            tab.set_icon(browser.favicon_pixbuf)
-        browser.connect("favicon-changed", lambda b,s: update_favicon())
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab
-
-    def _on_attach_clicked(self, browser):
-        text = "```website\n" + browser.get_current_url() + "\n```"
-        self.chat.append({"User": "User", "Message": text})
-        self.chat_history.show_message(text, False, is_user=True)
-    
-    def add_explorer_tab(self, tabview=None, path=None):
-        """Add an explorer tab
-
-        Args:
-            path (): path of the tab
-        """
-        if path is None:
-            path = self.main_path
-        if not os.path.isdir(os.path.expanduser(path)):
-            return self.add_editor_tab(None, path)
-        panel = ExplorerPanel(self.controller, path)
-        tab = self.canvas_tabs.append(panel)
-        panel.set_tab(tab)
-        panel.connect("new-tab-requested", self.add_explorer_tab)
-        panel.connect("path-changed", self.update_path)
-        panel.connect("open-terminal-requested", lambda panel, path: self.add_terminal_tab(None, None, path))
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab
-
-    def update_path(self, panel, path):
-        self.main_path = path
 
     def add_editor_tab(self, tabview=None, file=None):
         if file is not None:

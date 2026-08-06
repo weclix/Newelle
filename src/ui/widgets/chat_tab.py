@@ -77,8 +77,6 @@ class ChatTab(Gtk.Box):
         self.last_token_num = None
         
         # Recording state
-        self.recording = False
-        self.video_recorder = None
         
         # Attachment state
         self.attached_image_data = None
@@ -190,16 +188,7 @@ class ChatTab(Gtk.Box):
         self.attached_image.set_size_request(36, 36)
         left_cluster.append(self.attached_image)
 
-        self.screen_record_button = Gtk.Button(
-            icon_name="media-record-symbolic",
-            css_classes=["flat", "circular"],
-            tooltip_text=_("Screen recording"),
-        )
-        self.screen_record_button.connect("clicked", self.start_screen_recording)
-        left_cluster.append(self.screen_record_button)
-        if not self.vision_model.supports_video_vision():
-            self.screen_record_button.set_visible(False)
-
+    
         # Quick toggles popover button
         self._build_quick_toggles()
         left_cluster.append(self.quick_toggles)
@@ -220,18 +209,7 @@ class ChatTab(Gtk.Box):
         right_spacer = Gtk.Box(hexpand=True)
         actions_row.append(right_spacer)
         right_cluster = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        self.mic_button = Gtk.Button(
-            css_classes=["flat", "circular"],
-            icon_name="audio-input-microphone-symbolic",
-            width_request=36,
-            height_request=36,
-            tooltip_text=_("Record"),
-        )
-        self.mic_button.set_vexpand(False)
-        self.mic_button.set_valign(Gtk.Align.CENTER)
-        self.mic_button.connect("clicked", self.start_recording)
-        self.recording_button = self.mic_button
-        right_cluster.append(self.mic_button)
+
 
         self.send_button = Gtk.Button(
             css_classes=["suggested-action"],
@@ -954,10 +932,6 @@ class ChatTab(Gtk.Box):
         # Generate chat name
         if self.controller.newelle_settings.auto_generate_name and len(self.chat) == 2:
             GLib.idle_add(self.generate_chat_name)
-        
-            GLib.idle_add(self.start_recording, self.recording_button)
-        
-            threading.Thread(target=restart_recording).start()
 
         return GLib.SOURCE_REMOVE
             
@@ -1309,7 +1283,6 @@ class ChatTab(Gtk.Box):
         self.attach_button.disconnect_by_func(self.delete_attachment)
         self.attach_button.connect("clicked", self.attach_file)
         self.attached_image.set_visible(False)
-        self.screen_record_button.set_visible(self.vision_model.supports_video_vision())
         
     def add_file(self, file_path=None, file_data=None):
         """Add a file attachment and update the UI, also generates thumbnail for videos
@@ -1379,39 +1352,13 @@ class ChatTab(Gtk.Box):
         # The attach_file was connected in _build_ui, so we need to disconnect it here
         # Since we can't directly disconnect by func in this case, we'll rebuild the button state
         self.attach_button.disconnect_by_func(self.attach_file)
-        self.screen_record_button.set_visible(False)
         
     # Recording
-    def start_recording(self, button):
-        """Start voice recording."""
-        try:
-            button.disconnect_by_func(self.start_recording)
-        except TypeError:
-            # Handler was not connected to this function
-            pass
-        self.window.start_recording(button)
 
-    def set_mic_warning(self):
-        """Set mic button to warning state (yellow) when speech is detected."""
-        self.mic_button.add_css_class("warning")
 
-    def set_mic_transcribing(self):
-        """Set mic button to transcribing state (spinner)."""
-        self.mic_button.remove_css_class("warning")
-        spinner = Gtk.Spinner(spinning=True)
-        self.mic_button.set_child(spinner)
-
-    def set_mic_normal(self):
-        """Reset mic button to normal state."""
-        self.mic_button.remove_css_class("warning")
-        self.mic_button.set_child(None)
-        self.mic_button.set_icon_name("audio-input-microphone-symbolic")
         
-    def start_screen_recording(self, button):
-        """Start screen recording."""
-        self.window.start_screen_recording(button)
-        
-    # Bot response (for suggestions)
+
+
     def send_bot_response(self, button):
         """Send a bot response suggestion."""
         self.send_button_start_spinner()

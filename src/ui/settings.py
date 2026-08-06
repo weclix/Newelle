@@ -338,9 +338,6 @@ class Settings(Adw.Window):
         row.add_suffix(entry)
         self.settings.bind("offers", int_spin, 'value', Gio.SettingsBindFlags.DEFAULT)
         self.interface.add(row)
-        # Browser
-        self.build_browser_settings()
-        self.general_page.add(self.browser_group)
         # Neural Network Control
         self.neural_network = Adw.PreferencesGroup(title=_('Neural Network Control'))
         self.general_page.add(self.neural_network) 
@@ -2156,49 +2153,7 @@ class Settings(Adw.Window):
         self.build_prompts_settings()
         return True
 
-    def build_browser_settings(self):
-        # Browser settings
-        self.browser_group = Adw.PreferencesGroup(title=_('Browser'), description=_(_("Settings for the browser")))
-        
-        # External Browser toggle 
-        external_browser_toggle = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("external-browser", external_browser_toggle, 'active', Gio.SettingsBindFlags.DEFAULT)
-        row = Adw.ActionRow(title=_("Use external browser"), subtitle=_("Use an external browser to open links instead of integrated one"))
-        row.add_suffix(external_browser_toggle)
-        self.browser_group.add(row)
 
-        # Persist browser session toggle 
-        persist_browser_toggle = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("browser-session-persist", persist_browser_toggle, 'active', Gio.SettingsBindFlags.DEFAULT)
-        row = Adw.ActionRow(title=_("Persist browser session"), subtitle=_("Persist browser session between restarts. Turning this off requires restarting the program"))
-        row.add_suffix(persist_browser_toggle)
-        self.browser_group.add(row)
-
-        # Delete browser session row 
-        row = Adw.ActionRow(title=_("Delete browser data"), subtitle=_("Delete browser session and data"))
-        delete_button = Gtk.Button(label=_("Delete"), valign=Gtk.Align.CENTER)
-        delete_button.connect("clicked", self.delete_browser_session)
-        row.add_suffix(delete_button)
-        self.browser_group.add(row)
-        
-        # Starting page 
-        row = Adw.ActionRow(title=_("Initial browser page"), subtitle=_("The page where the browser will start"))
-        entry = Gtk.Entry(valign=Gtk.Align.CENTER)
-        self.settings.bind("initial-browser-page", entry, 'text', Gio.SettingsBindFlags.DEFAULT)
-        row.add_suffix(entry)
-        self.browser_group.add(row)
-        
-        # Search string 
-        row = Adw.ActionRow(title=_("Search string"), subtitle=_("The search string used in the browser, %s is replaced with the query"))
-        entry = Gtk.Entry(valign=Gtk.Align.CENTER)
-        self.settings.bind("browser-search-string", entry, 'text', Gio.SettingsBindFlags.DEFAULT)
-        row.add_suffix(entry)
-        self.browser_group.add(row)
-
-    def delete_browser_session(self, button:Gtk.Button):
-        os.remove(self.controller.config_dir + "/bsession.json")
-        os.remove(self.controller.config_dir + "/bsession.json.cookies")
-        button.set_sensitive(False) 
 
     def build_rag_settings(self):
         def update_scale(scale, label, setting_value, type):

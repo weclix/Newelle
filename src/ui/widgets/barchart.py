@@ -6,7 +6,9 @@ class BarChartBox(Gtk.Box):
                          margin_bottom=10, margin_end=10, css_classes=["card","chart"])
 
         self.data_dict = data_dict
-        max_value = max(self.data_dict.values())
+        max_value = max(self.data_dict.values()) if self.data_dict else 0
+        if max_value == 0:
+            return
         if percentages and max_value<=100:
             max_value = 100
         for label, value in self.data_dict.items():

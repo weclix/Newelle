@@ -423,15 +423,6 @@ class MyApp(Adw.Application):
         self.win.notification_block.add_toast(
                 Adw.Toast(title=_('Chat is created')))
 
-    def start_recording(self,*a):
-        tab = self.win.get_active_chat_tab()
-        if tab is None:
-            return
-        if not self.win.recording:
-            self.win.start_recording(tab.recording_button)
-        else:
-            self.win.stop_recording(tab.recording_button)
-
 
     def stop_chat(self, *a):
         if hasattr(self, "win") and not self.win.status:
@@ -473,7 +464,6 @@ def main(version):
     app.create_action('reload_folder', app.reload_folder, ['<primary>e'])
     app.create_action('new_chat', app.new_chat, ['<primary>t'])
     app.create_action('focus_message', app.focus_message, ['<primary>l'])
-    app.create_action('start_recording', app.start_recording, ['<primary>g'])
     app.create_action('stop_chat', app.stop_chat, ['<primary>q'])
 
     app.create_action('save', app.save, ['<primary>s'])

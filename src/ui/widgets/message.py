@@ -671,8 +671,7 @@ class Message(Gtk.Box):
             main_window = self._get_main_window()
             ui_controller = getattr(main_window, "ui_controller", None)
             if ui_controller is not None:
-                use_integrated = not self.controller.settings.get_boolean("external-browser")
-                ui_controller.open_link(source.target, False, use_integrated)
+                ui_controller.open_link(source.target)
             else:
                 Gio.AppInfo.launch_default_for_uri(source.target, None)
         except Exception as error:
@@ -859,7 +858,7 @@ class Message(Gtk.Box):
         main_window = self._get_main_window()
 
         def open_browser_later():
-            main_window.ui_controller.new_browser_tab(f"http://localhost:{port}", new=False)
+            main_window.ui_controller.open_link(f"http://localhost:{port}")
             return GLib.SOURCE_REMOVE
 
         GLib.timeout_add(100, open_browser_later)

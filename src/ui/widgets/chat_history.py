@@ -1789,8 +1789,6 @@ class ChatHistory(Gtk.Box):
                 os.path.join(os.path.expanduser(self.window.main_path), button.get_name())
             ):
                 self.window.main_path = button.get_name()
-                self.ui_controller.new_explorer_tab(self.window.main_path, False)
-            else:
                 subprocess.run(["xdg-open", os.path.expanduser(button.get_name())])
         else:
             self.notification_block.add_toast(
