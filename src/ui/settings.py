@@ -5,6 +5,7 @@ import shutil
 import json
 import time
 import traceback
+import weakref
 from subprocess import Popen 
 
 from gi.repository import Gtk, Adw, Gio, GLib, GObject, Gdk, GtkSource
@@ -13,9 +14,10 @@ from ..utility.util import PerformanceMonitor
 
 from ..handlers import Handler
 
-from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH
+from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, AVAILABLE_TTS, AVAILABLE_STT, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
 from ..utility.pip import install_module
 from .extension import ExtensionPage
+from .interfaces import InterfacesPage
 from .extra_settings import ExtraSettingsBuilder
 from .widgets import ComboRowHelper, CopyBox 
 from .widgets import MultilineEntry
@@ -157,15 +159,192 @@ class Settings(Adw.Window):
         for key in AVAILABLE_WEBSEARCH:
            row = self.build_row(AVAILABLE_WEBSEARCH, key, selected, group) 
            tts_program.add_row(row)
-
+        # Build the Image Generator settings
+        image_generator_row = Adw.ExpanderRow(title=_('Image Generator'), subtitle=_("Choose which image generation engine to use"))
+        self.KNOWLEDGE.add(image_generator_row)
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("image-generator")
+        for key in AVAILABLE_IMAGE_GENERATORS:
+           row = self.build_row(AVAILABLE_IMAGE_GENERATORS, key, selected, group)
+           image_generator_row.add_row(row)
         # Build the RAG settings
         self.build_rag_settings()
 
         # Build the TTS settings
         self.Voicegroup = Adw.PreferencesGroup(title=_('Voice'))
         self.VoicePage.add(self.Voicegroup)
+        tts_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.settings.bind("tts-on", tts_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
+        tts_program = Adw.ExpanderRow(title=_('Text To Speech Program'), subtitle=_("Choose which text to speech to use"))
+        tts_program.add_action(tts_enabled)
+        self.Voicegroup.add(tts_program)
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("tts")
+        for tts_key in AVAILABLE_TTS:
+           row = self.build_row(AVAILABLE_TTS, tts_key, selected, group) 
+           tts_program.add_row(row)
+        # Build the Speech to Text settings
+        stt_engine = Adw.ExpanderRow(title=_('Speech To Text Engine'), subtitle=_("Choose which speech recognition engine you want"))
+        self.Voicegroup.add(stt_engine)
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("stt-engine")
+        for stt_key in AVAILABLE_STT:
+            if AVAILABLE_STT[stt_key].get("primary", True):
+                row = self.build_row(AVAILABLE_STT, stt_key, selected, group)
+                stt_engine.add_row(row)
 
+        # Automatic STT settings
+        self.auto_stt = Adw.ExpanderRow(title=_('Automatic Speech To Text'), subtitle=_("Automatically restart speech to text at the end of a text/TTS"))
+        self.build_auto_stt()
+        self.Voicegroup.add(self.auto_stt)
+        # Wakeword Detection
+        self.wakeword_row = Adw.ExpanderRow(
+            title=_('Wakeword Detection'),
+            subtitle=_("Detect wakeword to send voice commands")
+        )
+        wakeword_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.settings.bind("wakeword-on", wakeword_enabled, 'active',
+                           Gio.SettingsBindFlags.DEFAULT)
+        self.wakeword_row.add_action(wakeword_enabled)
 
+        # Wakeword mode toggle group
+        mode_row = Adw.ActionRow(title=_('Detection Method'), subtitle=_("Choose wakeword detection method"))
+        mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, valign=Gtk.Align.CENTER)
+        
+        current_mode = self.settings.get_string("wakeword-mode")
+        self.wakeword_mode_secondary = Gtk.ToggleButton(label=_("Secondary STT"), active=(current_mode == "secondary-stt"))
+        self.wakeword_mode_secondary.add_css_class("flat")
+        self.wakeword_mode_wakeword = Gtk.ToggleButton(label=_("Wakeword Model"), group=self.wakeword_mode_secondary, active=(current_mode == "openwakeword"))
+        self.wakeword_mode_wakeword.add_css_class("flat")
+        
+        mode_box.append(self.wakeword_mode_secondary)
+        mode_box.append(self.wakeword_mode_wakeword)
+        mode_row.add_suffix(mode_box)
+        self.wakeword_row.add_row(mode_row)
+
+        # Secondary STT mode rows (visible when secondary-stt mode is selected)
+        self.secondary_stt_rows = []
+        
+        # Secondary STT engine selection
+        secondary_stt_engine = Adw.ExpanderRow(
+            title=_('Secondary STT Engine'),
+            subtitle=_("Fast STT for quick wakeword detection")
+        )
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("secondary-stt-engine")
+        for stt_key in AVAILABLE_STT:
+            if "secondary" in AVAILABLE_STT[stt_key] and AVAILABLE_STT[stt_key]["secondary"]:
+                row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
+                secondary_stt_engine.add_row(row)
+        self.wakeword_row.add_row(secondary_stt_engine)
+        self.secondary_stt_rows.append(secondary_stt_engine)
+
+        # Wakeword text entry (for secondary STT mode)
+        wakeword_entry = Adw.EntryRow(title=_('Wakeword'))
+        wakeword_entry.set_tooltip_text(_("Word or phrase to detect (multiple separated by comma)"))
+        self.settings.bind("wakeword", wakeword_entry, 'text',
+                           Gio.SettingsBindFlags.DEFAULT)
+        self.wakeword_row.add_row(wakeword_entry)
+        self.secondary_stt_rows.append(wakeword_entry)
+
+        # Wakeword engine mode rows (visible when openwakeword mode is selected)
+        self.wakeword_engine_rows = []
+        
+        # Wakeword engine selection (handlers with "wakeword": True)
+        wakeword_engine = Adw.ExpanderRow(
+            title=_('Wakeword Engine'),
+            subtitle=_("Model specialized for wakeword detection")
+        )
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("wakeword-engine")
+        for stt_key in AVAILABLE_STT:
+            if AVAILABLE_STT[stt_key].get("wakeword", False):
+                row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
+                wakeword_engine.add_row(row)
+        self.wakeword_row.add_row(wakeword_engine)
+        self.wakeword_engine_rows.append(wakeword_engine)
+
+        # Pre-buffer duration
+        pre_buffer_adj = Gtk.Adjustment(
+            lower=0.1,
+            upper=2.0,
+            step_increment=0.1,
+            page_increment=0.5
+        )
+        pre_buffer_adj.set_value(self.settings.get_double("wakeword-pre-buffer-duration"))
+        pre_buffer_row = Adw.SpinRow(
+            title=_('Pre-buffer Duration'),
+            subtitle=_("Seconds of audio to capture before speech"),
+            adjustment=pre_buffer_adj,
+            digits=1
+        )
+        def update_pre_buffer(spin, input):
+            self.settings.set_double("wakeword-pre-buffer-duration", spin.get_value())
+            return False
+        pre_buffer_row.connect("input", update_pre_buffer)
+        self.wakeword_row.add_row(pre_buffer_row)
+
+        # Silence duration
+        silence_adj = Gtk.Adjustment(
+            lower=0.1,
+            upper=5.0,
+            step_increment=0.05,
+            page_increment=0.5
+        )
+        silence_adj.set_value(self.settings.get_double("wakeword-silence-duration"))
+        silence_row = Adw.SpinRow(
+            title=_('Silence Timeout'),
+            subtitle=_("Seconds of silence to end speech segment"),
+            adjustment=silence_adj,
+            digits=2
+        )
+        def update_silence(spin, input):
+            self.settings.set_double("wakeword-silence-duration", spin.get_value())
+            return False
+        silence_row.connect("input", update_silence)
+        self.wakeword_row.add_row(silence_row)
+
+        # Energy threshold
+        energy_adj = Gtk.Adjustment(
+            lower=0,
+            upper=1000,
+            step_increment=50,
+            page_increment=100
+        )
+        energy_adj.set_value(self.settings.get_int("wakeword-energy-threshold"))
+        energy_row = Adw.SpinRow(
+            title=_('Noise Threshold'),
+            subtitle=_("Audio energy level to ignore (higher = less sensitive, 0-1000)"),
+            adjustment=energy_adj,
+            digits=0
+        )
+        def update_energy(spin, input):
+            self.settings.set_int("wakeword-energy-threshold", int(spin.get_value()))
+            return False
+        energy_row.connect("input", update_energy)
+        self.wakeword_row.add_row(energy_row)
+
+        # Toggle visibility based on mode
+        def on_wakeword_mode_changed(btn):
+            is_wakeword = self.wakeword_mode_wakeword.get_active()
+            mode = "openwakeword" if is_wakeword else "secondary-stt"
+            self.settings.set_string("wakeword-mode", mode)
+            for row in self.secondary_stt_rows:
+                row.set_visible(not is_wakeword)
+            for row in self.wakeword_engine_rows:
+                row.set_visible(is_wakeword)
+        
+        self.wakeword_mode_secondary.connect("toggled", on_wakeword_mode_changed)
+        self.wakeword_mode_wakeword.connect("toggled", on_wakeword_mode_changed)
+        
+        # Set initial visibility
+        is_wakeword_mode = current_mode == "openwakeword"
+        for row in self.secondary_stt_rows:
+            row.set_visible(not is_wakeword_mode)
+        for row in self.wakeword_engine_rows:
+            row.set_visible(is_wakeword_mode)
+
+        self.Voicegroup.add(self.wakeword_row)
         # Build prompts settings 
         self.prompt = Adw.PreferencesGroup(title=_('Prompt control'))
         add_prompt_btn = Gtk.Button(icon_name="list-add-symbolic")
@@ -338,6 +517,9 @@ class Settings(Adw.Window):
         row.add_suffix(entry)
         self.settings.bind("offers", int_spin, 'value', Gio.SettingsBindFlags.DEFAULT)
         self.interface.add(row)
+        # Browser
+        self.build_browser_settings()
+        self.general_page.add(self.browser_group)
         # Neural Network Control
         self.neural_network = Adw.PreferencesGroup(title=_('Neural Network Control'))
         self.general_page.add(self.neural_network) 
@@ -516,11 +698,19 @@ class Settings(Adw.Window):
         self.developer.add(row)
         
         if self.popup:
+            self.InterfacesPage = Adw.PreferencesPage(
+                icon_name="controls-big-symbolic",
+                title=_("Interfaces"),
+            )
             self.ExtensionsPage = Adw.PreferencesPage(
                 icon_name="extension-symbolic",
                 title=_("Extensions"),
             )
         else:
+            self.InterfacesPage = InterfacesPage(
+                self.app,
+                self.controller,
+            )
             self.ExtensionsPage = ExtensionPage(
                 self.app,
                 self.controller,
@@ -553,6 +743,7 @@ class Settings(Adw.Window):
             ("Permissions", _("Permissions"), "key-symbolic", self.PermissionsPage),
             ("Skills", _("Skills"), "skills-symbolic", self.SkillsPage),
             ("MCP", _("MCP Servers"), "internet-symbolic", self.MCPPage),
+            ("Interfaces", _("Interfaces"), "controls-big-symbolic", self.InterfacesPage),
             ("Extensions", _("Extensions"), "extension-symbolic", self.ExtensionsPage),
         ]
         self.navigation_pages = {
@@ -1299,11 +1490,57 @@ class Settings(Adw.Window):
         if self.skills_page_initialized:
             return
         self.skills_page_initialized = True
+
+        self.skills_marketplace_initialized = False
+        self.skills_creator_initialized = False
+        self.skills_tabs_group = Adw.PreferencesGroup()
+        self.skills_tabs_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=18,
+        )
+        self.skills_view_stack = Adw.ViewStack(vhomogeneous=False)
+        self.skills_view_stack.connect(
+            "notify::visible-child-name",
+            self._on_skills_tab_changed,
+        )
+
+        self.installed_skills_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.marketplace_skills_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.create_skills_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.skills_view_stack.add_titled_with_icon(
+            self.installed_skills_page,
+            name="installed",
+            title=_("Installed"),
+            icon_name="skills-symbolic",
+        )
+        self.skills_view_stack.add_titled_with_icon(
+            self.marketplace_skills_page,
+            name="marketplace",
+            title=_("Marketplace"),
+            icon_name="folder-download-symbolic",
+        )
+        self.skills_view_stack.add_titled_with_icon(
+            self.create_skills_page,
+            name="create",
+            title=_("Create"),
+            icon_name="document-edit-symbolic",
+        )
+
+        self.skills_view_switcher = Adw.ViewSwitcher(
+            stack=self.skills_view_stack,
+            policy=Adw.ViewSwitcherPolicy.WIDE,
+            halign=Gtk.Align.CENTER,
+        )
+        self.skills_tabs_box.append(self.skills_view_switcher)
+        self.skills_tabs_box.append(self.skills_view_stack)
+        self.skills_tabs_group.add(self.skills_tabs_box)
+        self.SkillsPage.add(self.skills_tabs_group)
+
         self.skills_group = Adw.PreferencesGroup(
-            title=_("Skills"),
+            title=_("Installed Skills"),
             description=_("Manage Agent Skills (SKILL.md files)")
         )
-        self.SkillsPage.add(self.skills_group)
+        self.installed_skills_page.append(self.skills_group)
 
         actions_row = Adw.ActionRow(title=_("Skills folder"), subtitle=self.controller.skills_path)
         open_button = Gtk.Button(icon_name="folder-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
@@ -1325,6 +1562,148 @@ class Settings(Adw.Window):
 
         self.skills_rows = []
         self.refresh_skills_list()
+        self.skills_view_stack.set_visible_child_name("installed")
+
+    def _on_skills_tab_changed(self, stack, _pspec):
+        visible_page = stack.get_visible_child_name()
+        if visible_page == "marketplace" and not self.skills_marketplace_initialized:
+            self.skills_marketplace_initialized = True
+            from .skills_catalog import SkillsCatalogView
+
+            self.skills_catalog_group = Adw.PreferencesGroup(
+                title=_("Skills Marketplace"),
+                description=_("Search and install community skills from SkillsMP"),
+            )
+            self.skills_catalog = SkillsCatalogView(
+                parent=self,
+                controller=self.controller,
+                on_installed=self._on_catalog_skill_installed,
+            )
+            self.skills_catalog_group.add(self.skills_catalog)
+            self.marketplace_skills_page.append(self.skills_catalog_group)
+        elif visible_page == "create" and not self.skills_creator_initialized:
+            self._ensure_skill_creator()
+
+    def _make_weak_skills_refresh_callback(self):
+        settings_ref = weakref.ref(self)
+
+        def refresh_if_open():
+            settings = settings_ref()
+            if settings is not None and settings.get_visible():
+                settings.refresh_skills_list()
+
+        return refresh_if_open
+
+    def _ensure_skill_creator(self):
+        if self.skills_creator_initialized:
+            return self.skills_creator
+        self.skills_creator_initialized = True
+        from .skill_creator import SkillCreatorView
+
+        self.skills_creator = SkillCreatorView(
+            host=self,
+            controller=self.controller,
+            on_saved=self._make_weak_skills_refresh_callback(),
+            on_open_window=self._on_open_skill_creator_window,
+        )
+        self.create_skills_page.append(self.skills_creator)
+        return self.skills_creator
+
+    def _register_skill_editor_window(self):
+        self._open_skill_editor_count = (
+            getattr(self, "_open_skill_editor_count", 0) + 1
+        )
+        self.set_modal(False)
+        settings_ref = weakref.ref(self)
+
+        def editor_closed():
+            settings = settings_ref()
+            if settings is None:
+                return
+            settings._open_skill_editor_count = max(
+                0,
+                getattr(settings, "_open_skill_editor_count", 1) - 1,
+            )
+            if settings._open_skill_editor_count == 0 and settings.get_visible():
+                settings.set_modal(True)
+
+        return editor_closed
+
+    def _on_open_skill_creator_window(self, editor):
+        from .skill_creator import SkillEditorWindow
+
+        self.create_skills_page.remove(editor)
+        editor.set_open_window_callback(None)
+
+        placeholder = Adw.PreferencesGroup()
+        placeholder_row = Adw.ActionRow(
+            title=_("Skill editor is open in another window"),
+            subtitle=_("The editor keeps working if you close Settings."),
+        )
+        placeholder_row.add_prefix(
+            Gtk.Image(icon_name="document-edit-symbolic")
+        )
+        present_button = Gtk.Button(
+            label=_("Show Editor"),
+            icon_name="window-new-symbolic",
+            valign=Gtk.Align.CENTER,
+            css_classes=["suggested-action"],
+        )
+        placeholder_row.add_suffix(present_button)
+        placeholder.add(placeholder_row)
+        self.skill_creator_placeholder = placeholder
+        self.create_skills_page.append(placeholder)
+
+        settings_ref = weakref.ref(self)
+
+        def return_editor(returned_editor):
+            settings = settings_ref()
+            if settings is None or not settings.get_visible():
+                return False
+            settings._reattach_skill_creator(returned_editor)
+            return True
+
+        window = SkillEditorWindow(
+            application=self.app,
+            editor=editor,
+            return_editor=return_editor,
+            on_closed=self._register_skill_editor_window(),
+        )
+        self.skill_editor_window = window
+        present_button.connect("clicked", lambda _button: window.present())
+        window.present()
+
+    def _reattach_skill_creator(self, editor):
+        placeholder = getattr(self, "skill_creator_placeholder", None)
+        if placeholder is not None and placeholder.get_parent() is not None:
+            self.create_skills_page.remove(placeholder)
+        editor.set_host(self)
+        editor.set_windowed(False)
+        editor.set_open_window_callback(self._on_open_skill_creator_window)
+        self.create_skills_page.append(editor)
+        self.skills_creator = editor
+        self.skill_editor_window = None
+        self.refresh_skills_list()
+
+    def _on_edit_skill_clicked(self, _button, skill):
+        from .skill_creator import SkillCreatorView, SkillEditorWindow
+
+        editor = SkillCreatorView(
+            host=None,
+            controller=self.controller,
+            on_saved=self._make_weak_skills_refresh_callback(),
+        )
+        window = SkillEditorWindow(
+            application=self.app,
+            editor=editor,
+            on_closed=self._register_skill_editor_window(),
+            title=_("Edit {}").format(skill.name),
+        )
+        if editor.load_skill(skill):
+            window.present()
+        else:
+            window.close()
+            self.add_toast(Adw.Toast(title=_("Could not open skill for editing")))
 
     def refresh_skills_list(self):
         for row in self.skills_rows:
@@ -1348,15 +1727,39 @@ class Settings(Adw.Window):
         row.add_suffix(toggle)
 
         info_row = Adw.ActionRow(title=_("Location"), subtitle=skill.location)
+        edit_button = Gtk.Button(
+            label=_("Edit"),
+            icon_name="document-edit-symbolic",
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+        )
+        edit_button.set_tooltip_text(_("Edit skill"))
+        edit_button.connect("clicked", self._on_edit_skill_clicked, skill)
+        info_row.add_suffix(edit_button)
+        open_button = Gtk.Button(
+            icon_name="folder-visiting-symbolic",
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+        )
+        open_button.set_tooltip_text(_("Open skill folder"))
+        open_button.connect(
+            "clicked",
+            lambda _button, path=skill.base_dir: open_folder(path),
+        )
+        info_row.add_suffix(open_button)
         row.add_row(info_row)
 
-        resource_count = len(self.controller.skill_manager._list_resources(skill.base_dir))
-        if resource_count > 0:
-            res_row = Adw.ActionRow(
-                title=_("Bundled resources"),
-                subtitle=str(resource_count) + " " + (_("files") if resource_count != 1 else _("file"))
-            )
-            row.add_row(res_row)
+        resource_row = Adw.ActionRow(
+            title=_("Bundled resources"),
+            subtitle=_("Expand to count files"),
+        )
+        row.add_row(resource_row)
+        row.connect(
+            "notify::expanded",
+            self._on_skill_row_expanded,
+            skill,
+            resource_row,
+        )
 
         remove_row = Adw.ActionRow(title=_("Remove skill"))
         remove_button = Gtk.Button(label=_("Remove"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
@@ -1365,6 +1768,27 @@ class Settings(Adw.Window):
         row.add_row(remove_row)
 
         return row
+
+    def _on_skill_row_expanded(self, row, _pspec, skill, resource_row):
+        if not row.get_expanded() or getattr(row, "_resources_loading", False):
+            return
+        row._resources_loading = True
+        resource_row.set_subtitle(_("Counting files…"))
+
+        def worker():
+            count = len(self.controller.skill_manager._list_resources(skill.base_dir))
+            GLib.idle_add(self._finish_skill_resource_count, resource_row, count)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_skill_resource_count(self, resource_row, count):
+        resource_row.set_subtitle(
+            str(count) + " " + (_("files") if count != 1 else _("file"))
+        )
+        return False
+
+    def _on_catalog_skill_installed(self):
+        self.refresh_skills_list()
 
     def _on_skill_toggled(self, switch, state, skill_name):
         self.controller.skill_manager.set_skill_enabled(skill_name, state)
@@ -2153,7 +2577,49 @@ class Settings(Adw.Window):
         self.build_prompts_settings()
         return True
 
+    def build_browser_settings(self):
+        # Browser settings
+        self.browser_group = Adw.PreferencesGroup(title=_('Browser'), description=_(_("Settings for the browser")))
+        
+        # External Browser toggle 
+        external_browser_toggle = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.settings.bind("external-browser", external_browser_toggle, 'active', Gio.SettingsBindFlags.DEFAULT)
+        row = Adw.ActionRow(title=_("Use external browser"), subtitle=_("Use an external browser to open links instead of integrated one"))
+        row.add_suffix(external_browser_toggle)
+        self.browser_group.add(row)
 
+        # Persist browser session toggle 
+        persist_browser_toggle = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.settings.bind("browser-session-persist", persist_browser_toggle, 'active', Gio.SettingsBindFlags.DEFAULT)
+        row = Adw.ActionRow(title=_("Persist browser session"), subtitle=_("Persist browser session between restarts. Turning this off requires restarting the program"))
+        row.add_suffix(persist_browser_toggle)
+        self.browser_group.add(row)
+
+        # Delete browser session row 
+        row = Adw.ActionRow(title=_("Delete browser data"), subtitle=_("Delete browser session and data"))
+        delete_button = Gtk.Button(label=_("Delete"), valign=Gtk.Align.CENTER)
+        delete_button.connect("clicked", self.delete_browser_session)
+        row.add_suffix(delete_button)
+        self.browser_group.add(row)
+        
+        # Starting page 
+        row = Adw.ActionRow(title=_("Initial browser page"), subtitle=_("The page where the browser will start"))
+        entry = Gtk.Entry(valign=Gtk.Align.CENTER)
+        self.settings.bind("initial-browser-page", entry, 'text', Gio.SettingsBindFlags.DEFAULT)
+        row.add_suffix(entry)
+        self.browser_group.add(row)
+        
+        # Search string 
+        row = Adw.ActionRow(title=_("Search string"), subtitle=_("The search string used in the browser, %s is replaced with the query"))
+        entry = Gtk.Entry(valign=Gtk.Align.CENTER)
+        self.settings.bind("browser-search-string", entry, 'text', Gio.SettingsBindFlags.DEFAULT)
+        row.add_suffix(entry)
+        self.browser_group.add(row)
+
+    def delete_browser_session(self, button:Gtk.Button):
+        os.remove(self.controller.config_dir + "/bsession.json")
+        os.remove(self.controller.config_dir + "/bsession.json.cookies")
+        button.set_sensitive(False) 
 
     def build_rag_settings(self):
         def update_scale(scale, label, setting_value, type):
@@ -2304,6 +2770,48 @@ class Settings(Adw.Window):
             
             parent_expander.add_row(folder_row)
             self.custom_folder_rows.append(folder_row)
+
+    def build_auto_stt(self):
+        auto_stt_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.settings.bind("automatic-stt", auto_stt_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
+        self.auto_stt.add_suffix(auto_stt_enabled) 
+        def update_scale(scale, label, setting_value, type):
+            value = scale.get_value()
+            if type is float:
+                self.settings.set_double(setting_value, value)
+            elif type is int:
+                value = int(value)
+                self.settings.set_int(setting_value, value)
+            label.set_text(str(value))
+
+        # Silence Threshold
+        silence_threshold = Adw.ActionRow(title=_("Silence threshold"), subtitle=_("Silence threshold in seconds, percentage of the volume to be considered silence"))
+        threshold = Gtk.Scale(digits=0, round_digits=2)
+        threshold.set_range(0, 0.5)
+        threshold.set_size_request(120, -1)
+        th = self.settings.get_double("stt-silence-detection-threshold")
+        label = Gtk.Label(label=str(th))
+        threshold.set_value(th)
+        threshold.connect("value-changed", update_scale, label, "stt-silence-detection-threshold", float)
+        box = Gtk.Box()
+        box.append(threshold)
+        box.append(label)
+        silence_threshold.add_suffix(box)
+        # Silence time 
+        silence_time = Adw.ActionRow(title=_("Silence time"), subtitle=_("Silence time in seconds before recording stops automatically"))
+        time_scale = Gtk.Scale(digits=0, round_digits=0)
+        time_scale.set_range(0, 10)
+        time_scale.set_size_request(120, -1)
+        value = self.settings.get_int("stt-silence-detection-duration")
+        time_scale.set_value(value)
+        label = Gtk.Label(label=str(value))
+        time_scale.connect("value-changed", update_scale, label, "stt-silence-detection-duration", int)
+        box = Gtk.Box()
+        box.append(time_scale)
+        box.append(label)
+        silence_time.add_suffix(box)
+        self.auto_stt.add_row(silence_threshold) 
+        self.auto_stt.add_row(silence_time)
 
     def update_prompt(self, switch: Gtk.Switch, state, key: str):
         """Update the prompt in the settings
@@ -2456,6 +2964,13 @@ class Settings(Adw.Window):
                 setting_name = "secondary-language-model"
             else:
                 setting_name = "language-model"
+        elif constants == AVAILABLE_TTS:
+            setting_name = "tts"
+        elif constants == AVAILABLE_STT:
+            if secondary:
+                setting_name = "secondary-stt-engine"
+            else:
+                setting_name = "stt-engine"
         elif constants == AVAILABLE_MEMORIES:
             setting_name = "memory-model"
         elif constants == AVAILABLE_EMBEDDINGS:
@@ -2464,6 +2979,8 @@ class Settings(Adw.Window):
             setting_name = "rag-model"
         elif constants == AVAILABLE_WEBSEARCH:
             setting_name = "websearch-model"
+        elif constants == AVAILABLE_IMAGE_GENERATORS:
+            setting_name = "image-generator"
         else:
             return
 
