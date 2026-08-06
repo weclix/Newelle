@@ -52,7 +52,6 @@ integrations_sources = [
   'integrations/mcp_oauth.py',
   'integrations/default_tools.py',
   'integrations/skills.py',
-  'integrations/skill_editor.py',
   'integrations/agent_tools.py',
   'integrations/file_editing.py',
   'integrations/todo_list.py'
@@ -66,14 +65,16 @@ ui_sources = [
   'ui/presentation.py',
   'ui/thread_editing.py',
   'ui/scheduled_tasks.py',
+  'ui/screenrecorder.py',
   'ui/shortcuts.py',
   'ui/mini_window.py',
+  'ui/explorer.py',
   'ui/stdout_monitor.py',
   'ui/model_library.py',
   'ui/mcp_catalog.py',
   'ui/skills_catalog.py',
-  'ui/skill_creator.py',
   'ui/extra_settings.py',
+  'ui/interfaces.py',
 ]
 
 widgets_sources = [
@@ -103,10 +104,10 @@ widgets_sources = [
   'ui/widgets/thinking.py',
   'ui/widgets/documents_reader.py',
   'ui/widgets/tipscarousel.py',
+  'ui/widgets/browser.py',
   'ui/widgets/code_editor.py',
   'ui/widgets/tool.py',
   'ui/widgets/skill.py',
-  'ui/widgets/skill_editor_mini_app.py',
   'ui/widgets/subagent.py',
   'ui/widgets/scheduled_task.py',
   'ui/widgets/message.py',
@@ -115,7 +116,10 @@ widgets_sources = [
   'ui/widgets/chat_tab.py',
   'ui/widgets/mode_switcher.py',
   'ui/widgets/mode_editor.py',
+  'ui/widgets/call.py',
   'ui/widgets/question.py',
+  'ui/widgets/image_generator.py',
+  'ui/widgets/image_generator_mini_app.py',
 ]
 
 handler_sources = [
@@ -128,14 +132,62 @@ handler_sources = [
 llm_sources = [
   'handlers/llm/__init__.py',
   'handlers/llm/llm.py',
+  'handlers/llm/claude_handler.py',
+  'handlers/llm/custom_handler.py',
+  'handlers/llm/g4f_handler.py',
+  'handlers/llm/gemini_handler.py',
+  'handlers/llm/gpt3any_handler.py',
+  'handlers/llm/groq_handler.py',
+  'handlers/llm/mistral_handler.py',
   'handlers/llm/newelle_handler.py',
+  'handlers/llm/ollama_handler.py',
+  'handlers/llm/ollama_cloud_handler.py',
   'handlers/llm/openai_handler.py',
+  'handlers/llm/openrouter_handler.py',
+  'handlers/llm/deepseek_handler.py',
+  'handlers/llm/llama_cpp_handler.py',
   ]
+
+tts_sources = [
+  'handlers/tts/__init__.py',
+  'handlers/tts/tts.py',
+  'handlers/tts/gtts_handler.py',
+  'handlers/tts/espeak_handler.py',
+  'handlers/tts/elevenlabs_handler.py',
+  'handlers/tts/custom_handler.py',
+  'handlers/tts/kokoro_handler.py',
+  'handlers/tts/openai_tts_handler.py',
+  'handlers/tts/custom_openai_tts.py',
+  'handlers/tts/groq_tts_handler.py',
+  'handlers/tts/edge_handler.py',
+  'handlers/tts/mistral_tts_handler.py',
+]
+
+stt_sources = [  
+  'handlers/stt/__init__.py',
+  'handlers/stt/stt.py',
+  'handlers/stt/googlesr_handler.py',
+  'handlers/stt/groqsr_handler.py',
+  'handlers/stt/openaisr_handler.py',
+  'handlers/stt/sphinx_handler.py',
+  'handlers/stt/witai_handler.py',
+  'handlers/stt/whisper_handler.py',
+  'handlers/stt/whispercpp_handler.py',
+  'handlers/stt/custom_handler.py',
+  'handlers/stt/vosk_handler.py',
+  'handlers/stt/openwakeword_handler.py',
+  'handlers/stt/mistral_stt_handler.py',
+]
 
 embedding_sources = [  
   'handlers/embeddings/__init__.py',
   'handlers/embeddings/embedding.py',
+  'handlers/embeddings/wordllama_handler.py',
   'handlers/embeddings/openai_handler.py',
+  'handlers/embeddings/gemini_handler.py',
+  'handlers/embeddings/ollama_handler.py',
+  'handlers/embeddings/model2vec.py',
+  'handlers/embeddings/llama_cpp_handler.py',
 ]
 
 memory_sources = [  
@@ -158,7 +210,28 @@ websearch_sources = [
   'handlers/websearch/__init__.py',
   'handlers/websearch/websearch.py',
   'handlers/websearch/searxng.py',
+  'handlers/websearch/duckduckgo_handler.py',
+  'handlers/websearch/tavily.py',
+  'handlers/websearch/tinyfish_handler.py',
   ]
+
+image_generator_sources = [
+  'handlers/image_generator/__init__.py',
+  'handlers/image_generator/image_generator.py',
+  'handlers/image_generator/pollinations_handler.py',
+  'handlers/image_generator/stablediffusion_cpp_handler.py',
+  'handlers/image_generator/openai_image_handler.py',
+  'handlers/image_generator/openrouter_image_handler.py',
+  ]
+
+interface_sources = [
+  'handlers/interfaces/__init__.py',
+  'handlers/interfaces/interface.py',
+  'handlers/interfaces/chat_interface.py',
+  'handlers/interfaces/api_handler.py',
+  'handlers/interfaces/gui_api_handler.py',
+  'handlers/interfaces/telegram_handler.py',
+]
 
 utility_sources = [
   'utility/__init__.py',
@@ -169,9 +242,12 @@ utility_sources = [
   'utility/system.py',
   'utility/util.py',
   'utility/profile_settings.py',
+  'utility/audio_recorder.py',
   'utility/message_chunk.py',
   'utility/website_scraper.py',
   'utility/stdout_capture.py',
+  'utility/wakeword_detector.py',
+  'utility/vad.py',
   'utility/force_sync.py',
   'utility/file_search.py',
   'utility/context_manager.py',
@@ -188,11 +264,15 @@ install_data(ui_sources, install_dir: moduledir / 'ui')
 install_data(widgets_sources, install_dir: moduledir / 'ui' / 'widgets')
 install_data(handler_sources, install_dir: moduledir / 'handlers')
 install_data(llm_sources, install_dir: moduledir / 'handlers' / 'llm')
+install_data(tts_sources, install_dir: moduledir / 'handlers' / 'tts')
+install_data(stt_sources, install_dir: moduledir / 'handlers' / 'stt')
 install_data(memory_sources, install_dir: moduledir / 'handlers' / 'memory')
 install_data(rag_sources, install_dir: moduledir / 'handlers' / 'rag')
 install_data(embedding_sources, install_dir: moduledir / 'handlers' / 'embeddings')
 install_data(memory_sources, install_dir: moduledir / 'handlers' / 'memory')
 install_data(rag_sources, install_dir: moduledir / 'handlers' / 'rag')
 install_data(websearch_sources, install_dir: moduledir / 'handlers' / 'websearch')
+install_data(interface_sources, install_dir: moduledir / 'handlers' / 'interfaces')
 install_data(utility_sources, install_dir: moduledir / 'utility')
 install_data(integrations_sources, install_dir: moduledir / 'integrations')
+install_data(image_generator_sources, install_dir: moduledir / 'handlers' / 'image_generator')
