@@ -698,6 +698,7 @@ class ChatHistory(Gtk.Box):
             {"title": _("Chat with documents!"), "subtitle": _("Add your documents to your documents folder and chat using the information contained in them!"), "on_click": lambda : self.app.settings_action_paged("Memory")},
             {"title": _("Surf the web!"), "subtitle": _("Enable web search to allow the LLM to surf the web and provide up to date answers"), "on_click": lambda : self.app.settings_action_paged("Memory")},
             {"title": _("Mini Window"), "subtitle": _("Ask questions on the fly using the mini window mode"), "on_click": lambda : open_website("https://github.com/qwersyk/Newelle/?tab=readme-ov-file#mini-window-mode")},
+            {"title": _("Text to Speech"), "subtitle": _("Newelle supports text-to-speech! Enable it in the settings"), "on_click": lambda : self.app.settings_action_paged("Voice")},
             {"title": _("Keyboard Shortcuts"), "subtitle": _("Control Newelle using Keyboard Shortcuts"), "on_click": lambda : self.app.on_shortcuts_action()},
             {"title": _("Prompt Control"), "subtitle": _("Newelle gives you 100% prompt control. Tune your prompts for your use."), "on_click": lambda : self.app.settings_action_paged("Prompts")},
             {"title": _("Thread Editing"), "subtitle": _("Check the programs and processes you run from Newelle"), "on_click": lambda : self.app.thread_editing_action()},
@@ -1445,7 +1446,7 @@ class ChatHistory(Gtk.Box):
 
         """
         if not self.status:
-            self.notification_block.add_toast(
+            self.window.notification_block.add_toast(
                 Adw.Toast(
                     title=_("You can't edit a message while the program is running."),
                     timeout=2,
@@ -1784,14 +1785,18 @@ class ChatHistory(Gtk.Box):
             button ():
             *a:
         """
-        if os.path.exists(button.get_name()):
-            if os.path.isdir(
-                os.path.join(os.path.expanduser(self.window.main_path), button.get_name())
-            ):
-                self.window.main_path = button.get_name()
-                subprocess.run(["xdg-open", os.path.expanduser(button.get_name())])
+        file_path = os.path.expanduser(button.get_name())
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.path.expanduser(self.window.main_path), file_path)
+        file_path = os.path.normpath(file_path)
+
+        if os.path.exists(file_path):
+            if os.path.isdir(file_path):
+                self.window.window.ui_controller.new_explorer_tab(file_path, False)
+            else:
+                subprocess.run(["xdg-open", file_path])
         else:
-            self.notification_block.add_toast(
+            self.window.notification_block.add_toast(
                 Adw.Toast(title=_("File not found"), timeout=2)
             )
 
