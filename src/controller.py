@@ -2302,7 +2302,7 @@ class HandlersManager:
         """Get an handler instance for the specified handler key
 
         Args:
-            constants: The constants for the specified handler, can be AVAILABLE_TTS, AVAILABLE_STT...
+            constants: The constants for the specified handler, can be AVAILABLE_LLMS, AVAILABLE_MEMORIES...
             key: key of the specified handler
 
         Raises:
@@ -2347,7 +2347,7 @@ class HandlersManager:
         """Get an handler instance for the specified handler key
 
         Args:
-            constants: The constants for the specified handler, can be AVAILABLE_TTS, AVAILABLE_STT...
+            constants: The constants for the specified handler, can be AVAILABLE_LLMS, AVAILABLE_MEMORIES...
             key: key of the specified handler
             secondary: if to use secondary settings
 
@@ -2393,7 +2393,7 @@ class HandlersManager:
         Raises:
             Exception: if the handler is not known
 
-        Returns: AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_TTS based on the type of the handler 
+        Returns: AVAILABLE_LLMS, AVAILABLE_MEMORIES based on the type of the handler 
         """
         if issubclass(type(handler), LLMHandler):
             return AVAILABLE_LLMS

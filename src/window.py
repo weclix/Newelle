@@ -1181,8 +1181,6 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(show_presentation)
 
         self.focus_input()
-        if self.tts_enabled:
-            self.tts.stop()
         return False
 
     def focus_input(self):
