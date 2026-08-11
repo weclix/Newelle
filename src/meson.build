@@ -73,6 +73,8 @@ ui_sources = [
   'ui/model_library.py',
   'ui/mcp_catalog.py',
   'ui/skills_catalog.py',
+  'ui/skill_creator.py',
+  'ui/extensions_catalog.py',
   'ui/extra_settings.py',
   'ui/interfaces.py',
 ]
@@ -116,6 +118,7 @@ widgets_sources = [
   'ui/widgets/chat_tab.py',
   'ui/widgets/mode_switcher.py',
   'ui/widgets/mode_editor.py',
+  'ui/widgets/status.py',
   'ui/widgets/call.py',
   'ui/widgets/question.py',
   'ui/widgets/image_generator.py',
