@@ -48,7 +48,7 @@ let
 in
   stdenv.mkDerivation rec {
     pname = "newelle";
-    version = "0.9.6";
+    version = "1.4.6";
 
     format = "other";
 

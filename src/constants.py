@@ -1,7 +1,7 @@
 from copy import deepcopy
 from .handlers.llm import OpenAIHandler, NewelleAPIHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
-from .handlers.memory import MemoripyHandler, UserSummaryHandler, SummaryMemoripyHanlder, LlamaIndexMemoryHandler, AgenticMemoryHandler
+from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler
 from .integrations.website_reader import WebsiteReader
@@ -59,18 +59,6 @@ AVAILABLE_MEMORIES = {
         "title": _("Semantic Memory"),
         "description": _("Long term memory using LlamaIndex. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
         "class": LlamaIndexMemoryHandler,
-    },
-    "memoripy": {
-        "key": "memoripy",
-        "title": _("Memoripy"),
-        "description": _("Extract messages from previous conversations using contextual memory retrivial, memory decay, concept extraction and other advanced techniques. Does 1 llm call per message."),
-        "class": MemoripyHandler,
-    },
-    "summary-memoripy": {
-        "key": "summary-memoripy",
-        "title": _("User Summary + Memoripy"),
-        "description": _("Use both technologies for long term memory"),
-        "class": SummaryMemoripyHanlder,
     },
 }
 

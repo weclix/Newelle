@@ -671,7 +671,7 @@ class MainWindow(Adw.ApplicationWindow):
         if error == ErrorSeverity.ERROR:
             self.show_error_dialog(_("Provider Errror"), message)
         elif error == ErrorSeverity.WARNING:
-            self.notification_block.add_toast(Adw.Toast.new(message))
+            self.notification_block.add_toast(Adw.Toast.new(GLib.markup_escape_text(message)))
 
     def set_zoom(self, zoom):
         settings = Gtk.Settings.get_default()
