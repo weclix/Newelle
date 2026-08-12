@@ -77,7 +77,10 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
 
     def get_embedding(self, text: list[str]) -> np.ndarray:
         from openai import Client
-        client = Client(api_key=self.get_setting("api"), base_url=self.get_setting("endpoint"))
+        api = self.get_setting("api")
+        if api == "":
+            api = "nokey"
+        client = Client(api_key=api, base_url=self.get_setting("endpoint"))
         embedding = client.embeddings.create(
             input=text,
             model=self.get_setting("model")
@@ -97,4 +100,3 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
             return 1536
         else:
             return len(self.get_embedding([""]))
-
