@@ -71,6 +71,10 @@ class Settings(Adw.Window):
             convert_constants=self.convert_constants,
             on_before_rebuild=self._on_extra_settings_rebuild,
         )
+        self._llm_primary_rows = []
+        self._llm_primary_other_rows = []
+        self._llm_secondary_rows = []
+        self._llm_secondary_other_rows = []
         # Build the LLMs settings
         self.LLM = Adw.PreferencesGroup(title=_('Language Model'))
         # Add Help Button 
@@ -82,12 +86,15 @@ class Settings(Adw.Window):
         group = Gtk.CheckButton()
         selected = self.settings.get_string("language-model")
         others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
+        self._llm_primary_other_group = others_row
         for model_key in AVAILABLE_LLMS:
            row = self.build_row(AVAILABLE_LLMS, model_key, selected, group)
            if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
                others_row.add_row(row)
+               self._llm_primary_other_rows.append(row)
            else:
                 self.LLM.add(row)
+                self._llm_primary_rows.append(row)
         self.LLM.add(others_row)
         # Secondary LLM settings
         self.SECONDARY_LLM = Adw.PreferencesGroup(title=_('Secondary LLM'))
@@ -102,12 +109,16 @@ class Settings(Adw.Window):
         group = Gtk.CheckButton()
         selected = self.settings.get_string("secondary-language-model")
         others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
+        self._llm_secondary_model_group = secondary_LLM
+        self._llm_secondary_other_group = others_row
         for model_key in AVAILABLE_LLMS:
            row = self.build_row(AVAILABLE_LLMS, model_key, selected, group, True)
            if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
                others_row.add_row(row)
+               self._llm_secondary_other_rows.append(row)
            else:
                secondary_LLM.add_row(row)
+               self._llm_secondary_rows.append(row)
         secondary_LLM.add_row(others_row)
         self.SECONDARY_LLM.add(secondary_LLM)
 
