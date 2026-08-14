@@ -2114,6 +2114,7 @@ class NewelleSettings:
         self.websearch_model = self.settings.get_string("websearch-model")
         self.websearch_settings = self.settings.get_string("websearch-settings")
         self.parallel_tool_execution = settings.get_boolean("parallel-tool-execution")
+        self.max_tool_calls = settings.get_int("max-tool-calls")
         self.editor_color_scheme = settings.get_string("editor-color-scheme")
         self.tools_settings = settings.get_string("tools-settings")
         self.tools_settings_dict = json.loads(self.tools_settings)
