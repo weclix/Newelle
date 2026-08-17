@@ -87,7 +87,7 @@
           <default>"{}"</default>
         </key>
         <key name="websearch-model" type="s">
-          <default>"ddgsearch"</default>
+          <default>"bing"</default>
         </key>
         <key name="rag-on" type="b">
           <default>false</default>

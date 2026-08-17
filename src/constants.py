@@ -3,7 +3,7 @@ from .handlers.llm import OpenAIHandler, NewelleAPIHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
 from .handlers.memory import UserSummaryHandler, AgenticMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
-from .handlers.websearch import SearXNGHandler
+from .handlers.websearch import BingHandler, BingInternationalHandler
 from .integrations.website_reader import WebsiteReader
 from .integrations.websearch import WebsearchIntegration
 from .integrations.mcp import MCPIntegration
@@ -75,12 +75,18 @@ AVAILABLE_EMBEDDINGS = {
 }
 
 AVAILABLE_WEBSEARCH = {
-    "searxng": {
-        "key": "searxng",
-        "title": _("SearXNG"),
-        "description": _("SearXNG - Private and selfhostable search engine"),
-        "class": SearXNGHandler,
-    }
+    "bing": {
+        "key": "bing",
+        "title": _("Bing"),
+        "description": _("Bing - Web search powered by Microsoft Bing"),
+        "class": BingHandler,
+    },
+    "bing_international": {
+        "key": "bing_international",
+        "title": _("Bing International"),
+        "description": _("Bing International - Global web search powered by Microsoft Bing"),
+        "class": BingInternationalHandler,
+    },
 }
 
 PROMPTS = {

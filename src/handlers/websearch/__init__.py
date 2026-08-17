@@ -1,6 +1,8 @@
 from .websearch import WebSearchHandler
-from .searxng import SearXNGHandler
+from .bing import BingHandler
+from .bing_international import BingInternationalHandler
 __all__ = [
     "WebSearchHandler",
-    "SearXNGHandler",
+    "BingHandler",
+    "BingInternationalHandler",
 ]

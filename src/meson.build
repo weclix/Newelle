@@ -156,7 +156,8 @@ rag_sources = [
 websearch_sources = [
   'handlers/websearch/__init__.py',
   'handlers/websearch/websearch.py',
-  'handlers/websearch/searxng.py',
+  'handlers/websearch/bing.py',
+  'handlers/websearch/bing_international.py',
 ]
 
 utility_sources = [
