@@ -73,16 +73,42 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
                 settings += automatic_models_settings
         return settings
     def get_extra_settings(self) -> list:
-        return self.build_extra_settings("OpenAI", True, True, True, "https://platform.openai.com/docs/guides/embeddings#embedding-models", True)
+        settings = self.build_extra_settings("OpenAI", True, True, True, "https://platform.openai.com/docs/guides/embeddings#embedding-models", True)
+        settings.append(
+            ExtraSettings.ScaleSetting(
+                "max_tokens",
+                _("Max Tokens"),
+                _("Maximum context length (max_model_len) of the embedding model. Inputs longer than this are truncated before sending."),
+                2000, 64, 8192, 0,
+            )
+        )
+        return settings
+
+    @staticmethod
+    def _truncate(text: str, max_tokens: int) -> str:
+        if max_tokens <= 0:
+            return text
+        try:
+            import tiktoken
+            enc = tiktoken.get_encoding("cl100k_base")
+            tokens = enc.encode(text)
+            if len(tokens) > max_tokens:
+                return enc.decode(tokens[:max_tokens])
+            return text
+        except Exception:
+            # Fall back to a conservative character-based truncation when tiktoken
+            # is unavailable (English is ~4 chars/token, CJK ~1-2 chars/token).
+            return text[:max_tokens]
 
     def get_embedding(self, text: list[str]) -> np.ndarray:
         from openai import Client
         api = self.get_setting("api")
         if api == "":
             api = "nokey"
+        max_tokens = int(self.get_setting("max_tokens", return_value=2000))
         client = Client(api_key=api, base_url=self.get_setting("endpoint"))
         embedding = client.embeddings.create(
-            input=text,
+            input=[self._truncate(t, max_tokens) for t in text],
             model=self.get_setting("model")
         )
         res = []

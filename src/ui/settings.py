@@ -260,8 +260,10 @@ class Settings(Adw.Window):
         if options is not None:
             row = Adw.ComboRow(title=_("Editor color scheme"), subtitle=_("Change the color scheme of the editor and codeblocks"), )
             opts = tuple()
+            allowed = {"Adwaita", "Adwaita-dark"}
             for option in options:
-                opts += ((option, option),)
+                if option in allowed:
+                    opts += ((option, option),)
             helper = ComboRowHelper(row, opts, self.settings.get_string("editor-color-scheme"))
             helper.connect("changed", lambda x,y: self.settings.set_string("editor-color-scheme", y))
             self.interface.add(row)

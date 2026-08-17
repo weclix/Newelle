@@ -313,7 +313,14 @@ Recent conversations:
             return
 
         texts = [chunk.content for chunk in self.chunks]
-        embeddings = self.embedding.get_embedding(texts)
+        try:
+            embeddings = self.embedding.get_embedding(texts)
+        except Exception as e:
+            hint = ""
+            if hasattr(e, "status_code") and e.status_code == 404:
+                hint = " The embedding endpoint/model is returning 404 - check the embedding model name and the 'API Endpoint' in the OpenAI embedding settings, and make sure the server actually exposes an /embeddings route."
+            print(f"Error generating memory embeddings: {e}.{hint} Skipping memory indexing.")
+            return
 
         for i, chunk in enumerate(self.chunks):
             chunk.embedding = embeddings[i].tolist() if hasattr(embeddings[i], 'tolist') else list(embeddings[i])
@@ -351,7 +358,11 @@ Recent conversations:
 
         # Get search results using semantic search with context threshold
         context_threshold = float(self.get_setting("context_threshold", return_value=0.7))
-        results = self._semantic_search(prompt, threshold=context_threshold)
+        try:
+            results = self._semantic_search(prompt, threshold=context_threshold)
+        except Exception as e:
+            print(f"Memory context search failed, skipping memory context: {e}")
+            return r
 
         if results:
             return r + ["--- Memory Context ---"] + results
@@ -622,7 +633,15 @@ Recent conversations:
         max_results = int(self.get_setting("max_results", return_value=5))
 
         # Generate query embedding
-        query_embedding = self.embedding.get_embedding([query])[0]
+        try:
+            query_embedding = self.embedding.get_embedding([query])[0]
+        except Exception as e:
+            hint = ""
+            if hasattr(e, "status_code") and e.status_code == 404:
+                hint = (" This usually means the embedding 'API Endpoint' does not expose "
+                        "an /embeddings route. If you use a self-hosted server such as Ollama, "
+                        "the endpoint needs the /v1 prefix, e.g. http://host:11434/v1.")
+            raise RuntimeError(f"Embedding search failed: {e}.{hint}") from e
         if hasattr(query_embedding, 'tolist'):
             query_embedding = query_embedding.tolist()
 
@@ -666,7 +685,10 @@ Recent conversations:
         if not self._index_loaded:
             self._load_index()
 
-        results = self._semantic_search(query)
+        try:
+            results = self._semantic_search(query)
+        except Exception as e:
+            return f"Error: Memory search failed: {e}"
 
         if not results:
             return "No relevant memories found."

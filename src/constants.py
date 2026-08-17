@@ -1,7 +1,7 @@
 from copy import deepcopy
 from .handlers.llm import OpenAIHandler, NewelleAPIHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
-from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler
+from .handlers.memory import UserSummaryHandler, AgenticMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler
 from .integrations.website_reader import WebsiteReader
@@ -53,12 +53,6 @@ AVAILABLE_MEMORIES = {
         "title": _("Agentic Memory"),
         "description": _("Long term memory using Agentic Memory. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
         "class": AgenticMemoryHandler,
-    },
-    "llamaindex": {
-        "key": "llamaindex",
-        "title": _("Semantic Memory"),
-        "description": _("Long term memory using LlamaIndex. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
-        "class": LlamaIndexMemoryHandler,
     },
 }
 
