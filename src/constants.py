@@ -24,7 +24,7 @@ AVAILABLE_LLMS = {
     "newelle": {
         "key": "newelle",
         "title": _("Newelle Demo API"),
-        "description": "Newelle Demo API, limited to 10 requests per day, demo purposes only",
+        "description": "Newelle Demo API, limited to ~10 requests per day (not guaranteed), demo purposes only",
         "class": NewelleAPIHandler,
     },
     "openai": {
