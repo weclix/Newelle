@@ -13,7 +13,6 @@ from gi.repository import Gtk, Adw, Gio, Gdk, GLib
 from .ui.settings import Settings
 from .window import MainWindow
 from .ui.shortcuts import Shortcuts
-from .ui.thread_editing import ThreadEditing
 from .ui.scheduled_tasks import ScheduledTasksWindow
 from .ui.mini_window import MiniWindow
 
@@ -250,23 +249,11 @@ class MyApp(Adw.Application):
         action = Gio.SimpleAction.new("settings", None)
         action.connect('activate', self.settings_action)
         self.add_action(action)
-        action = Gio.SimpleAction.new("thread_editing", None)
-        action.connect('activate', self.thread_editing_action)
-        self.add_action(action)
         action = Gio.SimpleAction.new("scheduled_tasks", None)
         action.connect('activate', self.scheduled_tasks_action)
         self.add_action(action)
         action = Gio.SimpleAction.new("extension", None)
         action.connect('activate', self.extension_action)
-        self.add_action(action)
-        action = Gio.SimpleAction.new("export_current_chat", None)
-        action.connect('activate', self.export_current_chat_action)
-        self.add_action(action)
-        action = Gio.SimpleAction.new("export_all_chats", None)
-        action.connect('activate', self.export_all_chats_action)
-        self.add_action(action)
-        action = Gio.SimpleAction.new("import_chats", None)
-        action.connect('activate', self.import_chats_action)
         self.add_action(action)
     
     def create_action(self, name, callback, shortcuts=None):
@@ -294,10 +281,6 @@ class MyApp(Adw.Application):
                         translator_credits="\n".join(["Amine Saoud (Arabic) https://github.com/amiensa","Heimen Stoffels (Dutch) https://github.com/Vistaus","Albano Battistella (Italian) https://github.com/albanobattistella","Oliver Tzeng (Traditional Chinese, all languages) https://github.com/olivertzeng","Aritra Saha (Bengali, Hindi) https://github.com/olumolu","NorwayFun (Georgian) https://github.com/NorwayFun"]),
                         copyright='© 2025 qwersyk').present()
 
-    def thread_editing_action(self, *a):
-        threadediting = ThreadEditing(self)
-        threadediting.present()
-
     def scheduled_tasks_action(self, *a):
         scheduled_tasks = ScheduledTasksWindow(self)
         scheduled_tasks.present()
@@ -324,23 +307,6 @@ class MyApp(Adw.Application):
 
     def extension_action(self, *a):
         self.settings_action_paged("Extensions")
-
-
-    
-    def export_current_chat_action(self, *a):
-        """Export the current chat"""
-        if hasattr(self, "win"):
-            self.win.export_chat(export_all=False)
-    
-    def export_all_chats_action(self, *a):
-        """Export all chats"""
-        if hasattr(self, "win"):
-            self.win.export_chat(export_all=True)
-    
-    def import_chats_action(self, *a):
-        """Import chats from a file"""
-        if hasattr(self, "win"):
-            self.win.import_chat(None)
     
     def stdout_monitor_action(self, *a):
         """Show the stdout monitor dialog"""

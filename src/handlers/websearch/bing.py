@@ -68,6 +68,7 @@ class BingHandler(WebSearchHandler):
         """Fetch and extract the content of each result page, feeding progress back via update."""
         if max_results is None:
             max_results = self.get_setting("results")
+        max_results = int(max_results)
         if not result_links:
             return [], []
 
