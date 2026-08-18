@@ -149,7 +149,8 @@ class HeadlessController(UIController):
         pass
 
     def open_link(self, url:str|None, new:bool=False, use_integrated_browser : bool = True):
-        pass
+        if url:
+            open_website(url)
 
     def new_editor_tab(self, file: str) -> Adw.TabPage:
         pass

@@ -1,11 +1,10 @@
 import os
-import subprocess
 from threading import Thread
 
 from gi.repository import Adw, GLib, Gtk
 
 from ..controller import NewelleController
-from ..utility.system import can_escape_sandbox, get_spawn_command
+from ..utility.system import can_escape_sandbox, open_website
 from .extensions_catalog import ExtensionMarketplaceView, install_extension_files
 from .extra_settings import ExtraSettingsBuilder
 from .widgets import CopyBox
@@ -219,13 +218,7 @@ class ExtensionPage(Adw.PreferencesPage):
         )
         guide_button.connect(
             "clicked",
-            lambda _button: subprocess.Popen(
-                get_spawn_command()
-                + [
-                    "xdg-open",
-                    "https://github.com/qwersyk/Newelle/wiki/User-guide-to-Extensions",
-                ]
-            ),
+            lambda _button: open_website("https://github.com/qwersyk/Newelle/wiki/User-guide-to-Extensions"),
         )
         guide_row.add_suffix(guide_button)
         guide_row.set_activatable_widget(guide_button)
@@ -239,10 +232,7 @@ class ExtensionPage(Adw.PreferencesPage):
         )
         download_button.connect(
             "clicked",
-            lambda _button: subprocess.Popen(
-                get_spawn_command()
-                + ["xdg-open", "https://github.com/topics/newelle-extension"]
-            ),
+            lambda _button: open_website("https://github.com/topics/newelle-extension"),
         )
         download_row.add_suffix(download_button)
         download_row.set_activatable_widget(download_button)

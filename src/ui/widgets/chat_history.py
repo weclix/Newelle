@@ -3,7 +3,6 @@ import threading
 import time
 import uuid
 import os
-import subprocess
 import gettext
 from ...utility.system import open_website
 from ..widgets import TipsCarousel, SkillWidget
@@ -1794,7 +1793,7 @@ class ChatHistory(Gtk.Box):
             if os.path.isdir(file_path):
                 self.window.window.ui_controller.new_explorer_tab(file_path, False)
             else:
-                subprocess.run(["xdg-open", file_path])
+                Gio.AppInfo.launch_default_for_uri(Gio.File.new_for_path(file_path).get_uri(), None)
         else:
             self.window.notification_block.add_toast(
                 Adw.Toast(title=_("File not found"), timeout=2)

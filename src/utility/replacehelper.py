@@ -1,6 +1,4 @@
 import os 
-import subprocess
-from .system import get_spawn_command
 import time
 from .system import is_wayland 
 import re 
@@ -25,8 +23,16 @@ class ReplaceHelper:
         """
         if ReplaceHelper.DISTRO is None:
             try:
-                ReplaceHelper.DISTRO = subprocess.check_output(get_spawn_command() + ['bash', '-c', 'lsb_release -ds']).decode('utf-8').strip()
-            except subprocess.CalledProcessError:
+                fields = {}
+                with open('/etc/os-release', 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#') or '=' not in line:
+                            continue
+                        key, _, value = line.partition('=')
+                        fields[key] = value.strip().strip('"').strip("'")
+                ReplaceHelper.DISTRO = fields.get('PRETTY_NAME') or fields.get('NAME') or 'Unknown'
+            except (OSError, IOError):
                 ReplaceHelper.DISTRO = "Unknown"
         
         return ReplaceHelper.DISTRO

@@ -52,20 +52,20 @@ def get_spawn_command() -> list:
         return []
 
 def open_website(website):
-    """Opens a website using xdg-open
+    """Opens a website using gio
 
     Args:
         website (): url of the website 
     """
-    subprocess.Popen(get_spawn_command() + ["xdg-open", website])
+    subprocess.Popen(get_spawn_command() + ["gio", "open", website])
 
 def open_folder(folder):
-    """Opens a website using xdg-open
+    """Opens a folder using gio
 
     Args:
         folder (): location of the folder 
     """
-    subprocess.Popen(get_spawn_command() + ["xdg-open", folder])
+    subprocess.Popen(get_spawn_command() + ["gio", "open", folder])
 
 
 def has_backend(backend: str, spawn: bool = True) -> bool:

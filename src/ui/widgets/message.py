@@ -687,12 +687,7 @@ class Message(Gtk.Box):
                 Gio.AppInfo.launch_default_for_uri(Gio.File.new_for_path(path).get_uri(), None)
                 return
 
-            main_window = self._get_main_window()
-            ui_controller = getattr(main_window, "ui_controller", None)
-            if ui_controller is not None:
-                ui_controller.open_link(source.target)
-            else:
-                Gio.AppInfo.launch_default_for_uri(source.target, None)
+            Gio.AppInfo.launch_default_for_uri(source.target, None)
         except Exception as error:
             print(f"Failed to open citation source: {error}")
 

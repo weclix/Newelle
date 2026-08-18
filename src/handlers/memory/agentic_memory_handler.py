@@ -12,6 +12,7 @@ from ...handlers import ExtraSettings
 from ...tools import create_io_tool
 from ...utility.pip import find_module, install_module
 from ...utility.strings import clean_prompt, remove_thinking_blocks
+from ...utility.system import open_folder
 
 
 class MemoryChunk:
@@ -135,9 +136,8 @@ Recent conversations:
 
     def _open_folder(self):
         """Open the memory folder in the file manager"""
-        import subprocess
         try:
-            subprocess.run(["xdg-open", self.memory_dir])
+            open_folder(self.memory_dir)
         except Exception as e:
             print(f"Could not open folder: {e}")
 

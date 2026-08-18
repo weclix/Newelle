@@ -5,7 +5,6 @@ import shutil
 import json
 import time
 import traceback
-from subprocess import Popen 
 
 from gi.repository import Gtk, Adw, Gio, GLib, GObject, Gdk, GtkSource
 
@@ -19,7 +18,7 @@ from .extension import ExtensionPage
 from .extra_settings import ExtraSettingsBuilder
 from .widgets import ComboRowHelper, CopyBox 
 from .widgets import MultilineEntry
-from ..utility.system import can_escape_sandbox, get_spawn_command, open_website, open_folder, is_flatpak 
+from ..utility.system import can_escape_sandbox, open_website, open_folder, is_flatpak 
 
 from ..controller import NewelleController
 from ..modes import DEFAULT_MODE_NAME
@@ -80,7 +79,7 @@ class Settings(Adw.Window):
         self.LLM = Adw.PreferencesGroup(title=_('Language Model'))
         # Add Help Button 
         help = Gtk.Button(css_classes=["flat"], icon_name="info-outline-symbolic")
-        help.connect("clicked", lambda button : Popen(get_spawn_command() + ["xdg-open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]))
+        help.connect("clicked", lambda button : open_website("https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"))
         self.LLM.set_header_suffix(help)
         # Add LLMs
         self.LLMPage.add(self.LLM)
