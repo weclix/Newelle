@@ -112,40 +112,6 @@ gsettings set org.gnome.mutter center-new-windows true
 
 # Installation
 
-<a href="https://github.com/qwersyk/Newelle/archive/refs/heads/master.zip">
-  <picture>
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/builder.svg" media="(prefers-color-scheme: light)">
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/builder-dark.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/qwersyk/Assets/main/builder.svg" alt="builder">
-  </picture>
-</a>
-
-There are two ways of doing this
-
-  * `install.sh`
-    1. Install the latest Gnome SDK
-    2. Run `sh install.sh`
-    3. Profit!
-  * Gnome Builder
-    1. Install GNOME Builder on your system.
-    2. Clone the Newelle repository from GitHub.
-    3. Open the project in GNOME Builder and compile it.
-    4. Once compiled, you can run the program from the compiled executable.
-
-<a href="https://nixos.org">
-  <picture>
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/nix.svg" media="(prefers-color-scheme: light)">
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/nix-dark.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/qwersyk/Assets/main/nix.svg" alt="builder">
-  </picture>
-</a>
-
-With nix, you can run the app without installing by executing this command:
-```sh
-nix run github:qwersyk/Newelle
-```
-If you want the latest commit version, you can clone this repository and execute `nix run .` to start the program or `nix develop .` to start a developer shell
-
 <a href="https://github.com/qwersyk/Newelle/actions">
   <picture>
     <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/beta.svg" media="(prefers-color-scheme: light)">
@@ -155,8 +121,7 @@ If you want the latest commit version, you can clone this repository and execute
 </a>
 
 > [!WARNING]
-> Localizations will not work on these builds! If you want your language to work, go to the
-> "Builder" section instead
+> Localizations will not work on these builds!
 1. Download the latest release from the [Github Actions](https://github.com/qwersyk/Newelle/actions)
 2. Extract the downloaded package.
 3. Install a flatpak package.
