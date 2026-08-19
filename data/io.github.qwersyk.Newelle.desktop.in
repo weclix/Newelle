@@ -7,4 +7,9 @@ Terminal=false
 Type=Application
 Categories=Utility;
 StartupNotify=true
-Keywords=ai;assistant;chat;chatgpt;gpt;llm;ollama;
+Keywords=ai;assistant;chat;llm;
+Actions=MiniWindow;
+
+[Desktop Action MiniWindow]
+Name=Mini Window
+Exec=newelle --startup-mode=mini

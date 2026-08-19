@@ -23,6 +23,8 @@ class MyApp(Adw.Application):
         super().__init__(flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.settings = Gio.Settings.new("io.github.qwersyk.Newelle")
         self.add_main_option("run-action", 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Run an action", "ACTION")
+        self.add_main_option("startup-mode", 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Open as a 'mini' window or the normal window", "normal|mini")
+        self._startup_mode = None
         css = '''
         .code{
         background-color: rgb(38,38,38);
@@ -353,6 +355,15 @@ class MyApp(Adw.Application):
             else:
                 command_line.printerr(f"Action '{action_name}' not found.\n")
                 return 1
+        if options.contains("startup-mode"):
+            value = options.lookup_value("startup-mode").get_string()
+            if value in ("mini", "normal"):
+                self._startup_mode = value
+            else:
+                command_line.printerr(
+                    f"Invalid --startup-mode '{value}' (expected 'mini' or 'normal').\n"
+                )
+                return 1
         
         self.activate()
         return 0
@@ -362,7 +373,12 @@ class MyApp(Adw.Application):
             self.win = MainWindow(application=app)
             self.win.connect("close-request", self.close_window)
 
-        if self.settings.get_string("startup-mode") == "mini":
+        startup_mode = self._startup_mode
+        if startup_mode is None:
+            startup_mode = self.settings.get_string("startup-mode")
+        self._startup_mode = None
+
+        if startup_mode == "mini":
             self.settings.set_string("startup-mode", "normal")
             if getattr(self.win, "ui_built", False):
                 self.show_mini_window()
