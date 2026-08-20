@@ -8,8 +8,9 @@ Type=Application
 Categories=Utility;
 StartupNotify=true
 Keywords=ai;assistant;chat;llm;
-Actions=MiniWindow;
+Actions=mini-window;
 
-[Desktop Action MiniWindow]
+[Desktop Action mini-window]
 Name=Mini Window
-Exec=newelle --startup-mode=mini
+Exec=newelle --mini
+Icon=io.github.qwersyk.Newelle
