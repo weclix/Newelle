@@ -5,10 +5,7 @@ import math
 import re
 import threading
 
-import numpy as np
 from gi.repository import Gtk, GLib, Gdk
-from matplotlib.font_manager import FontProperties
-from matplotlib.mathtext import MathTextParser
 
 
 # MathText parsing is CPU-heavy and Matplotlib is not thread-safe. A single
@@ -16,8 +13,27 @@ from matplotlib.mathtext import MathTextParser
 # Matplotlib parsers. Queued work is cancelled when its widget is unmapped, so
 # switching chats does not leave a long list of irrelevant equations behind.
 _RENDER_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="latex-render")
-_MATHTEXT_PARSER = MathTextParser("agg")
 _RENDER_LOCK = threading.Lock()
+# Matplotlib/numpy are imported lazily on first render only. Importing them at
+# module load pulls ~1s of startup cost (numpy + matplotlib) even for users who
+# never display LaTeX, so we defer until an equation is actually rendered.
+_MATHTEXT_PARSER = None
+
+
+def _get_mathtext() -> tuple:
+    """Lazily load numpy/matplotlib and return (parser, FontProperties, np)."""
+    global _MATHTEXT_PARSER
+    if _MATHTEXT_PARSER is None:
+        # Late import so numpy/matplotlib are only loaded the first time an
+        # equation is actually rendered, not during app startup.
+        import numpy as np
+        from matplotlib.font_manager import FontProperties
+        from matplotlib.mathtext import MathTextParser
+        _MATHTEXT_PARSER = MathTextParser("agg")
+        return _MATHTEXT_PARSER, FontProperties, np
+    import numpy as np
+    from matplotlib.font_manager import FontProperties
+    return _MATHTEXT_PARSER, FontProperties, np
 
 # Keep rendered pixels, not GTK objects, in the cache. This lets repeated
 # equations share the expensive result while all GTK object creation remains on
@@ -89,9 +105,11 @@ def _render_latex(key) -> _RenderedLatex:
             _RENDER_CACHE.move_to_end(key)
             return cached
 
+        mathtext, FontProperties, np = _get_mathtext()
+
         latex, size, rgba, scale = key
         dpi = 100 * scale
-        parsed = _MATHTEXT_PARSER.parse(
+        parsed = mathtext.parse(
             f"${latex}$", dpi=dpi, prop=FontProperties(size=size)
         )
         alpha = np.asarray(parsed.image, dtype=np.uint8)

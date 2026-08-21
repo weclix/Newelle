@@ -1,6 +1,4 @@
 from select import select
-from tldextract.tldextract import update
-from pylatexenc.latex2text import LatexNodes2Text
 import time
 import re
 import sys

@@ -10,8 +10,10 @@ gnome.compile_resources('newelle',
 )
 
 python = import('python')
-conf = configuration_data() 
-conf.set('PYTHON', python.find_installation('python3').path())
+# Python 3.14 is the runtime requirement for Newelle.
+py = python.find_installation('python3.14', required: true)
+conf = configuration_data()
+conf.set('PYTHON', py.full_path())
 profile = get_option('profile')
 version_full = meson.project_version()
 if profile == 'development'
@@ -171,7 +173,6 @@ utility_sources = [
   'utility/message_chunk.py',
   'utility/website_scraper.py',
   'utility/stdout_capture.py',
-  'utility/force_sync.py',
   'utility/file_search.py',
   'utility/context_manager.py',
   'utility/source_attribution.py',

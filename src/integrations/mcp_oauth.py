@@ -172,23 +172,6 @@ def _post_form(url: str, form: dict[str, Any], headers: dict | None = None) -> t
         return (None, 0)
 
 
-def _fetch_json_async(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None):
-    """Async fetch JSON. Used when running in asyncio context."""
-    import asyncio
-    if HAS_HTTPX:
-        async def _do():
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                if method == "GET":
-                    r = await client.get(url, headers=headers or {})
-                else:
-                    r = await client.request(method, url, json=body or {}, headers=headers or {})
-                if r.status_code >= 200 and r.status_code < 300:
-                    return (r.json(), r.status_code)
-                return (r.json() if "application/json" in (r.headers.get("content-type") or "") else None, r.status_code)
-        return asyncio.get_event_loop().run_until_complete(_do())
-    return _fetch_json(url, method, body, headers)
-
-
 def discover_auth(mcp_url: str) -> tuple[dict | None, str | None]:
     """
     Discover OAuth metadata from MCP server.
