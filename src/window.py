@@ -145,6 +145,7 @@ class MainWindow(Adw.ApplicationWindow):
         menu_button.set_icon_name("open-menu-symbolic")
         menu = Gio.Menu()
         menu.append(_("Scheduled tasks"), "app.scheduled_tasks")
+        menu.append(_("Downloads"), "app.downloads")
         menu.append(_("Settings"), "app.settings")
         menu.append(_("Keyboard shorcuts"), "app.shortcuts")
         

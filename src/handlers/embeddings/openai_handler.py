@@ -1,4 +1,4 @@
-from .embedding import EmbeddingHandler
+from .embedding import EmbeddingHandler, EmbeddingPurpose
 from ...handlers import ExtraSettings
 import numpy as np 
 
@@ -71,7 +71,7 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
                 settings += models_settings
             else:
                 settings += automatic_models_settings
-        return settings
+        return settings + self.get_prefix_settings()
     def get_extra_settings(self) -> list:
         settings = self.build_extra_settings("OpenAI", True, True, True, "https://platform.openai.com/docs/guides/embeddings#embedding-models", True)
         settings.append(
@@ -100,7 +100,9 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
             # is unavailable (English is ~4 chars/token, CJK ~1-2 chars/token).
             return text[:max_tokens]
 
-    def get_embedding(self, text: list[str]) -> np.ndarray:
+    def get_embedding(
+        self, text: list[str], purpose: EmbeddingPurpose = None
+    ) -> np.ndarray:
         from openai import Client
         api = self.get_setting("api")
         if api == "":
@@ -108,7 +110,7 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
         max_tokens = int(self.get_setting("max_tokens", return_value=2000))
         client = Client(api_key=api, base_url=self.get_setting("endpoint"))
         embedding = client.embeddings.create(
-            input=[self._truncate(t, max_tokens) for t in text],
+            input=self._prepare_embedding_texts(text, purpose),
             model=self.get_setting("model")
         )
         res = []

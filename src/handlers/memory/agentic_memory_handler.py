@@ -314,7 +314,7 @@ Recent conversations:
 
         texts = [chunk.content for chunk in self.chunks]
         try:
-            embeddings = self.embedding.get_embedding(texts)
+            embeddings = self.embedding.get_embedding(texts, purpose="document")
         except Exception as e:
             hint = ""
             if hasattr(e, "status_code") and e.status_code == 404:
@@ -634,7 +634,9 @@ Recent conversations:
 
         # Generate query embedding
         try:
-            query_embedding = self.embedding.get_embedding([query])[0]
+            query_embedding = self.embedding.get_embedding(
+                [query], purpose="query"
+            )[0]
         except Exception as e:
             hint = ""
             if hasattr(e, "status_code") and e.status_code == 404:

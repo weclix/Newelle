@@ -67,6 +67,7 @@ ui_sources = [
   'ui/settings.py',
   'ui/presentation.py',
   'ui/scheduled_tasks.py',
+  'ui/downloads.py',
   'ui/shortcuts.py',
   'ui/mini_window.py',
   'ui/stdout_monitor.py',
@@ -171,6 +172,7 @@ utility_sources = [
   'utility/util.py',
   'utility/profile_settings.py',
   'utility/message_chunk.py',
+  'utility/model_icons.py',
   'utility/website_scraper.py',
   'utility/stdout_capture.py',
   'utility/file_search.py',
@@ -180,6 +182,8 @@ utility_sources = [
   'utility/command_runner.py',
   'utility/command_sessions.py',
   'utility/background_process.py',
+  'utility/download_manager.py',
+  'utility/huggingface_download.py',
   'utility/tool_call_group.py',
 ]
 
