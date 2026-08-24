@@ -247,6 +247,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.main.set_content(Adw.NavigationPage(child=self.chat_panel, title=_("Chat")))
         self.main.set_show_sidebar(not self.settings.get_boolean("hide-history-on-launch"))
         self.main.set_name("visible" if self.main.get_show_sidebar() else "hide")
+        # Ensure the toggle button reflects the actual sidebar visibility on launch
+        self.left_panel_toggle_button.set_active(self.main.get_show_sidebar())
         self.main.connect("notify::show-sidebar", lambda x, _ : self.left_panel_toggle_button.set_active(self.main.get_show_sidebar()))
         # Canvas panel
         self.build_canvas()
@@ -315,6 +317,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.main_program_block.connect(
             "notify::collapsed", self.handle_second_block_change
         )
+
+        # Apply the correct title-button host and sidebar toggle state on first
+        # launch, even if the sidebar starts in its final collapsed state
+        # without a transition (the initial show_sidebar=True would otherwise
+        # leave the folded sidebar with an already-active toggle button).
+        GLib.idle_add(self._first_launch_sidebar_setup)
 
         # Legacy streaming state - kept for compatibility but delegated to active tab
         self.active_tool_results = []
@@ -1842,6 +1850,16 @@ class MainWindow(Adw.ApplicationWindow):
                     Adw.Toast(title=_("The file is not recognized"), timeout=2)
                 )
 
+    def _first_launch_sidebar_setup(self):
+        # When the window is too narrow to show both panes, the history sidebar
+        # starts folded (collapsed overlay) even though show_sidebar defaults to
+        # True. Keep it folded so its toggle button starts inactive and opens in
+        # a single click.
+        if self.main.get_collapsed() and self.main.get_show_sidebar():
+            self.main.set_name("hide")
+            self.main.set_show_sidebar(False)
+        self.handle_main_block_change()
+
     def handle_main_block_change(self, *data):
         status = self.main.get_show_sidebar()
         name = self.main.get_name()
@@ -1852,14 +1870,15 @@ class MainWindow(Adw.ApplicationWindow):
         elif name == "visible" and not status and not collapsed:
             self.main.set_show_sidebar(True)
 
-        if self.main.get_show_sidebar():
-            self.chat_panel_header.set_show_end_title_buttons(
-                not self.main_program_block.get_show_sidebar()
-            )
-            self.chat_header.set_show_start_title_buttons(True)
-        else:
-            self.chat_panel_header.set_show_end_title_buttons(False)
-            self.chat_header.set_show_start_title_buttons(False)
+        # Window's left-side title buttons (close/minimize/maximize) must stay
+        # visible whether the history sidebar is shown (merged, sidebar hosts)
+        # or hidden/collapsed (overlay, chat headerbar hosts).
+        sidebar_hosts = self.main.get_show_sidebar() and not collapsed
+        self.chat_panel_header.set_show_start_title_buttons(sidebar_hosts)
+        self.chat_header.set_show_start_title_buttons(not sidebar_hosts)
+        self.chat_panel_header.set_show_end_title_buttons(
+            sidebar_hosts and not self.main_program_block.get_show_sidebar()
+        )
 
     # Chat management
     def continue_message(self, button):
