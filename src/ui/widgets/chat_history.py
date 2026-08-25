@@ -1197,9 +1197,10 @@ class ChatHistory(Gtk.Box):
             icon_name="edit-copy-symbolic",
             css_classes=["flat", "accent"],
             valign=Gtk.Align.CENTER,
+            name=id,
         )
         copy_button.set_tooltip_text(_("Copy"))
-        copy_button.connect("clicked", self.copy_message, int(id))
+        copy_button.connect("clicked", self.copy_message)
         actions.append(edit_button)
         actions.append(copy_button)
         if has_prompt:
@@ -1207,9 +1208,10 @@ class ChatHistory(Gtk.Box):
                 icon_name="question-round-outline-symbolic",
                 css_classes=["flat"],
                 valign=Gtk.Align.CENTER,
+                name=id,
             )
             info_button.set_tooltip_text(_("Show prompt"))
-            info_button.connect("clicked", self.show_prompt, int(id))
+            info_button.connect("clicked", self.show_prompt)
             actions.append(info_button)
         branch_button = Gtk.Button(
             icon_name="branch-symbolic",
@@ -1218,7 +1220,7 @@ class ChatHistory(Gtk.Box):
             name=id,
         )
         branch_button.set_tooltip_text(_("Branch chat"))
-        branch_button.connect("clicked", lambda btn: self.emit("branch-requested", int(id)))
+        branch_button.connect("clicked", lambda btn: self.emit("branch-requested", int(btn.get_name())))
         actions.append(branch_button)
         remove_button = Gtk.Button(
             icon_name="user-trash-symbolic",
@@ -1307,40 +1309,222 @@ class ChatHistory(Gtk.Box):
         del self.edit_entries[int(gesture.get_name())]
 
     def delete_message(self, gesture, box):
-        """Delete a message from the chat
+        """Delete a message from the chat without rebuilding the whole UI.
+
+        Only the affected row is removed and the stored indices of the
+        remaining live message widgets are re-numbered in place, so the rest
+        of the conversation is not re-created/flashed.
 
         Args:
             gesture (): widget with the id of the message to edit as name
             box (): box of the message
         """
         idx = int(gesture.get_name())
+        removed = set()
         if idx < len(self.chat):
             del self.chat[idx]
-        
-        # Also delete subsequent Console messages
-        while idx < len(self.chat) and self.chat[idx].get("User") == "Console":
-            del self.chat[idx]
+            removed.add(idx)
 
+        # Also delete subsequent, now-shifted Console messages.  Track their
+        # original indices so the re-numbering pass shifts correctly.
+        n = 1
+        while idx < len(self.chat) and self.chat[idx].get("User") == "Console":
+            removed.add(idx + n)
+            del self.chat[idx]
+            n += 1
+
+        # Remove the deleted message's row and bubble from the UI.  Messages
+        # are wrapped in a ListBoxRow, so detach that row explicitly; if it
+        # cannot be found, fall back to the action toolbar's own parent.
         try:
-            # Bubbles are wrapped in an avatar row inside the ListBoxRow
-            self.chat_list_block.remove(box.get_ancestor(Gtk.ListBoxRow))
+            row = box.get_ancestor(Gtk.ListBoxRow)
+        except Exception:
+            row = None
+        toolbar = getattr(box, "action_toolbar", None)
+        if row is not None:
+            self.chat_list_block.remove(row)
+        else:
+            # Toolbar may be anchored to the row's arrangement (overlay/group)
+            # even when get_ancestor fails; walk up from it.
+            anchor = toolbar.get_parent() if toolbar is not None else None
+            while anchor is not None and not isinstance(anchor, Gtk.ListBoxRow):
+                anchor = anchor.get_parent()
+            if anchor is not None:
+                self.chat_list_block.remove(anchor)
+        try:
             self.messages_box.remove(box)
+        except ValueError:
+            self.messages_box = [b for b in self.messages_box if b is not box]
+        # If the chat became empty there is nothing left to preserve, so do a
+        # full rebuild.  This also resets all compact-group bookkeeping and
+        # reliably shows the placeholder.
+        if len(self.chat) == 0:
+            self._detach_widget(toolbar)
+            self.show_chat()
+            self.controller.save_chats()
+            GLib.idle_add(self.update_button_text)
+            return
+
+        # Belt-and-suspenders: if the action toolbar is still attached
+        # anywhere, detach it so its buttons are not left floating on screen.
+        # Assistant toolbars live inside a Gtk.Overlay, user toolbars inside
+        # a plain box, so the removal method differs per parent type.
+        self._detach_widget(toolbar)
+
+        # Re-sync the live widgets' stored indices so edit/delete/branch/
+        # copy/show-prompt keep targeting the right entries.
+        self._renumber_message_indices(removed)
+        self._prune_hidden_rows()
+
+        self.hide_placeholder()
+
+        self.controller.save_chats()
+        GLib.idle_add(self.update_button_text)
+
+    def _detach_widget(self, widget):
+        """Remove ``widget`` from its parent, handling Overlay vs Box parents."""
+        if widget is None:
+            return
+        parent = widget.get_parent()
+        if parent is None:
+            return
+        if isinstance(parent, Gtk.Overlay):
+            parent.remove_overlay(widget)
+        else:
+            parent.remove(widget)
+
+    def _prune_hidden_rows(self):
+        """Drop compact-mode hidden-row bookkeeping for rows no longer present."""
+        live = set()
+        child = self.chat_list_block.get_first_child()
+        while child is not None:
+            live.add(child)
+            child = child.get_next_sibling()
+        for row in list(self._compact_hidden_rows):
+            if row not in live:
+                self._compact_hidden_rows.discard(row)
+
+    def _read_box_index(self, box):
+        """Return the chat index stored on a message bubble, or None."""
+        try:
+            for ctrl in box.observe_controllers():
+                if isinstance(ctrl, Gtk.GestureClick):
+                    name = ctrl.get_name() or ""
+                    if name.isdigit():
+                        return int(name)
         except Exception:
             pass
-        self.controller.save_chats()
-        self.show_chat()
+        # Fall back to a toolbar button that owns the index as its name.
+        toolbar = getattr(box, "action_toolbar", None)
+        if toolbar is not None:
+            found = [None]
+
+            def walk(w):
+                if found[0] is not None:
+                    return
+                name = w.get_name() or ""
+                if name.isdigit():
+                    found[0] = int(name)
+                    return
+                child = w.get_first_child()
+                while child is not None and found[0] is None:
+                    walk(child)
+                    child = child.get_next_sibling()
+
+            walk(toolbar)
+            return found[0]
+        return None
+
+    def _set_box_index(self, box, new_index):
+        """Rewrite the stored index on an existing message bubble in place."""
+        try:
+            for ctrl in box.observe_controllers():
+                if isinstance(ctrl, Gtk.GestureClick):
+                    if (ctrl.get_name() or "").isdigit():
+                        ctrl.set_name(str(new_index))
+        except Exception:
+            pass
+        toolbar = getattr(box, "action_toolbar", None)
+        if toolbar is not None:
+            self._update_toolbar_names(toolbar, new_index)
+        message = self._find_message_in(box)
+        if message is not None:
+            message.id_message = new_index
+
+    def _update_toolbar_names(self, toolbar, new_index):
+        """Rewrite the index carried by every button in an action toolbar."""
+        def walk(w):
+            if w.get_name() and w.get_name().isdigit():
+                w.set_name(str(new_index))
+            child = w.get_first_child()
+            while child is not None:
+                walk(child)
+                child = child.get_next_sibling()
+
+        walk(toolbar)
+
+    def _find_message_in(self, box):
+        """Return the first Message widget nested inside a bubble box."""
+        stack = [box]
+        while stack:
+            w = stack.pop()
+            if isinstance(w, Message):
+                return w
+            child = w.get_first_child()
+            while child is not None:
+                stack.append(child)
+                child = child.get_next_sibling()
+        return None
+
+    def _renumber_message_indices(self, removed):
+        """Re-number the stored indices of remaining messages after a delete.
+
+        ``removed`` is the set of old chat indices that were deleted.  Every
+        remaining editable bubble gets its stored index shifted by the number
+        of deleted indices that preceded it, keeping edit/delete/branch/copy/
+        show-prompt and the compact-group bookkeeping in sync.
+        """
+        old_to_box = {}
+        for b in self.messages_box:
+            idx = self._read_box_index(b)
+            if idx is not None:
+                old_to_box[idx] = b
+        for old_idx, b in old_to_box.items():
+            shift = sum(1 for r in removed if r < old_idx)
+            self._set_box_index(b, old_idx - shift)
+        # Re-key the transient edit-entry registry.
+        new_entries = {}
+        for b in self.messages_box:
+            idx = self._read_box_index(b)
+            if idx is not None and idx in self.edit_entries:
+                new_entries[idx] = self.edit_entries[idx]
+        self.edit_entries = new_entries
+        # Re-key compact tool groups by shifted indices, dropping groups whose
+        # chain-start message was deleted (its widgets were removed with the
+        # row).  A plain refresh could otherwise re-attach a deleted chain's
+        # tool-call buttons onto a surviving continuation message.
+        if self.controller.newelle_settings.compact_mode:
+            rekeyed = {}
+            for chain_start, group in self._compact_tool_groups.items():
+                if chain_start in removed:
+                    continue
+                shift = sum(1 for r in removed if r < chain_start)
+                rekeyed[chain_start - shift] = group
+            self._compact_tool_groups = rekeyed
+            self._active_compact_tool_group = None
 
     def add_prompt(self, prompt):
         """Store prompt text on the most recently appended chat entry."""
         if prompt is not None and self.chat:
             self.chat[-1]["Prompt"] = prompt
 
-    def show_prompt(self, button, id):
+    def show_prompt(self, button):
         """Show a prompt
 
-        Args:
-            id (): id of the prompt to show
+        The message index is read from the triggering button's name so the
+        action keeps working after an in-place message deletion.
         """
+        id = int(button.get_name())
         # Retrieve prompt data
         prompt_data = self.chat[id]
         prompt_text = prompt_data.get("Prompt", "")
@@ -1411,12 +1595,13 @@ class ChatHistory(Gtk.Box):
         dialog.set_content_height(600)
         dialog.present()
 
-    def copy_message(self, button, id):
+    def copy_message(self, button):
         """Copy a message
 
-        Args:
-            id (): id of the message to copy
+        The message index is read from the triggering button's name so the
+        action keeps working after an in-place message deletion.
         """
+        id = int(button.get_name())
         display = Gdk.Display.get_default()
         if display is None or len(self.chat) <= id:
             return
