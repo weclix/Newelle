@@ -77,6 +77,7 @@ ui_sources = [
   'ui/skill_creator.py',
   'ui/extensions_catalog.py',
   'ui/extra_settings.py',
+  'ui/build_dependency_warning.py',
 ]
 
 widgets_sources = [
@@ -182,9 +183,11 @@ utility_sources = [
   'utility/command_runner.py',
   'utility/command_sessions.py',
   'utility/background_process.py',
+  'utility/build_process.py',
   'utility/download_manager.py',
   'utility/huggingface_download.py',
   'utility/tool_call_group.py',
+  'utility/build_dependencies.py',
 ]
 
 install_data(newelle_sources, install_dir: moduledir)
