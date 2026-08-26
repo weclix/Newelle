@@ -156,6 +156,20 @@ class MCPIntegration(NewelleExtension):
         except OSError as e:
             print(f"MCP cache write error: {e}")
 
+
+    @staticmethod
+    def _normalize_tool(tool):
+        """Normalize an MCP SDK Tool (or _CachedTool) into a _CachedTool instance.
+
+        The MCP SDK's Tool stores its schema as ``input_schema`` while _CachedTool
+        uses ``inputSchema``. Normalizing everything to _CachedTool keeps the rest
+        of the registry code (get_tools, _save_cache) working regardless of source.
+        """
+        if isinstance(tool, _CachedTool):
+            return tool
+        schema = tool.input_schema if hasattr(tool, "input_schema") else getattr(tool, "inputSchema", {})
+        return _CachedTool(tool.name, str(getattr(tool, "description", "") or ""), schema)
+
     def _background_refresh(self):
         """Re-fetch tools from all servers and update the cache."""
         old_tools = self.tools
@@ -218,8 +232,9 @@ class MCPIntegration(NewelleExtension):
 
     def commit_mcp_server(self, server_info, tools):
         """Add a successfully probed server to the live registry."""
-        self.tools.extend(tools)
-        for tool in tools:
+        normalized = [self._normalize_tool(t) for t in tools]
+        self.tools.extend(normalized)
+        for tool in normalized:
             self.tools_dict[tool.name] = server_info
         self.mcp_servers.append(server_info)
         self.ui_controller.require_tool_update()
@@ -274,8 +289,9 @@ class MCPIntegration(NewelleExtension):
                         client_id=server_info.get("client_id")
                     )
                 print(tools)
-                self.tools.extend(tools)
-                for tool in tools:
+                normalized = [self._normalize_tool(t) for t in tools]
+                self.tools.extend(normalized)
+                for tool in normalized:
                     self.tools_dict[tool.name] = server_info
             except Exception as e:
                 print(f"Error fetching tools from {identifier}: {e}")
@@ -477,11 +493,47 @@ class MCPIntegration(NewelleExtension):
             process_env.update(env)
         return StdioServerParameters(command=command, args=args, env=process_env)
 
+
+    @staticmethod
+    def _open_http_stream(url, headers):
+        """Async context manager yielding (read, write) streams for an HTTP MCP server.
+
+        Handles both the legacy ``streamablehttp_client`` API (mcp SDK < 2.0) and the
+        current ``streamable_http_client`` + ``create_mcp_http_client`` API (mcp SDK 2.x),
+        adapting to whichever is installed.
+        """
+        from contextlib import asynccontextmanager
+
+        @asynccontextmanager
+        async def _stream():
+            # Preferred: current SDK API (headers passed via an httpx client).
+            try:
+                from mcp.client.streamable_http import (
+                    create_mcp_http_client,
+                    streamable_http_client,
+                )
+            except ImportError:
+                pass
+            else:
+                async with create_mcp_http_client(headers=headers) as http_client:
+                    async with streamable_http_client(
+                        url, http_client=http_client
+                    ) as transports:
+                        yield transports[0], transports[1]
+                return
+            # Legacy API (headers passed directly to the transport).
+            from mcp.client.streamable_http import streamablehttp_client
+
+            async with streamablehttp_client(url=url, headers=headers) as transports:
+                yield transports[0], transports[1]
+
+        return _stream()
+
+
     def sync_get_tools(self, url, headers=None, client_id=None, server_info=None):
         """Synchronous wrapper to get available tools (HTTP)"""
         import asyncio
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
         
         if headers is None:
             headers = {}
@@ -493,8 +545,7 @@ class MCPIntegration(NewelleExtension):
         request_url = (self._get_mcp_url_for_request(server_info) or url) if server_info else url
         
         async def _async_get_tools():
-            client_kwargs = {"url": request_url, "headers": resolved_headers}
-            async with streamablehttp_client(**client_kwargs) as (read, write, _):
+            async with self._open_http_stream(request_url, resolved_headers) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = await session.list_tools()
@@ -505,7 +556,6 @@ class MCPIntegration(NewelleExtension):
         """Synchronous wrapper to call a tool"""
         import asyncio
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
         
         if headers is None:
             headers = {}
@@ -517,8 +567,7 @@ class MCPIntegration(NewelleExtension):
         request_url = (self._get_mcp_url_for_request(server_info) or url) if server_info else url
         
         async def _async_call_tool():
-            client_kwargs = {"url": request_url, "headers": resolved_headers}
-            async with streamablehttp_client(**client_kwargs) as (read, write, _):
+            async with self._open_http_stream(request_url, resolved_headers) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     result = await session.call_tool(tool_name, arguments=arguments)
