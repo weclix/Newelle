@@ -79,7 +79,7 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
                 "max_tokens",
                 _("Max Tokens"),
                 _("Maximum context length (max_model_len) of the embedding model. Inputs longer than this are truncated before sending."),
-                2000, 64, 8192, 0,
+                512, 64, 8192, 0,
             )
         )
         return settings
@@ -107,10 +107,15 @@ class OpenAIEmbeddingHandler(EmbeddingHandler):
         api = self.get_setting("api")
         if api == "":
             api = "nokey"
-        max_tokens = int(self.get_setting("max_tokens", return_value=2000))
+        max_tokens = int(self.get_setting("max_tokens", return_value=512))
+        prepared = self._prepare_embedding_texts(text, purpose)
+        if isinstance(prepared, str):
+            prepared = self._truncate(prepared, max_tokens)
+        else:
+            prepared = [self._truncate(t, max_tokens) for t in prepared]
         client = Client(api_key=api, base_url=self.get_setting("endpoint"))
         embedding = client.embeddings.create(
-            input=self._prepare_embedding_texts(text, purpose),
+            input=prepared,
             model=self.get_setting("model")
         )
         res = []
