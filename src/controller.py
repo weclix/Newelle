@@ -396,6 +396,14 @@ class NewelleController:
         self.save_chats()
         return chat_id
 
+    def create_voice_chat(self):
+        """Create a hidden one-shot Voice Mode chat."""
+        chat_id = self.create_call_chat()
+        self.chats[chat_id]["name"] = _("Voice command ") + str(chat_id)
+        self.chats[chat_id]["voice"] = True
+        self.save_chats()
+        return chat_id
+
     def create_visible_chat(self, name: str | None = None, profile: str | None = None, folder_id: int | None = None):
         """Create a new visible chat entry and refresh history."""
         chat_id = self.next_chat_id
@@ -1046,7 +1054,7 @@ class NewelleController:
         # Add tools from memory and rag handlers
         self.handlers.add_tools(self.tools)
     
-    def get_enabled_tools(self) -> list:
+    def get_enabled_tools(self, mode_name: str | None = None) -> list:
         """Get the list of enabled tools
 
         Returns:
@@ -1067,7 +1075,9 @@ class NewelleController:
 
             # Apply the active Mode's tool override (enable/remove/no_change)
             if hasattr(self, "mode_manager"):
-                is_enabled = self.mode_manager.resolve_tool_enabled(tool.name, is_enabled)
+                is_enabled = self.mode_manager.resolve_tool_enabled(
+                    tool.name, is_enabled, mode_name
+                )
 
             if is_enabled:
                 enabled_tools.append(tool)
@@ -1209,7 +1219,7 @@ class NewelleController:
         tools = self.tools.get_all_tools()
         for tool in tools:
             if tool.name == name:
-                if tool in self.get_enabled_tools():
+                if tool in self.get_enabled_tools(mode_name):
                     return True
                 else:
                     return False
@@ -1396,15 +1406,52 @@ class NewelleController:
             return self.get_vision_model()
         return self.handlers.llm
 
-    def _build_tool_system_prompt(self, chat_id: int) -> list[str]:
+    def _get_tools_prompt_for_mode(self, mode_name: str | None = None) -> str:
+        """Return the tool catalog resolved against an optional named Mode."""
+        tools_settings = self.newelle_settings.tools_settings_dict
+        enabled_tools = {}
+        for tool in self.tools.get_all_tools():
+            enabled = tool.default_on
+            if tool.name in tools_settings and "enabled" in tools_settings[tool.name]:
+                enabled = tools_settings[tool.name]["enabled"]
+            if tool.name == "search" and not self.newelle_settings.websearch_on:
+                enabled = False
+            if hasattr(self, "mode_manager"):
+                enabled = self.mode_manager.resolve_tool_enabled(
+                    tool.name, enabled, mode_name
+                )
+            enabled_tools[tool.name] = enabled
+        return self.tools.get_tools_prompt(
+            enabled_tools_dict=enabled_tools,
+            tools_settings=tools_settings,
+            expanded_tools=self.expanded_tools,
+        )
+
+    def _build_tool_system_prompt(
+        self,
+        chat_id: int,
+        mode_name: str | None = None,
+        skill_manager: SkillManager | None = None,
+    ) -> list[str]:
         """Build the live system prompt used by the agent tool loop.
 
         Unlike a caller-supplied prompt, this prompt is derived from the active
         mode and may need to be rebuilt between tool iterations.
         """
         prompts = []
-        formatter = PromptFormatter(replace_variables_dict(), self.get_variable)
-        for prompt in self.newelle_settings.bot_prompts:
+        simple_vars = replace_variables_dict()
+        simple_vars["{TOOLS}"] = self._get_tools_prompt_for_mode(mode_name)
+        active_skill_manager = skill_manager or getattr(self, "skill_manager", None)
+        simple_vars["{SKILLS}"] = (
+            active_skill_manager.get_catalog() if active_skill_manager is not None else ""
+        )
+        formatter = PromptFormatter(
+            simple_vars,
+            lambda name: self.get_variable(
+                name, mode_name=mode_name, skill_manager=active_skill_manager
+            ),
+        )
+        for prompt in self.newelle_settings.get_bot_prompts(mode_name):
             prompts.append(formatter.format(prompt))
         prompts += self.get_memory_prompt(chat_id=chat_id)
         return prompts
@@ -1570,6 +1617,9 @@ class NewelleController:
         tool_registry: ToolRegistry | None = None,
         skill_manager: SkillManager | None = None,
         extension_processing: bool = True,
+        mode_name: str | None = None,
+        on_tool_start_callback: Callable[[str], None] = None,
+        on_intermediate_message_callback: Callable[[str], None] = None,
     ) -> str:
         """Run LLM with tool support integration.
         
@@ -1590,10 +1640,15 @@ class NewelleController:
             Final message from the LLM
         """
         active_tool_registry = tool_registry if tool_registry is not None else self.tools
+        enabled_tool_names = (
+            {tool.name for tool in self.get_enabled_tools(mode_name)}
+            if tool_registry is None
+            else None
+        )
         active_skill_manager = skill_manager if skill_manager is not None else getattr(self, "skill_manager", None)
         skills_integration = None
         original_skill_manager = None
-        if hasattr(self, "integrationsloader") and skill_manager is not None:
+        if hasattr(self, "integrationsloader") and active_skill_manager is not None:
             skills_integration = self.integrationsloader.extensionsmap.get("skills")
             if skills_integration is not None:
                 original_skill_manager = getattr(skills_integration, "skill_manager", None)
@@ -1633,9 +1688,10 @@ class NewelleController:
             current_prompt_index = len(current_history) - 1
             current_prompt = current_history[current_prompt_index].get("Message") or message
 
-        mode_manager = getattr(self, "mode_manager", None)
         active_mode_name = (
-            mode_manager.get_active_mode_name()
+            mode_name
+            if mode_name is not None
+            else mode_manager.get_active_mode_name()
             if mode_manager is not None
             else None
         )
@@ -1653,14 +1709,18 @@ class NewelleController:
                 # follow-up model call, but keep ``current_history`` intact so
                 # the model receives the switch result and all earlier results.
                 current_mode_name = (
-                    mode_manager.get_active_mode_name()
+                    mode_name
+                    if mode_name is not None
+                    else mode_manager.get_active_mode_name()
                     if mode_manager is not None
                     else None
                 )
                 if current_mode_name != active_mode_name:
                     active_mode_name = current_mode_name
                     if system_prompt_was_built:
-                        system_prompt = self._build_tool_system_prompt(chat_id)
+                        system_prompt = self._build_tool_system_prompt(
+                            chat_id, current_mode_name, active_skill_manager
+                        )
                         if extension_processing:
                             # Extensions can add prompt context based on history.
                             # Give them a deep copy because this pass is only meant
@@ -1674,6 +1734,9 @@ class NewelleController:
                             )
                     if tool_registry is None:
                         active_tool_registry = self.tools
+                        enabled_tool_names = {
+                            tool.name for tool in self.get_enabled_tools(current_mode_name)
+                        }
                     model = self.get_model_for_chat(self.chats[chat_id]["chat"])
 
                 def stream_callback(text: str):
@@ -1732,6 +1795,17 @@ class NewelleController:
                     elif chunk.type in ("text", "markdown"):
                         text_content += "\n" + chunk.text
 
+                if (
+                    tool_calls
+                    and not final_synthesis_turn
+                    and text_content.strip()
+                    and on_intermediate_message_callback is not None
+                ):
+                    try:
+                        on_intermediate_message_callback(text_content.strip())
+                    except Exception as exc:
+                        print(f"Intermediate message callback error: {exc}")
+
                 # Some streaming handlers throttle their callbacks and can
                 # leave the final character or provider chunk unreported.
                 # Flush the complete cumulative response once generation is
@@ -1755,6 +1829,12 @@ class NewelleController:
                     tool_context_messages = []
                     tool_display_text = None
 
+                    if on_tool_start_callback is not None:
+                        try:
+                            on_tool_start_callback(tool_name)
+                        except Exception as exc:
+                            print(f"Tool start callback error: {exc}")
+
                     # Lazy loading: a tool_search call means the model just fetched
                     # a tool's schema. Expand it in the system prompt so that, on the
                     # next turn, the tool carries its real parameters and can be
@@ -1769,6 +1849,13 @@ class NewelleController:
                         )
 
                     try:
+                        if (
+                            enabled_tool_names is not None
+                            and tool_name not in enabled_tool_names
+                        ):
+                            raise ValueError(
+                                f"Tool '{tool_name}' is not enabled in this Mode"
+                            )
                         tool = active_tool_registry.get_tool(tool_name)
                         if tool is None:
                             raise ValueError(f"Tool '{tool_name}' not found")
@@ -2026,8 +2113,12 @@ class NewelleSettings:
         # self.prompts stays profile-level only: mode overrides are applied to
         # bot_prompts below so the Mode Editor keeps comparing against the true
         # profile base text (controller.newelle_settings.prompts).
+        self.bot_prompts = self.get_bot_prompts()
+
+    def get_bot_prompts(self, mode_name: str | None = None) -> list[str]:
+        """Resolve profile prompts against the active or a request-local Mode."""
         mm = self.mode_manager
-        self.bot_prompts = []
+        bot_prompts = []
         ordered_prompts = self._get_ordered_prompts()
         for prompt in ordered_prompts:
             key = prompt["key"]
@@ -2037,11 +2128,16 @@ class NewelleSettings:
             else:
                 is_active = prompt["default"]
             if mm is not None:
-                is_active = mm.resolve_prompt_enabled(key, is_active)
+                is_active = mm.resolve_prompt_enabled(key, is_active, mode_name)
             if is_active:
                 base_text = self.prompts[key]
-                text = mm.resolve_prompt_text(key, base_text) if mm is not None else base_text
-                self.bot_prompts.append(text)
+                text = (
+                    mm.resolve_prompt_text(key, base_text, mode_name)
+                    if mm is not None
+                    else base_text
+                )
+                bot_prompts.append(text)
+        return bot_prompts
 
     def _get_ordered_prompts(self):
         """Return AVAILABLE_PROMPTS sorted by the user's custom order."""

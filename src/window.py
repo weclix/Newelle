@@ -50,7 +50,7 @@ class MainWindow(Adw.ApplicationWindow):
     }
 
     def __init__(self, *args, **kwargs):
-
+        self.suppress_presentation = kwargs.pop("suppress_presentation", False)
         super().__init__(*args, **kwargs)
         self.app = self.get_application()
         # Main program block - On the right Canvas tabs, Chat as content
@@ -345,7 +345,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         GLib.idle_add(start_transition)
         GLib.timeout_add(600, after_transition)
-        if not self.settings.get_boolean("welcome-screen-shown"):
+        if (
+            not self.suppress_presentation
+            and not self.settings.get_boolean("welcome-screen-shown")
+        ):
             threading.Thread(target=self.show_presentation_window).start()
         GLib.timeout_add(10, build_model_popup)
         self.ui_built = True

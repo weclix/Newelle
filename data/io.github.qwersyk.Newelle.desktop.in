@@ -14,3 +14,8 @@ Actions=mini-window;
 Name=Mini Window
 Exec=newelle --mini
 Icon=io.github.qwersyk.Newelle
+
+[Desktop Action voice-mode]
+Name=Voice Mode
+Exec=newelle --voice
+Icon=io.github.qwersyk.Newelle
