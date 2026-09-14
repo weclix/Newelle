@@ -172,6 +172,7 @@ utility_sources = [
   'utility/system.py',
   'utility/util.py',
   'utility/profile_settings.py',
+  'utility/audio_input.py',
   'utility/message_chunk.py',
   'utility/model_icons.py',
   'utility/website_scraper.py',
