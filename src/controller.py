@@ -19,12 +19,13 @@ from .handlers.rag import RAGHandler
 from .handlers.memory import MemoryHandler
 from .handlers.embeddings import EmbeddingHandler
 from .handlers.websearch import WebSearchHandler
+from .handlers.image_generator import ImageGeneratorHandler
 
 from .utility.system import is_flatpak
 from .utility.pip import install_module
 from .utility.profile_settings import get_settings_dict_by_groups
 from .utility.source_attribution import format_source_context
-from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers
+from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers
 import threading
 import pickle
 import tempfile
@@ -73,8 +74,8 @@ EXTENSIONS: Reload EXTENSIONS
     WEBSEARCH = 12
     OFFERS = 13
     TOOLS = 14
+    IMAGE_GENERATOR = 16
 
-    IMAGE_GENERATOR = 16 
     COMPACT_MODE = 17
     COMPACT_INPUT_BAR = 18
 
@@ -962,7 +963,7 @@ class NewelleController:
                                                    extension_cache=self.extensions_cache, settings=self.settings)
             self.extensionloader.load_extensions()
             restore_handlers()
-            self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, )
+            self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
             self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
             self.newelle_settings.load_prompts()
             if hasattr(self, "mode_manager"):
@@ -1091,7 +1092,7 @@ class NewelleController:
         self.extensionloader = ExtensionLoader(self.extension_path, pip_path=self.pip_path,
                                                extension_cache=self.extensions_cache, settings=self.settings)
         self.extensionloader.load_extensions()
-        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, )
+        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
         self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
         self.extensionloader.add_tools(self.tools)
         self.set_ui_controller(self.ui_controller)
@@ -1216,7 +1217,12 @@ class NewelleController:
 
         self.settings.set_string("profiles", json.dumps(self.newelle_settings.profile_settings))
 
-    def get_variable(self, name:str):
+    def get_variable(
+        self,
+        name: str,
+        mode_name: str | None = None,
+        skill_manager: SkillManager | None = None,
+    ):
         tools = self.tools.get_all_tools()
         for tool in tools:
             if tool.name == name:
@@ -1237,8 +1243,11 @@ class NewelleController:
         elif name == "profile_name":
             return self.newelle_settings.current_profile
         elif name == "call":
-            if hasattr(self, "skill_manager"):
-                return len(self.skill_manager.get_enabled_skills()) > 0
+            return self.is_call_request
+        elif name == "skills_available":
+            active_skill_manager = skill_manager or getattr(self, "skill_manager", None)
+            if active_skill_manager is not None:
+                return len(active_skill_manager.get_enabled_skills()) > 0
             return False
         elif name == "history":
             return "\n".join([f"{msg['User']}: {msg['Message']}" for msg in self.get_history()])
@@ -1695,7 +1704,9 @@ class NewelleController:
         system_prompt_was_built = system_prompt is None
         if system_prompt is None:
             _, _, _, _, _, effective_chat_id = self.prepare_generation(chat_id=chat_id)
-            system_prompt = self._build_tool_system_prompt(effective_chat_id)
+            system_prompt = self._build_tool_system_prompt(
+                effective_chat_id, mode_name, active_skill_manager
+            )
 
         # Avoid history duplication: check the last entry is the current message.
         last_entry_is_current = bool(
@@ -1721,6 +1732,7 @@ class NewelleController:
             current_prompt_index = len(current_history) - 1
             current_prompt = current_history[current_prompt_index].get("Message") or message
 
+        mode_manager = getattr(self, "mode_manager", None)
         active_mode_name = (
             mode_name
             if mode_name is not None
@@ -2091,6 +2103,8 @@ class NewelleSettings:
         self.websearch_on = self.settings.get_boolean("websearch-on")
         self.websearch_model = self.settings.get_string("websearch-model")
         self.websearch_settings = self.settings.get_string("websearch-settings")
+        self.image_generator = self.settings.get_string("image-generator")
+        self.image_generator_settings = self.settings.get_string("image-generator-settings")
         self.parallel_tool_execution = settings.get_boolean("parallel-tool-execution")
         self.max_tool_calls = settings.get_int("max-tool-calls")
         self.editor_color_scheme = settings.get_string("editor-color-scheme")
@@ -2226,6 +2240,8 @@ class NewelleSettings:
             reloads.append(ReloadType.RELOAD_CHAT_LIST)
         if self.websearch_on != new_settings.websearch_on or self.websearch_model != new_settings.websearch_model or self.websearch_settings != new_settings.websearch_settings:
             reloads.append(ReloadType.WEBSEARCH)
+        if self.image_generator != new_settings.image_generator or self.image_generator_settings != new_settings.image_generator_settings:
+            reloads.append(ReloadType.IMAGE_GENERATOR)
         if self.mcp_servers != new_settings.mcp_servers or self.tools_settings != new_settings.tools_settings or self.skills_settings != new_settings.skills_settings:
             reloads.append(ReloadType.TOOLS)
         # Check prompts
@@ -2233,8 +2249,6 @@ class NewelleSettings:
             reloads.append(ReloadType.PROMPTS)
         if self.offers != new_settings.offers:
             reloads.append(ReloadType.OFFERS)
-        if False:
-            reloads.append(ReloadType.IMAGE_GENERATOR)
         if self.hide_warning != new_settings.hide_warning:
             reloads.append(ReloadType.RELOAD_CHAT)
         if self.compact_mode != new_settings.compact_mode:
@@ -2295,6 +2309,8 @@ class HandlersManager:
             newelle_settings.rag_model = list(AVAILABLE_RAGS.keys())[0]
         if newelle_settings.websearch_model not in AVAILABLE_WEBSEARCH:
             newelle_settings.websearch_model = list(AVAILABLE_WEBSEARCH.keys())[0]
+        if newelle_settings.image_generator not in AVAILABLE_IMAGE_GENERATORS:
+            newelle_settings.image_generator = list(AVAILABLE_IMAGE_GENERATORS.keys())[0]
       
     def set_ui_controller(self, ui_controller):
         self.ui_controller = ui_controller
@@ -2317,9 +2333,10 @@ class HandlersManager:
         self.memory.set_memory_size(newelle_settings.memory)
         self.rag : RAGHandler = self.get_object(AVAILABLE_RAGS, newelle_settings.rag_model)
         self.websearch : WebSearchHandler = self.get_object(AVAILABLE_WEBSEARCH, newelle_settings.websearch_model)
+        self.image_generator : ImageGeneratorHandler = self.get_object(AVAILABLE_IMAGE_GENERATORS, newelle_settings.image_generator)
         # Assign handlers 
-        self.integrationsloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
-        self.extensionloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
+        self.integrationsloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch, self.image_generator)
+        self.extensionloader.set_handlers(self.llm, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch, self.image_generator)
         self.memory.set_handlers(self.secondary_llm, self.embedding, self.rag)
 
         self.rag.set_handlers(self.llm, self.embedding)
@@ -2338,6 +2355,9 @@ class HandlersManager:
             for tool in self.memory.get_tools():
                 tools.register_tool(tool)
         for tool in self.rag.get_tools():
+                tools.register_tool(tool)
+        if self.image_generator is not None:
+            for tool in self.image_generator.get_tools():
                 tools.register_tool(tool)
 
     def load_handlers(self):
@@ -2380,6 +2400,8 @@ class HandlersManager:
             self.handlers[(key, self.convert_constants(AVAILABLE_EMBEDDINGS), False)] = self.get_object(AVAILABLE_EMBEDDINGS, key)
         for key in AVAILABLE_WEBSEARCH:
             self.handlers[(key, self.convert_constants(AVAILABLE_WEBSEARCH), False)] = self.get_object(AVAILABLE_WEBSEARCH, key)
+        for key in AVAILABLE_IMAGE_GENERATORS:
+            self.handlers[(key, self.convert_constants(AVAILABLE_IMAGE_GENERATORS), False)] = self.get_object(AVAILABLE_IMAGE_GENERATORS, key)
         self.handlers_cached.release()
     
     def convert_constants(self, constants: str | dict[str, Any]) -> (str | dict):
@@ -2407,6 +2429,8 @@ class HandlersManager:
                     return AVAILABLE_RAGS
                 case "websearch":
                     return AVAILABLE_WEBSEARCH
+                case "image_generator":
+                    return AVAILABLE_IMAGE_GENERATORS
                 case "extension":
                     return self.extensionloader.extensionsmap
                 case _:
@@ -2422,6 +2446,8 @@ class HandlersManager:
                 return "rag"
             elif constants == AVAILABLE_WEBSEARCH:
                 return "websearch"
+            elif constants == AVAILABLE_IMAGE_GENERATORS:
+                return "image_generator"
             elif constants == self.extensionloader.extensionsmap:
                 return "extension"
             else:
@@ -2459,6 +2485,8 @@ class HandlersManager:
         elif constants == AVAILABLE_WEBSEARCH:
             model = constants[key]["class"](self.settings, self.directory)
             model = constants[key]["class"](self.settings, self.directory)
+        elif constants == AVAILABLE_IMAGE_GENERATORS:
+            model = constants[key]["class"](self.settings, self.directory)
         elif constants == self.extensionloader.extensionsmap:
             model = self.extensionloader.extensionsmap[key]
             if model is None:
@@ -2491,6 +2519,8 @@ class HandlersManager:
             return AVAILABLE_RAGS
         elif issubclass(type(handler), WebSearchHandler):
             return AVAILABLE_WEBSEARCH
+        elif issubclass(type(handler), ImageGeneratorHandler):
+            return AVAILABLE_IMAGE_GENERATORS
         else:
             raise Exception("Unknown handler")
     

@@ -16,6 +16,7 @@ from .ui.settings import Settings
 
 from .ui.profile import ProfileDialog
 from .ui.presentation import PresentationWindow
+from .ui.screenrecorder import ScreenRecorder
 from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, Terminal, CodeEditorWidget, ToolWidget
 from .ui.widgets import MultilineEntry, ProfileRow, DisplayLatex, InlineLatex, ThinkingWidget, Message, ChatRow, FolderRow, ChatHistory, ChatTab
 from .ui.stdout_monitor import StdoutMonitorDialog
@@ -399,6 +400,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Create custom menu entries: Title, Icon, Callable
         menu_entries = [
             (_("Terminal Tab"), "gnome-terminal-symbolic", self.add_terminal_tab),
+            (_("Image Generator"), "insert-image-symbolic", self.add_image_generator_tab),
         ]
         menu_entries += self.controller.integrationsloader.get_add_tab_buttons()
         menu_entries += self.extensionloader.get_add_tab_buttons()
@@ -891,6 +893,13 @@ class MainWindow(Adw.ApplicationWindow):
             child = page.get_child()
             if isinstance(child, ChatTab):
                 child._update_attach_visibility()
+                if not vision_model.supports_video_vision():
+                    if child.video_recorder is not None:
+                        child.video_recorder.stop()
+                        child.video_recorder = None
+                child.screen_record_button.set_visible(
+                    vision_model.supports_video_vision() and not child.attached_image_data
+                )
                 # Refresh the Mode switcher label and the thinking control so
                 # they follow the active LLM's capabilities.
                 child.refresh_mode_and_thinking()
@@ -1726,6 +1735,37 @@ class MainWindow(Adw.ApplicationWindow):
         tab = self.get_active_chat_tab()
         if tab is not None:
             tab.delete_attachment(button)
+
+    # Screen recording
+    def start_screen_recording(self, button, tab=None):
+        """Record asynchronously, keeping callbacks bound to the owning tab."""
+        if tab is None:
+            tab = self.get_active_chat_tab()
+        if tab is None:
+            return
+        if tab.video_recorder is not None:
+            button.set_sensitive(False)
+            tab.video_recorder.stop()
+            return
+
+        def started():
+            button.set_sensitive(True)
+            button.set_icon_name("media-playback-stop-symbolic")
+            button.set_css_classes(["destructive-action", "circular"])
+
+        def finished(path):
+            button.set_sensitive(True)
+            button.set_icon_name("media-record-symbolic")
+            button.set_css_classes(["flat"])
+            if tab.video_recorder is recorder:
+                tab.video_recorder = None
+                if path is not None:
+                    tab.add_file(file_path=path)
+
+        recorder = ScreenRecorder(self, on_started=started, on_finished=finished)
+        tab.video_recorder = recorder
+        button.set_sensitive(False)
+        recorder.start()
 
     def add_file(self, file_path=None, file_data=None):
         """Add a file and update the UI - delegates to the active chat tab
@@ -2648,6 +2688,19 @@ class MainWindow(Adw.ApplicationWindow):
         tab.set_title("Terminal")
         tab.set_icon(Gio.ThemedIcon(name="gnome-terminal-symbolic"))
         self.show_sidebar()
+        return tab
+
+    def add_image_generator_tab(self, tabview=None, file=None):
+        from .constants import AVAILABLE_IMAGE_GENERATORS
+        handler = self.controller.handlers.image_generator
+        if handler is None:
+            return
+        mini_app = handler.get_mini_app(AVAILABLE_IMAGE_GENERATORS)
+        tab = self.canvas_tabs.append(mini_app)
+        tab.set_title(_("Image Generator"))
+        tab.set_icon(Gio.ThemedIcon(name="insert-image-symbolic"))
+        self.show_sidebar()
+        self.canvas_tabs.set_selected_page(tab)
         return tab
 
 

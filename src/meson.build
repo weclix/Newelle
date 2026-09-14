@@ -66,6 +66,7 @@ ui_sources = [
   'ui/extension.py',
   'ui/settings.py',
   'ui/presentation.py',
+  'ui/screenrecorder.py',
   'ui/scheduled_tasks.py',
   'ui/downloads.py',
   'ui/shortcuts.py',
@@ -121,6 +122,8 @@ widgets_sources = [
   'ui/widgets/mode_editor.py',
   'ui/widgets/status.py',
   'ui/widgets/question.py',
+  'ui/widgets/image_generator.py',
+  'ui/widgets/image_generator_mini_app.py',
 ]
 
 handler_sources = [
@@ -163,6 +166,15 @@ websearch_sources = [
   'handlers/websearch/bing_international.py',
 ]
 
+image_generator_sources = [
+  'handlers/image_generator/__init__.py',
+  'handlers/image_generator/image_generator.py',
+  'handlers/image_generator/pollinations_handler.py',
+  'handlers/image_generator/stablediffusion_cpp_handler.py',
+  'handlers/image_generator/openai_image_handler.py',
+  'handlers/image_generator/openrouter_image_handler.py',
+]
+
 utility_sources = [
   'utility/__init__.py',
   'utility/media.py',
@@ -201,5 +213,6 @@ install_data(memory_sources, install_dir: moduledir / 'handlers' / 'memory')
 install_data(rag_sources, install_dir: moduledir / 'handlers' / 'rag')
 install_data(embedding_sources, install_dir: moduledir / 'handlers' / 'embeddings')
 install_data(websearch_sources, install_dir: moduledir / 'handlers' / 'websearch')
+install_data(image_generator_sources, install_dir: moduledir / 'handlers' / 'image_generator')
 install_data(utility_sources, install_dir: moduledir / 'utility')
 install_data(integrations_sources, install_dir: moduledir / 'integrations')

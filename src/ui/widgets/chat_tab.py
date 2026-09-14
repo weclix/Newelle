@@ -78,7 +78,8 @@ class ChatTab(Gtk.Box):
         self.last_token_num = None
         
         # Recording state
-        
+        self.video_recorder = None
+
         # Attachment state
         self.attached_image_data = None
         
@@ -210,6 +211,15 @@ class ChatTab(Gtk.Box):
         self.attached_image = Gtk.Image(visible=False)
         self.attached_image.set_size_request(36, 36)
 
+        self.screen_record_button = Gtk.Button(
+            icon_name="media-record-symbolic",
+            css_classes=["flat", "circular"],
+            tooltip_text=_("Screen recording"),
+        )
+        self.screen_record_button.connect("clicked", self.start_screen_recording)
+        if not self.vision_model.supports_video_vision():
+            self.screen_record_button.set_visible(False)
+
         # Quick toggles popover button
         self._build_quick_toggles()
 
@@ -281,7 +291,7 @@ class ChatTab(Gtk.Box):
         if getattr(self, "compact_options_popover", None) is not None:
             self.compact_options_popover.set_child(None)
         for widget in (
-            self.attach_button, self.attached_image,
+            self.attach_button, self.attached_image, self.screen_record_button,
             self.quick_toggles, self.quick_toggles_box, self.mode_button,
             self.thinking_button, self.send_button,
             self.context_indicator, getattr(self, "compact_options_button", None),
@@ -308,6 +318,7 @@ class ChatTab(Gtk.Box):
         left_cluster = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
         left_cluster.append(self.attach_button)
         left_cluster.append(self.attached_image)
+        left_cluster.append(self.screen_record_button)
         left_cluster.append(self.quick_toggles)
         if self.mode_button is not None:
             left_cluster.append(self.mode_button)
@@ -387,6 +398,7 @@ class ChatTab(Gtk.Box):
         self.compact_options_box.set_size_request(280, -1)
         self.compact_options_popover.set_child(self.compact_options_box)
         self._compact_attach_row = None
+        self._compact_record_row = None
 
     def _populate_compact_options(self):
         """Fill the compact options popover with the controls hidden from the bar."""
@@ -407,6 +419,15 @@ class ChatTab(Gtk.Box):
         box.append(attach_row)
         self._compact_attach_row = attach_row
 
+        # Screen recording
+        record_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        record_row.append(self.screen_record_button)
+        record_row.append(Gtk.Label(
+            label=_("Screen recording"), hexpand=True, xalign=0,
+        ))
+        box.append(record_row)
+        self._compact_record_row = record_row
+
         box.append(Gtk.Separator())
 
         # Quick toggles embedded directly, with no nested popover.
@@ -425,6 +446,8 @@ class ChatTab(Gtk.Box):
             return
         if self._compact_attach_row is not None:
             self._compact_attach_row.set_visible(self.attach_button.get_visible())
+        if self._compact_record_row is not None:
+            self._compact_record_row.set_visible(self.screen_record_button.get_visible())
 
     def _build_command_popover(self):
         """Build the slash-command hints popover attached to the input panel."""
@@ -746,6 +769,7 @@ class ChatTab(Gtk.Box):
             self.attach_button.set_visible(False)
         else:
             self.attach_button.set_visible(True)
+        self.screen_record_button.set_visible(vision_model.supports_video_vision())
             
     # Properties
     @property
@@ -1479,6 +1503,7 @@ class ChatTab(Gtk.Box):
         self.attach_button.disconnect_by_func(self.delete_attachment)
         self.attach_button.connect("clicked", self.attach_file)
         self.attached_image.set_visible(False)
+        self.screen_record_button.set_visible(self.vision_model.supports_video_vision())
         
     def add_file(self, file_path=None, file_data=None):
         """Add a file attachment and update the UI, also generates thumbnail for videos
@@ -1548,8 +1573,13 @@ class ChatTab(Gtk.Box):
         # The attach_file was connected in _build_ui, so we need to disconnect it here
         # Since we can't directly disconnect by func in this case, we'll rebuild the button state
         self.attach_button.disconnect_by_func(self.attach_file)
+        self.screen_record_button.set_visible(False)
         
     # Recording
+    def start_screen_recording(self, button):
+        """Start screen recording."""
+        self.window.start_screen_recording(button, self)
+
 
 
         

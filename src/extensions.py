@@ -43,7 +43,7 @@ class NewelleExtension(Handler):
         self.schema_key = "extensions-settings"
         pass
 
-    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler):
+    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler, image_generator=None):
         """Set the handlers for the extension
 
         Args:
@@ -59,6 +59,7 @@ class NewelleExtension(Handler):
         self.rag = rag
         self.memory = memory
         self.websearch = websearch
+        self.image_generator = image_generator
 
     def get_llm_handlers(self) -> list[dict]:
         """
@@ -101,6 +102,21 @@ class NewelleExtension(Handler):
                 "title": "title of handler",
                 "description": "description of handler",
                 "class": WebSearchHandler - The class of handler,
+            }
+        """
+        return []
+
+    def get_image_generator_handlers(self) -> list[dict]:
+        """
+        Returns list of image generator handlers
+
+        Returns:
+            list: list of image generator handlers in this format
+            {
+                "key": "key of handler",
+                "title": "title of handler",
+                "description": "description of handler",
+                "class": ImageGeneratorHandler - The class of handler,
             }
         """
         return []
@@ -371,9 +387,9 @@ class ExtensionLoader:
             
         sys.path.remove(self.project_dir)
 
-    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None):
+    def set_handlers(self, llm: LLMHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None, image_generator=None):
         for extension in self.extensions:
-            extension.set_handlers(llm, secondary_llm, embedding, rag, memory, websearch)
+            extension.set_handlers(llm, secondary_llm, embedding, rag, memory, websearch, image_generator)
     
     def add_tools(self, tool_registry):
         for extension in self.extensions:
@@ -395,7 +411,7 @@ class ExtensionLoader:
         for tool in extension.get_tools():
             tool_registry.remove_tool(tool.name)
 
-    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
+    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
         """Add the handlers of each extension to the available handlers
 
         Args:
@@ -404,6 +420,7 @@ class ExtensionLoader:
             AVAILABLE_EMBEDDINGS (): list of available embeddings
             AVAILABLE_RAG (): list of available rags
             AVAILABLE_WEBSEARCH (): list of available websearch
+            AVAILABLE_IMAGE_GENERATORS (): list of available image generators
         """
         for extension in self.extensions:
             if extension in self.disabled_extensions:
@@ -423,6 +440,10 @@ class ExtensionLoader:
             handlers = extension.get_websearch_handlers()
             for handler in handlers:
                 AVAILABLE_WEBSEARCH[handler["key"]] = handler
+            if AVAILABLE_IMAGE_GENERATORS is not None:
+                handlers = extension.get_image_generator_handlers()
+                for handler in handlers:
+                    AVAILABLE_IMAGE_GENERATORS[handler["key"]] = handler
 
     def add_prompts(self, PROMPTS, AVAILABLE_PROMPTS):
         """Add the prompts of each extension to the available prompts

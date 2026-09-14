@@ -12,7 +12,7 @@ from ..utility.util import PerformanceMonitor
 
 from ..handlers import Handler
 
-from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH
+from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
 from ..utility.pip import install_module
 from ..utility.download_manager import get_download_manager
 from ..utility.mcp_config import MCPConfigError, parse_mcp_servers_json
@@ -169,6 +169,14 @@ class Settings(Adw.Window):
         for key in AVAILABLE_WEBSEARCH:
            row = self.build_row(AVAILABLE_WEBSEARCH, key, selected, group) 
            tts_program.add_row(row)
+        # Build the Image Generator settings
+        image_generator_row = Adw.ExpanderRow(title=_('Image Generator'), subtitle=_("Choose which image generation engine to use"))
+        self.KNOWLEDGE.add(image_generator_row)
+        group = Gtk.CheckButton()
+        selected = self.settings.get_string("image-generator")
+        for key in AVAILABLE_IMAGE_GENERATORS:
+           row = self.build_row(AVAILABLE_IMAGE_GENERATORS, key, selected, group)
+           image_generator_row.add_row(row)
         # Build the RAG settings
         self.build_rag_settings()
 
@@ -2836,6 +2844,8 @@ class Settings(Adw.Window):
             setting_name = "rag-model"
         elif constants == AVAILABLE_WEBSEARCH:
             setting_name = "websearch-model"
+        elif constants == AVAILABLE_IMAGE_GENERATORS:
+            setting_name = "image-generator"
         else:
             return
 
