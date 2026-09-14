@@ -1595,6 +1595,8 @@ class NewelleController:
                 )
             else:
                 message_label = model.send_message(chat[-1]["Message"], new_history, prompts)
+            response_metadata = getattr(message_label, "response_metadata", None)
+            response_usage = getattr(message_label, "usage", None)
             
             # Post-generation logic
             last_generation_time = time.time() - t1
@@ -1607,6 +1609,9 @@ class NewelleController:
             input_tokens += count_tokens(chat[-1]["Message"])
             
             output_tokens = count_tokens(message_label)
+            if response_usage is not None:
+                input_tokens = response_usage.get("input_tokens", input_tokens)
+                output_tokens = response_usage.get("output_tokens", output_tokens)
             
             message_label = clean_bot_response(message_label)
 
@@ -1644,6 +1649,8 @@ class NewelleController:
             'time_to_first_token': time_to_first_token,
             'time_to_first_token_no_thinking': time_to_first_token_no_thinking,
             'trim_result': getattr(self, 'last_trim_result', None),
+            'response_metadata': response_metadata,
+            'usage': response_usage,
         })
 
     def run_llm_with_tools(
@@ -1828,8 +1835,10 @@ class NewelleController:
                     )
                     if on_message_callback:
                         on_message_callback(response)
-                
-                chunks = get_message_chunks(response)
+                response_text = str(response)
+                response_metadata = getattr(response, "response_metadata", None)
+                response_usage = getattr(response, "usage", None)
+                chunks = get_message_chunks(response_text)
                 
                 text_content = ""
                 tool_calls = []
@@ -1860,13 +1869,32 @@ class NewelleController:
                 
                 if not tool_calls:
                     msg_uuid = int(uuid_lib.uuid4())
-                    current_history.append({"User": "Assistant", "Message": text_content, "UUID": msg_uuid})
+                    assistant_entry = {
+                        "User": "Assistant",
+                        "Message": text_content,
+                        "UUID": msg_uuid,
+                    }
+                    if response_metadata is not None:
+                        assistant_entry["OpenAIResponse"] = response_metadata
+                    if response_usage is not None:
+                        assistant_entry["LLMUsage"] = dict(response_usage)
+                    current_history.append(assistant_entry)
                     if save_chat:
-                        self.chats[chat_id]["chat"].append({"User": "Assistant", "Message": response, "UUID": msg_uuid, "Profile": self.newelle_settings.current_profile})
+                        saved_entry = {
+                            "User": "Assistant",
+                            "Message": response,
+                            "UUID": msg_uuid,
+                            "Profile": self.newelle_settings.current_profile,
+                        }
+                        if response_metadata is not None:
+                            saved_entry["OpenAIResponse"] = response_metadata
+                        if response_usage is not None:
+                            saved_entry["LLMUsage"] = dict(response_usage)
+                        self.chats[chat_id]["chat"].append(saved_entry)
                         self.save_chats()
                     return text_content
                 assistant_msg_uuid = int(uuid_lib.uuid4())
-                
+
                 for tool_call in tool_calls:
                     tool_name = tool_call["name"]
                     tool_args = normalize_tool_arguments(tool_call["args"])
