@@ -735,9 +735,10 @@ class OpenAIHandler(LLMHandler):
         param = getattr(error, "param", None)
         message = str(error).lower()
         return status in (400, 404) and (
-            param == "previous_response_id"
+            param in ("previous_response_id", "response_id")
             or "previous_response_id" in message
             or "previous response" in message
+            or ("response with id" in message and "not found" in message)
         )
 
     def _create_response(self, client, kwargs: dict, full_input: list, anchor, store: bool):
