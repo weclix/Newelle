@@ -1,3 +1,3 @@
 #!/bin/bash
-meson setup --prefix="$HOME/.local" _build
+meson setup --prefix="/usr/local" _build
 ninja -C _build install
