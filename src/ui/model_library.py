@@ -51,7 +51,7 @@ def _system_ram_bytes():
 def _backend_from_cmake_cache(handler):
     source_dir = {
         "llamacpp": "llama_cpp_path",
-        "llamacppembedding": "llama_cpp_path",
+        # "llamacppembedding": "llama_cpp_path",
         "stablediffusioncpp": "sd_cpp_path",
         "whispercpp": "whisper_cpp_path",
     }.get(getattr(handler, "key", ""))
@@ -81,7 +81,8 @@ def _backend_from_cmake_cache(handler):
 def get_local_backend(handler):
     """Return the installed built-in backend, or None when no binary exists."""
     key = getattr(handler, "key", "")
-    if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
+    # if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
+    if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
         return None
 
     def setting(name, default=False):
@@ -107,8 +108,10 @@ def get_local_backend(handler):
     if not binary_installed:
         return None
 
-    backend = setting("prebuilt_backend", None) if key in ("llamacpp", "llamacppembedding") else setting("installed_backend", None)
-    if backend is None and key in ("llamacpp", "llamacppembedding") and setting("prebuilt", False):
+    # backend = setting("prebuilt_backend", None) if key in ("llamacpp", "llamacppembedding") else setting("installed_backend", None)
+    backend = setting("prebuilt_backend", None) if key in ("llamacpp",) else setting("installed_backend", None)
+    # if backend is None and key in ("llamacpp", "llamacppembedding") and setting("prebuilt", False):
+    if backend is None and key in ("llamacpp",) and setting("prebuilt", False):
         backend = "cuda" if setting("prebuilt_cuda") else "cpu"
     if backend is None:
         backend = _backend_from_cmake_cache(handler)
@@ -146,7 +149,8 @@ def _installed_backend(handler):
         if host not in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
             return "remote"
         return "auto"
-    if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
+    # if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
+    if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
         return "cpu"
 
     def setting(name, default=False):
@@ -155,7 +159,8 @@ def _installed_backend(handler):
         except Exception:  # noqa: BLE001 - handler boundary
             return default
 
-    if key in ("llamacpp", "llamacppembedding", "whispercpp") and setting("use_system_server"):
+    # if key in ("llamacpp", "llamacppembedding", "whispercpp") and setting("use_system_server"):
+    if key in ("llamacpp", "whispercpp") and setting("use_system_server"):
         return "unknown"
     if key == "stablediffusioncpp" and setting("use_system_sd"):
         return "unknown"
@@ -673,7 +678,8 @@ class ModelLibraryWindow(Adw.Window):
                     break
         if size is None:
             size = _size_from_text(model.description or "")
-        if size is None and getattr(self.handler, "key", "") in ("llamacpp", "llamacppembedding"):
+        # if size is None and getattr(self.handler, "key", "") in ("llamacpp", "llamacppembedding"):
+        if size is None and getattr(self.handler, "key", "") in ("llamacpp",):
             for tag in model.tags or []:
                 match = _PARAMETER_PATTERN.fullmatch(str(tag).strip())
                 if match:

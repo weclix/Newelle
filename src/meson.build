@@ -199,12 +199,12 @@ stt_sources = [
 embedding_sources = [  
   'handlers/embeddings/__init__.py',
   'handlers/embeddings/embedding.py',
-  'handlers/embeddings/wordllama_handler.py',
+  # 'handlers/embeddings/wordllama_handler.py',
   'handlers/embeddings/openai_handler.py',
-  'handlers/embeddings/gemini_handler.py',
-  'handlers/embeddings/ollama_handler.py',
-  'handlers/embeddings/model2vec.py',
-  'handlers/embeddings/llama_cpp_handler.py',
+  # 'handlers/embeddings/gemini_handler.py',
+  # 'handlers/embeddings/ollama_handler.py',
+  # 'handlers/embeddings/model2vec.py',
+  # 'handlers/embeddings/llama_cpp_handler.py',
 ]
 
 memory_sources = [  

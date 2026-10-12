@@ -4,7 +4,8 @@ from .handlers.llm import OpenAIHandler
 # from .handlers.llm import ClaudeHandler, DeepseekHandler, GroqHandler, OllamaHandler, OllamaCloudHandler, CustomLLMHandler, GeminiHandler, MistralHandler, OpenRouterHandler, LlamaCPPHandler
 from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, CustomOpenAITTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
 from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
-from .handlers.embeddings import WordLlamaHandler, OpenAIEmbeddingHandler, GeminiEmbeddingHanlder, OllamaEmbeddingHandler, Model2VecHandler, LlamaCPPEmbeddingHandler
+from .handlers.embeddings import OpenAIEmbeddingHandler
+# from .handlers.embeddings import WordLlamaHandler, GeminiEmbeddingHanlder, OllamaEmbeddingHandler, Model2VecHandler, LlamaCPPEmbeddingHandler
 from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler, LongTermMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler, DDGSeachHandler, TavilyHandler, TinyFishHandler
@@ -295,42 +296,42 @@ AVAILABLE_TTS = {
 }
 
 AVAILABLE_EMBEDDINGS = {
-    "wordllama": {
-        "key": "wordllama",
-        "title": _("WordLlama"),
-        "description": _("Light local embedding model based on llama. Works offline, very low resources usage"),
-        "class": WordLlamaHandler,
-    },
-    "model2vec": {
-        "key": "model2vec",
-        "title": _("Model2Vec"),
-        "description": _("State of art light local embedding model. Works offline, very low resource usage. Suggested for multilingual"),
-        "class": Model2VecHandler,
-    },
-    "ollamaembedding": {
-        "key": "ollamaembedding",
-        "title": _("Ollama Embedding"),
-        "description": _("Use Ollama models for Embedding. Works offline, very low resources usage"),
-        "class": OllamaEmbeddingHandler,
-    },
-    "llamacppembedding": {
-        "key": "llamacppembedding",
-        "title": _("LlamaCPP Embedding"),
-        "description": _("Run embedding models locally using LlamaCPP with hardware acceleration support"),
-        "class": LlamaCPPEmbeddingHandler,
-    },
+    # "wordllama": {
+    #     "key": "wordllama",
+    #     "title": _("WordLlama"),
+    #     "description": _("Light local embedding model based on llama. Works offline, very low resources usage"),
+    #     "class": WordLlamaHandler,
+    # },
+    # "model2vec": {
+    #     "key": "model2vec",
+    #     "title": _("Model2Vec"),
+    #     "description": _("State of art light local embedding model. Works offline, very low resource usage. Suggested for multilingual"),
+    #     "class": Model2VecHandler,
+    # },
+    # "ollamaembedding": {
+    #     "key": "ollamaembedding",
+    #     "title": _("Ollama Embedding"),
+    #     "description": _("Use Ollama models for Embedding. Works offline, very low resources usage"),
+    #     "class": OllamaEmbeddingHandler,
+    # },
+    # "llamacppembedding": {
+    #     "key": "llamacppembedding",
+    #     "title": _("LlamaCPP Embedding"),
+    #     "description": _("Run embedding models locally using LlamaCPP with hardware acceleration support"),
+    #     "class": LlamaCPPEmbeddingHandler,
+    # },
     "openaiembedding": {
         "key": "openaiembedding",
         "title": _("OpenAI API"),
         "description": _("OpenAI API"),
         "class": OpenAIEmbeddingHandler,
     },
-    "geminiembedding": {
-        "key": "geminiembedding",
-        "title": _("Google Gemini API"),
-        "description": _("Use Google Gemini API to get embeddings"),
-        "class": GeminiEmbeddingHanlder,
-    }
+    # "geminiembedding": {
+    #     "key": "geminiembedding",
+    #     "title": _("Google Gemini API"),
+    #     "description": _("Use Google Gemini API to get embeddings"),
+    #     "class": GeminiEmbeddingHanlder,
+    # }
 }
 
 AVAILABLE_MEMORIES = {
