@@ -167,32 +167,32 @@ llm_sources = [
 tts_sources = [
   'handlers/tts/__init__.py',
   'handlers/tts/tts.py',
-  'handlers/tts/gtts_handler.py',
-  'handlers/tts/espeak_handler.py',
-  'handlers/tts/elevenlabs_handler.py',
-  'handlers/tts/custom_handler.py',
-  'handlers/tts/kokoro_handler.py',
-  'handlers/tts/openai_tts_handler.py',
+  # 'handlers/tts/gtts_handler.py',
+  # 'handlers/tts/espeak_handler.py',
+  # 'handlers/tts/elevenlabs_handler.py',
+  # 'handlers/tts/custom_handler.py',
+  # 'handlers/tts/kokoro_handler.py',
+  # 'handlers/tts/openai_tts_handler.py',
   'handlers/tts/custom_openai_tts.py',
-  'handlers/tts/groq_tts_handler.py',
-  'handlers/tts/edge_handler.py',
-  'handlers/tts/mistral_tts_handler.py',
+  # 'handlers/tts/groq_tts_handler.py',
+  # 'handlers/tts/edge_handler.py',
+  # 'handlers/tts/mistral_tts_handler.py',
 ]
 
 stt_sources = [  
   'handlers/stt/__init__.py',
   'handlers/stt/stt.py',
-  'handlers/stt/googlesr_handler.py',
-  'handlers/stt/groqsr_handler.py',
+  # 'handlers/stt/googlesr_handler.py',
+  # 'handlers/stt/groqsr_handler.py',
   'handlers/stt/openaisr_handler.py',
-  'handlers/stt/sphinx_handler.py',
+  # 'handlers/stt/sphinx_handler.py',
   'handlers/stt/witai_handler.py',
   'handlers/stt/whisper_handler.py',
-  'handlers/stt/whispercpp_handler.py',
+  # 'handlers/stt/whispercpp_handler.py',
   'handlers/stt/custom_handler.py',
-  'handlers/stt/vosk_handler.py',
-  'handlers/stt/openwakeword_handler.py',
-  'handlers/stt/mistral_stt_handler.py',
+  # 'handlers/stt/vosk_handler.py',
+  # 'handlers/stt/openwakeword_handler.py',
+  # 'handlers/stt/mistral_stt_handler.py',
 ]
 
 embedding_sources = [  
@@ -226,18 +226,18 @@ websearch_sources = [
   'handlers/websearch/__init__.py',
   'handlers/websearch/websearch.py',
   'handlers/websearch/searxng.py',
-  'handlers/websearch/duckduckgo_handler.py',
-  'handlers/websearch/tavily.py',
-  'handlers/websearch/tinyfish_handler.py',
+  # 'handlers/websearch/duckduckgo_handler.py',
+  # 'handlers/websearch/tavily.py',
+  # 'handlers/websearch/tinyfish_handler.py',
   ]
 
 image_generator_sources = [
   'handlers/image_generator/__init__.py',
   'handlers/image_generator/image_generator.py',
-  'handlers/image_generator/pollinations_handler.py',
-  'handlers/image_generator/stablediffusion_cpp_handler.py',
+  # 'handlers/image_generator/pollinations_handler.py',
+  # 'handlers/image_generator/stablediffusion_cpp_handler.py',
   'handlers/image_generator/openai_image_handler.py',
-  'handlers/image_generator/openrouter_image_handler.py',
+  # 'handlers/image_generator/openrouter_image_handler.py',
   ]
 
 utility_sources = [

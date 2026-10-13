@@ -4016,11 +4016,8 @@ class HandlersManager:
                     newelle_settings.wakeword_engine = key
                     break
             else:
-                # Fallback to openwakeword if available, or first STT
-                if "openwakeword" in AVAILABLE_STT:
-                    newelle_settings.wakeword_engine = "openwakeword"
-                else:
-                    newelle_settings.wakeword_engine = list(AVAILABLE_STT.keys())[0]
+                # Fallback to first STT
+                newelle_settings.wakeword_engine = list(AVAILABLE_STT.keys())[0]
         if newelle_settings.websearch_model not in AVAILABLE_WEBSEARCH:
             newelle_settings.websearch_model = list(AVAILABLE_WEBSEARCH.keys())[0]
         if newelle_settings.image_generator not in AVAILABLE_IMAGE_GENERATORS:
@@ -4046,12 +4043,8 @@ class HandlersManager:
             self.secondary_llm : LLMHandler = self.llm
         self.stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.stt_engine)
         # Set wakeword handler based on mode
-        if newelle_settings.wakeword_mode == "secondary-stt":
-            self.secondary_stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.secondary_stt_engine, True)
-            self.wakeword_handler : STTHandler = None
-        else:  # openwakeword mode
-            self.wakeword_handler : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.wakeword_engine, True)
-            self.secondary_stt : STTHandler = None
+        self.secondary_stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.secondary_stt_engine, True)
+        self.wakeword_handler : STTHandler = None
         self.tts : TTSHandler = self.get_object(AVAILABLE_TTS, newelle_settings.tts_program)
         self.embedding : EmbeddingHandler= self.get_object(AVAILABLE_EMBEDDINGS, newelle_settings.embedding_model)
         self.memory : MemoryHandler = self.get_object(AVAILABLE_MEMORIES, newelle_settings.memory_model)
@@ -4124,7 +4117,6 @@ class HandlersManager:
             "stt": {
                 newelle_settings.stt_engine,
                 newelle_settings.secondary_stt_engine,
-                newelle_settings.wakeword_engine,
             },
             "memory": {newelle_settings.memory_model},
             "embedding": {newelle_settings.embedding_model},

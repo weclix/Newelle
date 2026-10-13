@@ -12,14 +12,14 @@ src/handlers/memory/user_summary_handler.py
 src/handlers/rag/rag_handler.py
 src/handlers/rag/llamaindex_handler.py
 src/handlers/stt/custom_handler.py
-src/handlers/stt/googlesr_handler.py
-src/handlers/stt/groqsr_handler.py
+# src/handlers/stt/googlesr_handler.py
+# src/handlers/stt/groqsr_handler.py
 src/handlers/stt/openaisr_handler.py
-src/handlers/stt/vosk_handler.py
+# src/handlers/stt/vosk_handler.py
 src/handlers/stt/whisper_handler.py
 src/handlers/stt/witai_handler.py
-src/handlers/stt/sphinx_handler.py
-src/handlers/stt/whispercpp_handler.py
+# src/handlers/stt/sphinx_handler.py
+# src/handlers/stt/whispercpp_handler.py
 src/handlers/tts/custom_openai_tts.py
 src/handlers/tts/groq_tts_handler.py
 src/handlers/tts/openai_tts_handler.py

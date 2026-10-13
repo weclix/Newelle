@@ -52,8 +52,8 @@ def _backend_from_cmake_cache(handler):
     source_dir = {
         "llamacpp": "llama_cpp_path",
         # "llamacppembedding": "llama_cpp_path",
-        "stablediffusioncpp": "sd_cpp_path",
-        "whispercpp": "whisper_cpp_path",
+        # "stablediffusioncpp": "sd_cpp_path",
+        # "whispercpp": "whisper_cpp_path",
     }.get(getattr(handler, "key", ""))
     if not source_dir or not getattr(handler, source_dir, None):
         return None
@@ -82,7 +82,8 @@ def get_local_backend(handler):
     """Return the installed built-in backend, or None when no binary exists."""
     key = getattr(handler, "key", "")
     # if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
-    if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
+    # if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
+    if key not in ("llamacpp",):  # stablediffusioncpp removed
         return None
 
     def setting(name, default=False):
@@ -91,20 +92,20 @@ def get_local_backend(handler):
         except Exception:  # noqa: BLE001 - handler boundary
             return default
 
-    if key == "stablediffusioncpp":
-        binary_installed = any(
-            path and os.path.isfile(path) and os.access(path, os.X_OK)
-            for path in (
-                getattr(handler, "sd_binary_path", None),
-                getattr(handler, "sd_server_binary_path", None),
-            )
-        )
-    else:
-        installed = getattr(handler, "is_gpu_installed", None)
-        try:
-            binary_installed = callable(installed) and installed()
-        except Exception:  # noqa: BLE001 - handler boundary
-            binary_installed = False
+    # if key == "stablediffusioncpp":
+    #     binary_installed = any(
+    #         path and os.path.isfile(path) and os.access(path, os.X_OK)
+    #         for path in (
+    #             getattr(handler, "sd_binary_path", None),
+    #             getattr(handler, "sd_server_binary_path", None),
+    #         )
+    #     )
+    # else:
+    installed = getattr(handler, "is_gpu_installed", None)
+    try:
+        binary_installed = callable(installed) and installed()
+    except Exception:  # noqa: BLE001 - handler boundary
+        binary_installed = False
     if not binary_installed:
         return None
 
@@ -150,7 +151,8 @@ def _installed_backend(handler):
             return "remote"
         return "auto"
     # if key not in ("llamacpp", "llamacppembedding", "stablediffusioncpp", "whispercpp"):
-    if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
+    # if key not in ("llamacpp", "stablediffusioncpp", "whispercpp"):
+    if key not in ("llamacpp",):  # stablediffusioncpp removed
         return "cpu"
 
     def setting(name, default=False):
@@ -160,10 +162,11 @@ def _installed_backend(handler):
             return default
 
     # if key in ("llamacpp", "llamacppembedding", "whispercpp") and setting("use_system_server"):
-    if key in ("llamacpp", "whispercpp") and setting("use_system_server"):
+    # if key in ("llamacpp", "whispercpp") and setting("use_system_server"):
+    if key == "llamacpp" and setting("use_system_server"):
         return "unknown"
-    if key == "stablediffusioncpp" and setting("use_system_sd"):
-        return "unknown"
+    # if key == "stablediffusioncpp" and setting("use_system_sd"):
+    #     return "unknown"
     if not setting("gpu_acceleration"):
         return "cpu"
     backend = get_local_backend(handler)

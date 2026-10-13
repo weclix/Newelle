@@ -31,7 +31,7 @@
         "modules/vte.json",
         "modules/python3-requests.json",
         "modules/python3-expandvars.json",
-        "modules/python3-gtts.json",
+        # "modules/python3-gtts.json",
         "modules/portaudio.json",
         "modules/python3-pyaudio.json",
         "modules/python3-speechrecognition.json",
@@ -54,7 +54,7 @@
         "modules/llama-cpp-prebuilt.json",
         "modules/python3-ddgs.json",
         "modules/python3-pysilero-vad.json",
-        "modules/python3-openwakeword.json",
+        # "modules/python3-openwakeword.json",
 
         {
             "name" : "newelle",

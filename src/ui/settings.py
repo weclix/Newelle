@@ -276,13 +276,10 @@ class Settings(Adw.Window):
         mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, valign=Gtk.Align.CENTER)
         
         current_mode = self.settings.get_string("wakeword-mode")
-        self.wakeword_mode_secondary = Gtk.ToggleButton(label=_("Secondary STT"), active=(current_mode == "secondary-stt"))
+        self.wakeword_mode_secondary = Gtk.ToggleButton(label=_("Secondary STT"), active=True)
         self.wakeword_mode_secondary.add_css_class("flat")
-        self.wakeword_mode_wakeword = Gtk.ToggleButton(label=_("Wakeword Model"), group=self.wakeword_mode_secondary, active=(current_mode == "openwakeword"))
-        self.wakeword_mode_wakeword.add_css_class("flat")
         
         mode_box.append(self.wakeword_mode_secondary)
-        mode_box.append(self.wakeword_mode_wakeword)
         mode_row.add_suffix(mode_box)
         self.wakeword_row.add_row(mode_row)
 
@@ -312,21 +309,21 @@ class Settings(Adw.Window):
         self.secondary_stt_rows.append(wakeword_entry)
 
         # Wakeword engine mode rows (visible when openwakeword mode is selected)
-        self.wakeword_engine_rows = []
-        
-        # Wakeword engine selection (handlers with "wakeword": True)
-        wakeword_engine = Adw.ExpanderRow(
-            title=_('Wakeword Engine'),
-            subtitle=_("Model specialized for wakeword detection")
-        )
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("wakeword-engine")
-        for stt_key in AVAILABLE_STT:
-            if AVAILABLE_STT[stt_key].get("wakeword", False):
-                row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
-                wakeword_engine.add_row(row)
-        self.wakeword_row.add_row(wakeword_engine)
-        self.wakeword_engine_rows.append(wakeword_engine)
+        # self.wakeword_engine_rows = []
+        #
+        # # Wakeword engine selection (handlers with "wakeword": True)
+        # wakeword_engine = Adw.ExpanderRow(
+        #     title=_('Wakeword Engine'),
+        #     subtitle=_("Model specialized for wakeword detection")
+        # )
+        # group = Gtk.CheckButton()
+        # selected = self.settings.get_string("wakeword-engine")
+        # for stt_key in AVAILABLE_STT:
+        #     if AVAILABLE_STT[stt_key].get("wakeword", False):
+        #         row = self.build_row(AVAILABLE_STT, stt_key, selected, group, True)
+        #         wakeword_engine.add_row(row)
+        # self.wakeword_row.add_row(wakeword_engine)
+        # self.wakeword_engine_rows.append(wakeword_engine)
 
         # Pre-buffer duration
         pre_buffer_adj = Gtk.Adjustment(
@@ -390,23 +387,15 @@ class Settings(Adw.Window):
 
         # Toggle visibility based on mode
         def on_wakeword_mode_changed(btn):
-            is_wakeword = self.wakeword_mode_wakeword.get_active()
-            mode = "openwakeword" if is_wakeword else "secondary-stt"
-            self.settings.set_string("wakeword-mode", mode)
+            self.settings.set_string("wakeword-mode", "secondary-stt")
             for row in self.secondary_stt_rows:
-                row.set_visible(not is_wakeword)
-            for row in self.wakeword_engine_rows:
-                row.set_visible(is_wakeword)
+                row.set_visible(True)
         
         self.wakeword_mode_secondary.connect("toggled", on_wakeword_mode_changed)
-        self.wakeword_mode_wakeword.connect("toggled", on_wakeword_mode_changed)
         
         # Set initial visibility
-        is_wakeword_mode = current_mode == "openwakeword"
         for row in self.secondary_stt_rows:
-            row.set_visible(not is_wakeword_mode)
-        for row in self.wakeword_engine_rows:
-            row.set_visible(is_wakeword_mode)
+            row.set_visible(True)
 
         self.Voicegroup.add(self.wakeword_row)
         self._build_voice_mode_settings()

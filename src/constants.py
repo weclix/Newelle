@@ -2,14 +2,20 @@ from copy import deepcopy
 from .handlers.llm import OpenAIHandler
 # from .handlers.llm import NewelleAPIHandler, G4FHandler
 # from .handlers.llm import ClaudeHandler, DeepseekHandler, GroqHandler, OllamaHandler, OllamaCloudHandler, CustomLLMHandler, GeminiHandler, MistralHandler, OpenRouterHandler, LlamaCPPHandler
-from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, CustomOpenAITTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
-from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
+# from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
+from .handlers.tts import CustomOpenAITTSHandler
+# from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
+# from .handlers.stt import OpenAISRHandler, WhisperCPPHandler, WitAIHandler, CustomSRHandler, OpenWakeWordHandler
+# from .handlers.stt import OpenAISRHandler, WitAIHandler, CustomSRHandler, OpenWakeWordHandler
+from .handlers.stt import OpenAISRHandler, WitAIHandler, CustomSRHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
 # from .handlers.embeddings import WordLlamaHandler, GeminiEmbeddingHanlder, OllamaEmbeddingHandler, Model2VecHandler, LlamaCPPEmbeddingHandler
 from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler, LongTermMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
-from .handlers.websearch import SearXNGHandler, DDGSeachHandler, TavilyHandler, TinyFishHandler
-from .handlers.image_generator import ImageGeneratorHandler, PollinationsHandler, StableDiffusionCPPHandler, OpenAIImageHandler, OpenRouterImageHandler
+from .handlers.websearch import SearXNGHandler
+# from .handlers.websearch import DDGSeachHandler, TavilyHandler, TinyFishHandler
+from .handlers.image_generator import ImageGeneratorHandler, OpenAIImageHandler
+# from .handlers.image_generator import PollinationsHandler, StableDiffusionCPPHandler, OpenRouterImageHandler
 # from .handlers.interfaces.interface import Interface
 # from .handlers.interfaces.api_handler import APIInterface
 # from .handlers.interfaces.gui_api_handler import GUIAPIInterface
@@ -31,31 +37,31 @@ SCHEMA_ID = 'io.github.qwersyk.Newelle'
 AVAILABLE_INTEGRATIONS = [WebsiteReader, WebsearchIntegration, MermaidIntegration, MCPIntegration, SkillsIntegration, SkillEditorIntegration, DefaultToolsIntegration, AgentToolsIntegration, FileEditingIntegration, TodoListIntegration]
 
 AVAILABLE_IMAGE_GENERATORS = {
-    "stablediffusioncpp": {
-        "key": "stablediffusioncpp",
-        "title": _("Stable Diffusion (Local)"),
-        "description": _("Run Stable Diffusion locally using stable-diffusion.cpp, with hardware acceleration support (CUDA, Vulkan, ROCm)."),
-        "class": StableDiffusionCPPHandler,
-    },
-    "pollinations": {
-        "key": "pollinations",
-        "title": _("Pollinations AI"),
-        "description": _("Generate images using Pollinations AI. Multiple models available, supports advanced parameters."),
-        "class": PollinationsHandler,
-    },
+    # "stablediffusioncpp": {
+    #     "key": "stablediffusioncpp",
+    #     "title": _("Stable Diffusion (Local)"),
+    #     "description": _("Run Stable Diffusion locally using stable-diffusion.cpp, with hardware acceleration support (CUDA, Vulkan, ROCm)."),
+    #     "class": StableDiffusionCPPHandler,
+    # },
+    # "pollinations": {
+    #     "key": "pollinations",
+    #     "title": _("Pollinations AI"),
+    #     "description": _("Generate images using Pollinations AI. Multiple models available, supports advanced parameters."),
+    #     "class": PollinationsHandler,
+    # },
     "openai-image": {
         "key": "openai-image",
         "title": _("OpenAI Compatible"),
         "description": _("Generate images using OpenAI-compatible APIs (OpenAI DALL-E, and compatible services)."),
         "class": OpenAIImageHandler,
     },
-    "openrouter-image": {
-        "key": "openrouter-image",
-        "title": _("OpenRouter"),
-        "description": _("Generate images using OpenRouter's Chat Completions endpoint with the modalities parameter. Supports image-capable models like Gemini, Flux, Recraft, Sourceful and more."),
-        "class": OpenRouterImageHandler,
-        "website": "https://openrouter.ai/models?output_modalities=image",
-    },
+    # "openrouter-image": {
+    #     "key": "openrouter-image",
+    #     "title": _("OpenRouter"),
+    #     "description": _("Generate images using OpenRouter's Chat Completions endpoint with the modalities parameter. Supports image-capable models like Gemini, Flux, Recraft, Sourceful and more."),
+    #     "class": OpenRouterImageHandler,
+    #     "website": "https://openrouter.ai/models?output_modalities=image",
+    # },
 }
 
 AVAILABLE_LLMS = {
@@ -150,45 +156,45 @@ AVAILABLE_LLMS = {
 }
 
 AVAILABLE_STT = {
-    "whispercpp": {
-        "key": "whispercpp",
-        "title": _("Whisper C++"),
-        "description": _("Works offline. Optimized Whisper impelementation written in C++"),
-        "website": "https://github.com/ggerganov/whisper.cpp",
-        "class": WhisperCPPHandler,
-        "secondary": True,
-    },
-    "openwakeword": {
-        "key": "openwakeword",
-        "title": _("OpenWakeWord"),
-        "description": _("Works offline. Model optimized for wakeword detection. Will output any wakeword listed if detected by the model"),
-        "class": OpenWakeWordHandler,
-        "secondary": False,
-        "primary": False,
-        "wakeword": True,
-    },
-    "sphinx": {
-        "key": "sphinx",
-        "title": _("CMU Sphinx"),
-        "description": _("Works offline. Only English supported"),
-        "website": "https://cmusphinx.github.io/wiki/",
-        "class": SphinxHandler,
-        "secondary": True,
-    },
-    "google_sr": {
-        "key": "google_sr",
-        "title": _("Google Speech Recognition"),
-        "description": _("Google Speech Recognition online"),
-        "class": GoogleSRHandler,
-        "secondary": True,
-    },
-    "groq_sr": {
-        "key": "groq_sr",
-        "title": _("Groq Speech Recognition"),
-        "description": _("Speech regnition on Groq"),
-        "class": GroqSRHandler,
-        "secondary": True,
-    },
+    # "whispercpp": {
+    #     "key": "whispercpp",
+    #     "title": _("Whisper C++"),
+    #     "description": _("Works offline. Optimized Whisper impelementation written in C++"),
+    #     "website": "https://github.com/ggerganov/whisper.cpp",
+    #     "class": WhisperCPPHandler,
+    #     "secondary": True,
+    # },
+    # "openwakeword": {
+    #     "key": "openwakeword",
+    #     "title": _("OpenWakeWord"),
+    #     "description": _("Works offline. Model optimized for wakeword detection. Will output any wakeword listed if detected by the model"),
+    #     "class": OpenWakeWordHandler,
+    #     "secondary": False,
+    #     "primary": False,
+    #     "wakeword": True,
+    # },
+    # "sphinx": {
+    #     "key": "sphinx",
+    #     "title": _("CMU Sphinx"),
+    #     "description": _("Works offline. Only English supported"),
+    #     "website": "https://cmusphinx.github.io/wiki/",
+    #     "class": SphinxHandler,
+    #     "secondary": True,
+    # },
+    # "google_sr": {
+    #     "key": "google_sr",
+    #     "title": _("Google Speech Recognition"),
+    #     "description": _("Google Speech Recognition online"),
+    #     "class": GoogleSRHandler,
+    #     "secondary": True,
+    # },
+    # "groq_sr": {
+    #     "key": "groq_sr",
+    #     "title": _("Groq Speech Recognition"),
+    #     "description": _("Speech regnition on Groq"),
+    #     "class": GroqSRHandler,
+    #     "secondary": True,
+    # },
     "witai": {
         "key": "witai",
         "title": _("Wit AI"),
@@ -197,14 +203,14 @@ AVAILABLE_STT = {
         "class": WitAIHandler,
         "secondary": True,
     },
-    "vosk": {
-        "key": "vosk",
-        "title": _("Vosk API"),
-        "description": _("Works Offline"),
-        "website": "https://github.com/alphacep/vosk-api/",
-        "class": VoskHandler,
-        "secondary": True,
-    },
+    # "vosk": {
+    #     "key": "vosk",
+    #     "title": _("Vosk API"),
+    #     "description": _("Works Offline"),
+    #     "website": "https://github.com/alphacep/vosk-api/",
+    #     "class": VoskHandler,
+    #     "secondary": True,
+    # },
     "openai_sr": {
         "key": "openai_sr",
         "title": _("Whisper API"),
@@ -213,14 +219,14 @@ AVAILABLE_STT = {
         "class": OpenAISRHandler,
         "secondary": True,
     },
-    "mistral_sr": {
-        "key": "mistral_sr",
-        "title": _("Mistral Speech Recognition"),
-        "description": _("Uses Mistral's Voxtral speech recognition API"),
-        "website": "https://docs.mistral.ai/studio-api/audio/speech_to_text",
-        "class": MistralSTTHandler,
-        "secondary": True,
-    },
+    # "mistral_sr": {
+    #     "key": "mistral_sr",
+    #     "title": _("Mistral Speech Recognition"),
+    #     "description": _("Uses Mistral's Voxtral speech recognition API"),
+    #     "website": "https://docs.mistral.ai/studio-api/audio/speech_to_text",
+    #     "class": MistralSTTHandler,
+    #     "secondary": True,
+    # },
    "custom_command": {
         "key": "custom_command",
         "title": _("Custom command"),
@@ -232,67 +238,67 @@ AVAILABLE_STT = {
 
 
 AVAILABLE_TTS = {
-    "gtts": {
-        "key": "gtts",
-        "title": _("Google TTS"),
-        "description": _("Google's text to speech"),
-        "class": gTTSHandler,
-    },
-    "kokoro": {
-        "key": "kokoro",
-        "title": _("Kokoro TTS"),
-        "description": _("Lightweight and fast open source TTS engine. ~3GB dependencies, 400MB model"),
-        "class": KokoroTTSHandler,
-    },
-    "edge_tts": {
-        "key": "edge_tts",
-        "title": _("Edge TTS"),
-        "description": _("Use Microsoft Edge online TTS without any API Key"),
-        "class": EdgeTTSHandler,
-    },
-    "elevenlabs": {
-        "key": "elevenlabs",
-        "title": _("ElevenLabs TTS"),
-        "description": _("Natural sounding TTS"),
-        "class": ElevenLabs,
-    },
-    "openai_tts": {
-        "key": "openai_tts",
-        "title": _("OpenAI TTS"),
-        "description": _("OpenAI TTS"),
-        "class": OpenAITTSHandler,
-    },
-    "groq_tts": {
-        "key": "groq_tts",
-        "title": _("Groq TTS"),
-        "description": _("Groq TTS API"),
-        "class": GroqTTSHandler,
-    },
-    "mistral_tts": {
-        "key": "mistral_tts",
-        "title": _("Mistral Voxtral TTS"),
-        "description": _("Mistral's Voxtral text-to-speech with zero-shot voice cloning"),
-        "website": "https://docs.mistral.ai/studio-api/audio/text_to_speech",
-        "class": MistralTTSHandler,
-    },
+    # "gtts": {
+    #     "key": "gtts",
+    #     "title": _("Google TTS"),
+    #     "description": _("Google's text to speech"),
+    #     "class": gTTSHandler,
+    # },
+    # "kokoro": {
+    #     "key": "kokoro",
+    #     "title": _("Kokoro TTS"),
+    #     "description": _("Lightweight and fast open source TTS engine. ~3GB dependencies, 400MB model"),
+    #     "class": KokoroTTSHandler,
+    # },
+    # "edge_tts": {
+    #     "key": "edge_tts",
+    #     "title": _("Edge TTS"),
+    #     "description": _("Use Microsoft Edge online TTS without any API Key"),
+    #     "class": EdgeTTSHandler,
+    # },
+    # "elevenlabs": {
+    #     "key": "elevenlabs",
+    #     "title": _("ElevenLabs TTS"),
+    #     "description": _("Natural sounding TTS"),
+    #     "class": ElevenLabs,
+    # },
+    # "openai_tts": {
+    #     "key": "openai_tts",
+    #     "title": _("OpenAI TTS"),
+    #     "description": _("OpenAI TTS"),
+    #     "class": OpenAITTSHandler,
+    # },
+    # "groq_tts": {
+    #     "key": "groq_tts",
+    #     "title": _("Groq TTS"),
+    #     "description": _("Groq TTS API"),
+    #     "class": GroqTTSHandler,
+    # },
+    # "mistral_tts": {
+    #     "key": "mistral_tts",
+    #     "title": _("Mistral Voxtral TTS"),
+    #     "description": _("Mistral's Voxtral text-to-speech with zero-shot voice cloning"),
+    #     "website": "https://docs.mistral.ai/studio-api/audio/text_to_speech",
+    #     "class": MistralTTSHandler,
+    # },
     "custom_openai_tts": {
         "key": "custom_openai_tts",
         "title": _("Custom OpenAI TTS"),
         "description": _("Custom OpenAI TTS"),
         "class": CustomOpenAITTSHandler,
     },
-    "espeak": {
-        "key": "espeak",
-        "title": _("Espeak TTS"),
-        "description": _("Offline TTS"),
-        "class": EspeakHandler,
-    },
-    "custom_command": {
-        "key": "custom_command",
-        "title": _("Custom Command"),
-        "description": _("Use a custom command as TTS, {0} will be replaced with the text"),
-        "class": CustomTTSHandler,
-    }
+    # "espeak": {
+    #     "key": "espeak",
+    #     "title": _("Espeak TTS"),
+    #     "description": _("Offline TTS"),
+    #     "class": EspeakHandler,
+    # },
+    # "custom_command": {
+    #     "key": "custom_command",
+    #     "title": _("Custom Command"),
+    #     "description": _("Use a custom command as TTS, {0} will be replaced with the text"),
+    #     "class": CustomTTSHandler,
+    # }
 }
 
 AVAILABLE_EMBEDDINGS = {
@@ -377,25 +383,25 @@ AVAILABLE_WEBSEARCH = {
         "description": _("SearXNG - Private and selfhostable search engine"),
         "class": SearXNGHandler,
     },
-    "ddgsearch": {
-        "key": "ddgsearch",
-        "title": _("DuckDuckGo"),
-        "description": _("DuckDuckGo search"),
-        "class": DDGSeachHandler,
-    },
-    "tavily": {
-        "key": "tavily",
-        "title": _("Tavily"),
-        "description": _("Tavily search"),
-        "website": "https://tavily.com/",
-        "class": TavilyHandler,
-    },
-    "tinyfish": {
-        "key": "tinyfish",
-        "title": _("TinyFish"),
-        "description": _("TinyFish web search API"),
-        "class": TinyFishHandler,
-    }
+    # "ddgsearch": {
+    #     "key": "ddgsearch",
+    #     "title": _("DuckDuckGo"),
+    #     "description": _("DuckDuckGo search"),
+    #     "class": DDGSeachHandler,
+    # },
+    # "tavily": {
+    #     "key": "tavily",
+    #     "title": _("Tavily"),
+    #     "description": _("Tavily search"),
+    #     "website": "https://tavily.com/",
+    #     "class": TavilyHandler,
+    # },
+    # "tinyfish": {
+    #     "key": "tinyfish",
+    #     "title": _("TinyFish"),
+    #     "description": _("TinyFish web search API"),
+    #     "class": TinyFishHandler,
+    # }
 }
 
 # AVAILABLE_INTERFACES = {
