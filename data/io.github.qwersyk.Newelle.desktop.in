@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Newelle
 Comment=Newelle: Your advanced chat bot
-Exec=newelle
+Exec=env DRI_PRIME=1 newelle
 Icon=io.github.qwersyk.Newelle
 Terminal=false
 Type=Application
@@ -12,10 +12,10 @@ Actions=mini-window;voice-mode;
 
 [Desktop Action mini-window]
 Name=Mini Window
-Exec=newelle --mini
+Exec=env DRI_PRIME=1 newelle --mini
 Icon=io.github.qwersyk.Newelle
 
 [Desktop Action voice-mode]
 Name=Voice Mode
-Exec=newelle --voice
+Exec=env DRI_PRIME=1 newelle --voice
 Icon=io.github.qwersyk.Newelle

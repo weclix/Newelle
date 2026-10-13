@@ -226,20 +226,20 @@ class NewelleExtension(Handler):
         """
         return []
 
-    def get_interface_handlers(self) -> list[dict]:
-        """
-        Returns list of interface handlers
-
-        Returns:
-            list: list of interface handlers in this format
-            {
-                "key": "key of handler",
-                "title": "title of handler",
-                "description": "description of handler",
-                "class": Interface - The class of handler,
-            }
-        """
-        return []
+    # def get_interface_handlers(self) -> list[dict]:
+    #     """
+    #     Returns list of interface handlers
+    #
+    #     Returns:
+    #         list: list of interface handlers in this format
+    #         {
+    #             "key": "key of handler",
+    #             "title": "title of handler",
+    #             "description": "description of handler",
+    #             "class": Interface - The class of handler,
+    #         }
+    #     """
+    #     return []
 
     def get_image_generator_handlers(self) -> list[dict]:
         """
@@ -479,7 +479,7 @@ class ExtensionLoader:
         "embedding": "get_embedding_handlers",
         "rag": "get_rag_handlers",
         "websearch": "get_websearch_handlers",
-        "interface": "get_interface_handlers",
+        # "interface": "get_interface_handlers",
         "image_generator": "get_image_generator_handlers",
     }
 
@@ -537,8 +537,8 @@ class ExtensionLoader:
         handler_contributions = self.get_handler_contributions(
             extension_ids, include_disabled
         )
-        if handler_contributions["interface"]:
-            contribution_types.add("interfaces")
+        # if handler_contributions["interface"]:
+        #     contribution_types.add("interfaces")
         if any(
             keys
             for category, keys in handler_contributions.items()
@@ -667,7 +667,7 @@ class ExtensionLoader:
         for tool in extension.get_tools():
             tool_registry.remove_tool(tool.name)
 
-    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_INTERFACES=None, AVAILABLE_IMAGE_GENERATORS=None):
+    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
         """Add the handlers of each extension to the available handlers
 
         Args:
@@ -678,7 +678,7 @@ class ExtensionLoader:
             AVAILABLE_EMBEDDINGS (): list of available embeddings
             AVAILABLE_RAG (): list of available rags
             AVAILABLE_WEBSEARCH (): list of available websearch
-            AVAILABLE_INTERFACES (): list of available interfaces
+            # AVAILABLE_INTERFACES (): list of available interfaces
         """
         for extension in self.extensions:
             if extension in self.disabled_extensions:
@@ -704,10 +704,10 @@ class ExtensionLoader:
             handlers = extension.get_websearch_handlers()
             for handler in handlers:
                 AVAILABLE_WEBSEARCH[handler["key"]] = handler
-            if AVAILABLE_INTERFACES is not None:
-                handlers = extension.get_interface_handlers()
-                for handler in handlers:
-                    AVAILABLE_INTERFACES[handler["key"]] = handler
+            # if AVAILABLE_INTERFACES is not None:
+            #     handlers = extension.get_interface_handlers()
+            #     for handler in handlers:
+            #         AVAILABLE_INTERFACES[handler["key"]] = handler
             if AVAILABLE_IMAGE_GENERATORS is not None:
                 handlers = extension.get_image_generator_handlers()
                 for handler in handlers:

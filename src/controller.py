@@ -27,7 +27,7 @@ from .handlers.memory import MemoryHandler
 from .handlers.embeddings import EmbeddingHandler
 from .handlers.websearch import WebSearchHandler
 from .handlers.image_generator import ImageGeneratorHandler
-from .handlers.interfaces.interface import Interface
+# from .handlers.interfaces.interface import Interface
 
 from .utility.system import is_flatpak
 from .utility.pip import install_module
@@ -44,7 +44,7 @@ from .utility.profile_settings import (
     save_live_settings_to_profiles,
 )
 from .utility.source_attribution import format_source_context
-from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_STT, AVAILABLE_TTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_INTERFACES, SETTINGS_GROUPS, restore_handlers, restore_prompts
+from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_STT, AVAILABLE_TTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers, restore_prompts
 import threading
 import pickle
 import tempfile
@@ -1501,8 +1501,8 @@ class NewelleController(WorkspaceController):
                               if hasattr(controller, "handlers") and hasattr(controller.ui_controller, "window")), None)
             if successor is not None:
                 successor.secondary_window = False
-                successor.handlers.interfaces.clear()
-                successor.handlers.refresh_interfaces()
+                # successor.handlers.interfaces.clear()
+                # successor.handlers.refresh_interfaces()
 
     def wait_llm_loading(self):
         GLib.idle_add(self.ui_controller.set_model_loading, True)
@@ -1575,7 +1575,7 @@ class NewelleController(WorkspaceController):
         )
 
         active_handlers_changed = False
-        if refreshes & {"handlers", "interfaces"}:
+        if refreshes & {"handlers"}:
             # Rebuilding these descriptor dictionaries is cheap; actual handler
             # instances are invalidated selectively below.
             restore_handlers()
@@ -1588,7 +1588,7 @@ class NewelleController(WorkspaceController):
                 AVAILABLE_RAGS,
                 AVAILABLE_WEBSEARCH,
                 AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS,
-                AVAILABLE_INTERFACES=AVAILABLE_INTERFACES,
+                # AVAILABLE_INTERFACES=AVAILABLE_INTERFACES,
             )
             duplicated_llms_changed = self.handlers.sync_duplicated_llms(force=True)
             active_handlers_changed = self.handlers.refresh_extension_handlers(
@@ -1786,7 +1786,7 @@ class NewelleController(WorkspaceController):
         self.extensionloader = ExtensionLoader(self.extension_path, pip_path=self.pip_path,
                                                extension_cache=self.extensions_cache, settings=self.settings)
         self.extensionloader.load_extensions()
-        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS, AVAILABLE_INTERFACES=AVAILABLE_INTERFACES)
+        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
         self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
         self.extensionloader.add_tools(self.tools)
         self.set_ui_controller(self.ui_controller)
@@ -3695,7 +3695,7 @@ class HandlersManager:
         embedding: Embedding Handler 
         memory: Memory Handler
         rag: RAG Handler 
-        interfaces: List of Interface handlers
+        # interfaces: List of Interface handlers
     """
     DUPLICATED_LLMS_SETTINGS_KEY = "__duplicated_llm_handlers__"
 
@@ -3710,7 +3710,7 @@ class HandlersManager:
         self.secondary_stt = None
         self.wakeword_handler = None
         self.controller = controller
-        self.interfaces = {}
+        # self.interfaces = {}
         self._duplicated_llm_definitions = []
 
     @classmethod
@@ -3977,8 +3977,8 @@ class HandlersManager:
     def destroy(self):
         for handler in self.handlers.values():
             handler.destroy()
-        for interface in self.interfaces.values():
-            interface.stop()
+        # for interface in self.interfaces.values():
+        #     interface.stop()
 
     def fix_handlers_integrity(self, newelle_settings: NewelleSettings):
         """Select available handlers if not available handlers in settings
@@ -4029,12 +4029,12 @@ class HandlersManager:
     def set_ui_controller(self, ui_controller):
         self.ui_controller = ui_controller
 
-    def select_handlers(self, newelle_settings: NewelleSettings, skip_auto_start_interfaces=False):
+    def select_handlers(self, newelle_settings: NewelleSettings):
         """Assign the selected handlers
 
         Args:
             newelle_settings: Newelle settings
-            skip_auto_start_interfaces: If True, don't auto-start any interfaces (used in headless mode)
+            # skip_auto_start_interfaces: If True, don't auto-start any interfaces (used in headless mode)
         """
         self.sync_duplicated_llms()
         self.fix_handlers_integrity(newelle_settings)
@@ -4059,7 +4059,7 @@ class HandlersManager:
         self.rag : RAGHandler = self.get_object(AVAILABLE_RAGS, newelle_settings.rag_model)
         self.websearch : WebSearchHandler = self.get_object(AVAILABLE_WEBSEARCH, newelle_settings.websearch_model)
         self.image_generator : ImageGeneratorHandler = self.get_object(AVAILABLE_IMAGE_GENERATORS, newelle_settings.image_generator)
-        self.refresh_interfaces(auto_start=not skip_auto_start_interfaces)
+        # self.refresh_interfaces(auto_start=not skip_auto_start_interfaces)
         # Assign handlers 
         self.integrationsloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
         self.extensionloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
@@ -4069,36 +4069,36 @@ class HandlersManager:
         #self.image_generator.set_ui_controller(self.controller.ui_controller)
         threading.Thread(target=self.install_missing_handlers).start()
 
-    def refresh_interfaces(self, auto_start=True):
-        """Synchronize interface instances without restarting unchanged ones."""
-        auto_start = auto_start and not getattr(self.controller, "secondary_window", False)
-        available_keys = set(AVAILABLE_INTERFACES)
-        for key in set(self.interfaces) - available_keys:
-            interface = self.interfaces.pop(key)
-            try:
-                interface.stop()
-            except Exception as error:
-                print(f"Error stopping removed interface '{key}': {error}")
-            self.handlers.pop((key, "interface", False), None)
-
-        for key in AVAILABLE_INTERFACES:
-            is_new = key not in self.interfaces
-            interface = self.get_object(AVAILABLE_INTERFACES, key)
-            interface.set_controller(self.controller)
-            self.interfaces[key] = interface
-            if not auto_start or not is_new:
-                continue
-            enabled = interface.get_setting("enabled", False, False)
-            if not enabled:
-                continue
-            if Interface.check_external_running(key, self.directory):
-                print(
-                    f"Interface '{key}' is already running externally, "
-                    "skipping auto-start"
-                )
-            else:
-                print("Interface started")
-                interface.start()
+    # def refresh_interfaces(self, auto_start=True):
+    #     """Synchronize interface instances without restarting unchanged ones."""
+    #     auto_start = auto_start and not getattr(self.controller, "secondary_window", False)
+    #     available_keys = set(AVAILABLE_INTERFACES)
+    #     for key in set(self.interfaces) - available_keys:
+    #         interface = self.interfaces.pop(key)
+    #         try:
+    #             interface.stop()
+    #         except Exception as error:
+    #             print(f"Error stopping removed interface '{key}': {error}")
+    #         self.handlers.pop((key, "interface", False), None)
+    #
+    #     for key in AVAILABLE_INTERFACES:
+    #         is_new = key not in self.interfaces
+    #         interface = self.get_object(AVAILABLE_INTERFACES, key)
+    #         interface.set_controller(self.controller)
+    #         self.interfaces[key] = interface
+    #         if not auto_start or not is_new:
+    #             continue
+    #         enabled = interface.get_setting("enabled", False, False)
+    #         if not enabled:
+    #             continue
+    #         if Interface.check_external_running(key, self.directory):
+    #             print(
+    #                 f"Interface '{key}' is already running externally, "
+    #                 "skipping auto-start"
+    #             )
+    #         else:
+    #             print("Interface started")
+    #             interface.start()
 
     def refresh_extension_handlers(
         self,
@@ -4147,26 +4147,27 @@ class HandlersManager:
                 invalidated.append(handler)
                 invalidated_ids.add(id(handler))
 
-        for key in affected["interface"]:
-            interface = self.interfaces.pop(key, None)
-            if interface is not None and id(interface) not in invalidated_ids:
-                invalidated.append(interface)
-                invalidated_ids.add(id(interface))
+        # for key in affected["interface"]:
+        #     interface = self.interfaces.pop(key, None)
+        #     if interface is not None and id(interface) not in invalidated_ids:
+        #         invalidated.append(interface)
+        #         invalidated_ids.add(id(interface))
 
         for handler in invalidated:
             try:
-                if isinstance(handler, Interface):
-                    handler.stop()
-                else:
-                    handler.destroy()
+                # if isinstance(handler, Interface):
+                #     handler.stop()
+                # else:
+                #     handler.destroy()
+                handler.destroy()
             except Exception as error:
                 print(f"Error disposing extension handler: {error}")
 
         if active_changed:
             self.select_handlers(newelle_settings)
         else:
-            if affected["interface"]:
-                self.refresh_interfaces()
+            # if affected["interface"]:
+            #     self.refresh_interfaces()
             self.extensionloader.set_handlers(
                 self.llm,
                 self.stt,
@@ -4196,98 +4197,98 @@ class HandlersManager:
         if self.image_generator is not None:
             for tool in self.image_generator.get_tools():
                 tools.register_tool(tool)
-        self._add_send_message_tool(tools)
+        # self._add_send_message_tool(tools)
 
-    def _get_message_interfaces(self) -> dict[str, Interface]:
-        """Return local, running interfaces that can deliver agent messages.
-
-        An interface running in a different Newelle process cannot safely be
-        called from this process, even though its state file makes it visible.
-        """
-        return {
-            key: interface
-            for key, interface in self.interfaces.items()
-            if interface.is_locally_running() and interface.supports_send_message()
-        }
-
-    def _add_send_message_tool(self, tools: ToolRegistry):
-        """Register the optional cross-interface messaging tool when usable."""
-        interfaces = self._get_message_interfaces()
-        if not interfaces:
-            return
-
-        interface_schemas = []
-        for key, interface in interfaces.items():
-            properties = {
-                "interface": {
-                    "type": "string",
-                    "const": key,
-                    "description": (
-                        f"Send through the running {getattr(interface, 'name', key)} "
-                        "interface."
-                    ),
-                },
-                **interface.get_send_message_options_schema(),
-            }
-            interface_schemas.append({
-                "type": "object",
-                "properties": properties,
-                "required": ["interface", *interface.get_send_message_required_options()],
-                "additionalProperties": False,
-            })
-
-        def send_message(message, extra_options):
-            if not isinstance(message, str) or not message.strip():
-                result = ToolResult()
-                result.set_output("Error: 'message' must be a non-empty string.")
-                return result
-            if not isinstance(extra_options, dict):
-                result = ToolResult()
-                result.set_output("Error: 'extra_options' must be an object.")
-                return result
-
-            interface_key = extra_options.get("interface")
-            interface = self._get_message_interfaces().get(interface_key)
-            if interface is None:
-                available = ", ".join(self._get_message_interfaces()) or "none"
-                result = ToolResult()
-                result.set_output(
-                    f"Error: interface '{interface_key}' is not available. "
-                    f"Running interfaces: {available}."
-                )
-                return result
-            return interface.send_message(message, extra_options)
-
-        tools.register_tool(Tool(
-            name="send_message",
-            title="Send Message",
-            description=(
-                "Send a message to the user through another running interface. "
-                "Use the interface-specific destination options in extra_options."
-            ),
-            func=send_message,
-            schema={
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": (
-                            "Message to send. Media code blocks such as ```image, "
-                            "```video, and ```file are supported when the selected "
-                            "interface supports them."
-                        ),
-                    },
-                    "extra_options": {
-                        "description": "Select a running interface and its destination.",
-                        "oneOf": interface_schemas,
-                    },
-                },
-                "required": ["message", "extra_options"],
-            },
-            default_on=False,
-            tools_group="Interfaces",
-            icon_name="send-to-symbolic",
-        ))
+    # def _get_message_interfaces(self) -> dict[str, Interface]:
+    #     """Return local, running interfaces that can deliver agent messages.
+    #
+    #     An interface running in a different Newelle process cannot safely be
+    #     called from this process, even though its state file makes it visible.
+    #     """
+    #     return {
+    #         key: interface
+    #         for key, interface in self.interfaces.items()
+    #         if interface.is_locally_running() and interface.supports_send_message()
+    #     }
+    #
+    # def _add_send_message_tool(self, tools: ToolRegistry):
+    #     """Register the optional cross-interface messaging tool when usable."""
+    #     interfaces = self._get_message_interfaces()
+    #     if not interfaces:
+    #         return
+    #
+    #     interface_schemas = []
+    #     for key, interface in interfaces.items():
+    #         properties = {
+    #             "interface": {
+    #                 "type": "string",
+    #                 "const": key,
+    #                 "description": (
+    #                     f"Send through the running {getattr(interface, 'name', key)} "
+    #                     "interface."
+    #                 ),
+    #             },
+    #             **interface.get_send_message_options_schema(),
+    #         }
+    #         interface_schemas.append({
+    #             "type": "object",
+    #             "properties": properties,
+    #             "required": ["interface", *interface.get_send_message_required_options()],
+    #             "additionalProperties": False,
+    #         })
+    #
+    #     def send_message(message, extra_options):
+    #         if not isinstance(message, str) or not message.strip():
+    #             result = ToolResult()
+    #             result.set_output("Error: 'message' must be a non-empty string.")
+    #             return result
+    #         if not isinstance(extra_options, dict):
+    #             result = ToolResult()
+    #             result.set_output("Error: 'extra_options' must be an object.")
+    #             return result
+    #
+    #         interface_key = extra_options.get("interface")
+    #         interface = self._get_message_interfaces().get(interface_key)
+    #         if interface is None:
+    #             available = ", ".join(self._get_message_interfaces()) or "none"
+    #             result = ToolResult()
+    #             result.set_output(
+    #                 f"Error: interface '{interface_key}' is not available. "
+    #                 f"Running interfaces: {available}."
+    #             )
+    #             return result
+    #         return interface.send_message(message, extra_options)
+    #
+    #     tools.register_tool(Tool(
+    #         name="send_message",
+    #         title="Send Message",
+    #         description=(
+    #             "Send a message to the user through another running interface. "
+    #             "Use the interface-specific destination options in extra_options."
+    #         ),
+    #         func=send_message,
+    #         schema={
+    #             "type": "object",
+    #             "properties": {
+    #                 "message": {
+    #                     "type": "string",
+    #                     "description": (
+    #                         "Message to send. Media code blocks such as ```image, "
+    #                         "```video, and ```file are supported when the selected "
+    #                         "interface supports them."
+    #                     ),
+    #                 },
+    #                 "extra_options": {
+    #                     "description": "Select a running interface and its destination.",
+    #                     "oneOf": interface_schemas,
+    #                 },
+    #             },
+    #             "required": ["message", "extra_options"],
+    #         },
+    #         default_on=False,
+    #         tools_group="Interfaces",
+    #         icon_name="send-to-symbolic",
+    #     ))
 
     def load_handlers(self):
         """Load handlers"""
@@ -4336,8 +4337,8 @@ class HandlersManager:
             self.handlers[(key, self.convert_constants(AVAILABLE_EMBEDDINGS), False)] = self.get_object(AVAILABLE_EMBEDDINGS, key)
         for key in AVAILABLE_WEBSEARCH:
             self.handlers[(key, self.convert_constants(AVAILABLE_WEBSEARCH), False)] = self.get_object(AVAILABLE_WEBSEARCH, key)
-        for key in AVAILABLE_INTERFACES:
-            self.handlers[(key, self.convert_constants(AVAILABLE_INTERFACES), False)] = self.get_object(AVAILABLE_INTERFACES, key)
+        # for key in AVAILABLE_INTERFACES:
+        #     self.handlers[(key, self.convert_constants(AVAILABLE_INTERFACES), False)] = self.get_object(AVAILABLE_INTERFACES, key)
         for key in AVAILABLE_IMAGE_GENERATORS:
             self.handlers[(key, self.convert_constants(AVAILABLE_IMAGE_GENERATORS), False)] = self.get_object(AVAILABLE_IMAGE_GENERATORS, key)
         self.handlers_cached.release()
@@ -4371,8 +4372,8 @@ class HandlersManager:
                     return AVAILABLE_RAGS
                 case "websearch":
                     return AVAILABLE_WEBSEARCH
-                case "interface":
-                    return AVAILABLE_INTERFACES
+                # case "interface":
+                #     return AVAILABLE_INTERFACES
                 case "image_generator":
                     return AVAILABLE_IMAGE_GENERATORS
                 case "extension":
@@ -4394,8 +4395,8 @@ class HandlersManager:
                 return "rag"
             elif constants == AVAILABLE_WEBSEARCH:
                 return "websearch"
-            elif constants == AVAILABLE_INTERFACES:
-                return "interface"
+            # elif constants == AVAILABLE_INTERFACES:
+            #     return "interface"
             elif constants == AVAILABLE_IMAGE_GENERATORS:
                 return "image_generator"
             elif constants == self.extensionloader.extensionsmap:
@@ -4436,8 +4437,8 @@ class HandlersManager:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_WEBSEARCH:
             model = constants[key]["class"](self.settings, self.directory)
-        elif constants == AVAILABLE_INTERFACES:
-            model = constants[key]["class"](self.settings, self.directory)
+        # elif constants == AVAILABLE_INTERFACES:
+        #     model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_IMAGE_GENERATORS:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == self.extensionloader.extensionsmap:
@@ -4478,8 +4479,8 @@ class HandlersManager:
             return AVAILABLE_WEBSEARCH
         elif issubclass(type(handler), ImageGeneratorHandler):
             return AVAILABLE_IMAGE_GENERATORS
-        elif issubclass(type(handler), Interface):
-            return AVAILABLE_INTERFACES
+        # elif issubclass(type(handler), Interface):
+        #     return AVAILABLE_INTERFACES
         else:
             raise Exception("Unknown handler")
     

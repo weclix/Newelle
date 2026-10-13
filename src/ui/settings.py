@@ -21,7 +21,7 @@ from ..utility.pip import install_module
 from ..utility.download_manager import get_download_manager
 from ..utility.mcp_config import MCPConfigError, parse_mcp_servers_json
 from .extension import ExtensionPage
-from .interfaces import InterfacesPage
+# from .interfaces import InterfacesPage
 from .usage import UsagePage
 from .extra_settings import ExtraSettingsBuilder
 from .settings_search import SettingsSearch
@@ -53,7 +53,7 @@ PROFILE_PAGE_GROUPS = {
     "Skills": ["tools"],
     "Subagents": ["tools"],
     "MCP": ["tools"],
-    "Interfaces": ["interface"],
+    # "Interfaces": ["interface"],
     "Extensions": ["extensions"],
 }
 
@@ -776,19 +776,19 @@ class Settings(Adw.Window):
         self.developer.add(row)
         
         if self.popup:
-            self.InterfacesPage = Adw.PreferencesPage(
-                icon_name="controls-big-symbolic",
-                title=_("Interfaces"),
-            )
+            # self.InterfacesPage = Adw.PreferencesPage(
+            #     icon_name="controls-big-symbolic",
+            #     title=_("Interfaces"),
+            # )
             self.ExtensionsPage = Adw.PreferencesPage(
                 icon_name="extension-symbolic",
                 title=_("Extensions"),
             )
         else:
-            self.InterfacesPage = InterfacesPage(
-                self.app,
-                self.controller,
-            )
+            # self.InterfacesPage = InterfacesPage(
+            #     self.app,
+            #     self.controller,
+            # )
             self.ExtensionsPage = ExtensionPage(
                 self.app,
                 self.controller,
@@ -822,7 +822,7 @@ class Settings(Adw.Window):
             ("Skills", _("Skills"), "skills-symbolic", self.SkillsPage),
             ("Subagents", _("Subagents"), "system-users-symbolic", self.SubagentsPage),
             ("MCP", _("MCP Servers"), "internet-symbolic", self.MCPPage),
-            ("Interfaces", _("Interfaces"), "controls-big-symbolic", self.InterfacesPage),
+            # ("Interfaces", _("Interfaces"), "controls-big-symbolic", self.InterfacesPage),
             ("Extensions", _("Extensions"), "extension-symbolic", self.ExtensionsPage),
             ("Usage", _("Usage"), "chart-bars-symbolic", self.UsagePage),
         ]
@@ -1001,8 +1001,8 @@ class Settings(Adw.Window):
             self.prompts_settings = self.controller.newelle_settings.prompts_settings
             self.prompts = self.controller.newelle_settings.prompts
             self.build_prompts_settings()
-        if "interfaces" in refreshes and hasattr(self.InterfacesPage, "refresh"):
-            self.InterfacesPage.refresh()
+        # if "interfaces" in refreshes and hasattr(self.InterfacesPage, "refresh"):
+        #     self.InterfacesPage.refresh()
 
     def refresh_llm_rows(self):
         """Refresh primary and secondary LLM choices in this live window."""

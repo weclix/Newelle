@@ -10,10 +10,10 @@ from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, Agenti
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler, DDGSeachHandler, TavilyHandler, TinyFishHandler
 from .handlers.image_generator import ImageGeneratorHandler, PollinationsHandler, StableDiffusionCPPHandler, OpenAIImageHandler, OpenRouterImageHandler
-from .handlers.interfaces.interface import Interface
-from .handlers.interfaces.api_handler import APIInterface
-from .handlers.interfaces.gui_api_handler import GUIAPIInterface
-from .handlers.interfaces.telegram_handler import TelegramInterface
+# from .handlers.interfaces.interface import Interface
+# from .handlers.interfaces.api_handler import APIInterface
+# from .handlers.interfaces.gui_api_handler import GUIAPIInterface
+# from .handlers.interfaces.telegram_handler import TelegramInterface
 from .integrations.website_reader import WebsiteReader
 from .integrations.websearch import WebsearchIntegration
 from .integrations.mcp import MCPIntegration
@@ -398,26 +398,26 @@ AVAILABLE_WEBSEARCH = {
     }
 }
 
-AVAILABLE_INTERFACES = {
-    "api": {
-        "key": "api",
-        "title": _("OpenAI Compatible API"),
-        "description": _("Expose the current LLM as an OpenAI-compatible API server"),
-        "class": APIInterface,
-    },
-    "gui-api": {
-        "key": "gui-api",
-        "title": _("Newelle GUI API"),
-        "description": _("Full REST API for building a WebUI, exposing chats, messages, tools, settings and more"),
-        "class": GUIAPIInterface,
-    },
-    "telegram": {
-        "key": "telegram",
-        "title": _("Telegram Bot"),
-        "description": _("Use Newelle as a Telegram bot with message streaming, voice transcription, tools and more"),
-        "class": TelegramInterface,
-    },
-}
+# AVAILABLE_INTERFACES = {
+#     "api": {
+#         "key": "api",
+#         "title": _("OpenAI Compatible API"),
+#         "description": _("Expose the current LLM as an OpenAI-compatible API server"),
+#         "class": APIInterface,
+#     },
+#     "gui-api": {
+#         "key": "gui-api",
+#         "title": _("Newelle GUI API"),
+#         "description": _("Full REST API for building a WebUI, exposing chats, messages, tools, settings and more"),
+#         "class": GUIAPIInterface,
+#     },
+#     "telegram": {
+#         "key": "telegram",
+#         "title": _("Telegram Bot"),
+#         "description": _("Use Newelle as a Telegram bot with message streaming, voice transcription, tools and more"),
+#         "class": TelegramInterface,
+#     },
+# }
 
 PROMPTS = {
     "generate_name_prompt": """Create a concise title that names the conversation's main subject or task.
@@ -739,13 +739,13 @@ DEFAULT_AVAILABLE_EMBEDDING = AVAILABLE_EMBEDDINGS.copy()
 DEFAULT_AVAILABLE_MEMORIES = AVAILABLE_MEMORIES.copy()
 DEFAULT_AVAILABLE_RAG = AVAILABLE_RAGS.copy()
 DEFAULT_AVAILABLE_WEBSEARCH = AVAILABLE_WEBSEARCH.copy()
-DEFAULT_AVAILABLE_INTERFACES = AVAILABLE_INTERFACES.copy()
+# DEFAULT_AVAILABLE_INTERFACES = AVAILABLE_INTERFACES.copy()
 DEFAULT_AVAILABLE_IMAGE_GENERATORS = AVAILABLE_IMAGE_GENERATORS.copy()
 DEFAULT_AVAILABLE_PROMPTS = AVAILABLE_PROMPTS.copy()
 DEFAULT_PROMPTS = PROMPTS.copy()
 
 def restore_handlers():
-    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_INTERFACES, AVAILABLE_IMAGE_GENERATORS
+    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
     AVAILABLE_LLMS.clear()
     AVAILABLE_TTS.clear()
     AVAILABLE_STT.clear()
@@ -753,7 +753,7 @@ def restore_handlers():
     AVAILABLE_MEMORIES.clear()
     AVAILABLE_RAGS.clear()
     AVAILABLE_WEBSEARCH.clear()
-    AVAILABLE_INTERFACES.clear()
+    # AVAILABLE_INTERFACES.clear()
     AVAILABLE_IMAGE_GENERATORS.clear()
     AVAILABLE_LLMS.update(deepcopy(DEFAULT_AVAILABLE_LLM))
     AVAILABLE_TTS.update(deepcopy(DEFAULT_AVAILABLE_TTS))
@@ -762,7 +762,7 @@ def restore_handlers():
     AVAILABLE_MEMORIES.update(deepcopy(DEFAULT_AVAILABLE_MEMORIES))
     AVAILABLE_RAGS.update(deepcopy(DEFAULT_AVAILABLE_RAG))
     AVAILABLE_WEBSEARCH.update(deepcopy(DEFAULT_AVAILABLE_WEBSEARCH))
-    AVAILABLE_INTERFACES.update(deepcopy(DEFAULT_AVAILABLE_INTERFACES))
+    # AVAILABLE_INTERFACES.update(deepcopy(DEFAULT_AVAILABLE_INTERFACES))
     AVAILABLE_IMAGE_GENERATORS.update(deepcopy(DEFAULT_AVAILABLE_IMAGE_GENERATORS))
 
 def restore_prompts():
@@ -820,7 +820,7 @@ SETTINGS_GROUPS = {
         },
         "interface": {
             "title": _("Interface"),
-            "settings": ["hidden-files", "reverse-order", "display-latex", "expand-reasoning", "compact-mode", "external-terminal-on", "external-terminal", "zoom", "send-on-enter", "initial-browser-page", "external-browser", "browser-search-string", "browser-session-persist", "editor-color-scheme", "hide-history-on-launch", "remember-profile", "user-name", "font-family", "font-size", "line-height", "monospace-font-family", "monospace-font-size", "monospace-line-height", "hide-warning", "interfaces-settings"],
+            "settings": ["hidden-files", "reverse-order", "display-latex", "expand-reasoning", "compact-mode", "external-terminal-on", "external-terminal", "zoom", "send-on-enter", "initial-browser-page", "external-browser", "browser-search-string", "browser-session-persist", "editor-color-scheme", "hide-history-on-launch", "remember-profile", "user-name", "font-family", "font-size", "line-height", "monospace-font-family", "monospace-font-size", "monospace-line-height", "hide-warning"],
             "description": _("Interface settings, hidden files, reverse order, zoom..."),
         },
         "general": {

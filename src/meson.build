@@ -85,7 +85,6 @@ ui_sources = [
   'ui/skill_creator.py',
   'ui/subagents.py',
   'ui/extra_settings.py',
-  'ui/interfaces.py',
   'ui/build_dependency_warning.py',
   'ui/usage.py',
 ]
@@ -241,15 +240,6 @@ image_generator_sources = [
   'handlers/image_generator/openrouter_image_handler.py',
   ]
 
-interface_sources = [
-  'handlers/interfaces/__init__.py',
-  'handlers/interfaces/interface.py',
-  'handlers/interfaces/chat_interface.py',
-  'handlers/interfaces/api_handler.py',
-  'handlers/interfaces/gui_api_handler.py',
-  'handlers/interfaces/telegram_handler.py',
-]
-
 utility_sources = [
   'utility/screenshot.py',
   'utility/__init__.py',
@@ -298,7 +288,6 @@ install_data(embedding_sources, install_dir: moduledir / 'handlers' / 'embedding
 install_data(memory_sources, install_dir: moduledir / 'handlers' / 'memory')
 install_data(rag_sources, install_dir: moduledir / 'handlers' / 'rag')
 install_data(websearch_sources, install_dir: moduledir / 'handlers' / 'websearch')
-install_data(interface_sources, install_dir: moduledir / 'handlers' / 'interfaces')
 install_data(utility_sources, install_dir: moduledir / 'utility')
 install_data(integrations_sources, install_dir: moduledir / 'integrations')
 install_data(image_generator_sources, install_dir: moduledir / 'handlers' / 'image_generator')
