@@ -233,7 +233,7 @@ class LongTermMemoryHandler(MemoryHandler):
 
     def _open_folder(self):
         try:
-            subprocess.Popen(["xdg-open", self.root])
+            subprocess.Popen(["gio", "open", self.root])
         except Exception as e:
             print(f"Could not open folder: {e}")
 

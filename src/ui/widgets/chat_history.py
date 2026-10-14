@@ -2055,7 +2055,7 @@ class ChatHistory(Gtk.Box):
             if os.path.isdir(file_path):
                 self.window.window.ui_controller.new_explorer_tab(file_path, False)
             else:
-                subprocess.run(["xdg-open", file_path])
+                subprocess.run(["gio", "open", file_path])
         else:
             self.window.notification_block.add_toast(
                 Adw.Toast(title=_("File not found"), timeout=2)

@@ -33,7 +33,7 @@ def open_website(website):
     Args:
         website (): url of the website 
     """
-    subprocess.Popen(["xdg-open", website])
+    subprocess.Popen(["gio", "open", website])
 
 def open_folder(folder):
     """Opens a website using xdg-open
@@ -41,7 +41,7 @@ def open_folder(folder):
     Args:
         folder (): location of the folder 
     """
-    subprocess.Popen(["xdg-open", folder])
+    subprocess.Popen(["gio", "open", folder])
 
 
 def has_backend(backend: str, spawn: bool = True) -> bool:

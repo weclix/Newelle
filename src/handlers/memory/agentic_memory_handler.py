@@ -137,7 +137,7 @@ Recent conversations:
         """Open the memory folder in the file manager"""
         import subprocess
         try:
-            subprocess.run(["xdg-open", self.memory_dir])
+            subprocess.run(["gio", "open", self.memory_dir])
         except Exception as e:
             print(f"Could not open folder: {e}")
 

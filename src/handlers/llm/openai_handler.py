@@ -16,7 +16,7 @@ from ...handlers import ExtraSettings, ErrorSeverity
 class OpenAIHandler(LLMHandler):
     key = "openai"
     default_send_reasoning = False
-    default_models = (("gpt-5.6-luna", "gpt-5.6-luna"), )
+    default_models = ()
     RESPONSE_STATE_KEY = "OpenAIResponse"
     RESPONSE_STATE_VERSION = 1
     MISSING_TOOL_OUTPUT = "Tool result unavailable in the current Newelle history."

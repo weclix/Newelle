@@ -120,7 +120,7 @@ class Settings(Adw.Window):
         duplicate_llm.connect("clicked", self.on_duplicate_llm)
         llm_header_actions.append(duplicate_llm)
         help = Gtk.Button(css_classes=["flat"], icon_name="info-outline-symbolic")
-        help.connect("clicked", lambda button : Popen(["xdg-open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]))
+        help.connect("clicked", lambda button : Popen(["gio", "open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]))
         llm_header_actions.append(help)
         self.LLM.set_header_suffix(llm_header_actions)
         # Add LLMs

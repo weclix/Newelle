@@ -99,7 +99,7 @@ class PresentationWindow(Adw.Window):
                     {
                         "label": _("Github Page"),
                         "classes": [],
-                        "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/qwersyk/Newelle"]), 
+                        "callback": lambda x: subprocess.Popen(["gio", "open", "https://github.com/qwersyk/Newelle"]), 
                     }
                 ]
             },
@@ -111,7 +111,7 @@ class PresentationWindow(Adw.Window):
                     {
                         "label": _("Guide to LLM"),
                         "classes": ["suggested-action"],
-                        "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]),
+                        "callback": lambda x: subprocess.Popen(["gio", "open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]),
                     }
                 ] 
             },
@@ -143,7 +143,7 @@ class PresentationWindow(Adw.Window):
                     {
                         "label": _("Download extensions"),
                         "classes": ["suggested-action"],
-                        "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/topics/newelle-extension"]),
+                        "callback": lambda x: subprocess.Popen(["gio", "open", "https://github.com/topics/newelle-extension"]),
                     }
                 ]
             })
@@ -158,7 +158,7 @@ class PresentationWindow(Adw.Window):
         #             {
         #                 "label": "Learn more",
         #                 "classes": ["suggested-action"],
-        #                 "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/qwersyk/Newelle?tab=readme-ov-file#permission"]),
+        #                 "callback": lambda x: subprocess.Popen(["gio", "open", "https://github.com/qwersyk/Newelle?tab=readme-ov-file#permission"]),
         #             }
         #         ]
         #     })

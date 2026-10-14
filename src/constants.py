@@ -20,7 +20,7 @@ from .handlers.image_generator import ImageGeneratorHandler, OpenAIImageHandler
 # from .handlers.interfaces.api_handler import APIInterface
 # from .handlers.interfaces.gui_api_handler import GUIAPIInterface
 # from .handlers.interfaces.telegram_handler import TelegramInterface
-from .handlers.interfaces.mcp_interface import MCPInterface
+# from .handlers.interfaces.mcp_interface import MCPInterface
 from .integrations.website_reader import WebsiteReader
 from .integrations.websearch import WebsearchIntegration
 from .integrations.mcp import MCPIntegration
@@ -405,14 +405,14 @@ AVAILABLE_WEBSEARCH = {
     # }
 }
 
-AVAILABLE_INTERFACES = {
-    "mcp": {
-        "key": "mcp",
-        "title": _("MCP Server"),
-        "description": _("Expose Newelle tools to third-party applications over the Model Context Protocol"),
-        "class": MCPInterface,
-    },
-}
+# AVAILABLE_INTERFACES = {
+#     "mcp": {
+#         "key": "mcp",
+#         "title": _("MCP Server"),
+#         "description": _("Expose Newelle tools to third-party applications over the Model Context Protocol"),
+#         "class": MCPInterface,
+#     },
+# }
 
 PROMPTS = {
     "generate_name_prompt": """Create a concise title that names the conversation's main subject or task.

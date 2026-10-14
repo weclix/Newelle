@@ -397,7 +397,7 @@ class ExplorerPanel(Gtk.Box):
                 self.set_main_path(full_path)
                 GLib.idle_add(self.update_folder)
             else:
-                subprocess.run(["xdg-open", full_path])
+                subprocess.run(["gio", "open", full_path])
         else:
             self.notification_block.add_toast(
                 Adw.Toast(title=_("File not found"), timeout=2)
@@ -474,10 +474,10 @@ class ExplorerPanel(Gtk.Box):
         try:
             if is_directory:
                 # Open the directory itself
-                subprocess.run(["xdg-open", file_path])
+                subprocess.run(["gio", "open", file_path])
             else:
                 # Open the directory containing the file
-                subprocess.run(["xdg-open", os.path.dirname(file_path)])
+                subprocess.run(["gio", "open", os.path.dirname(file_path)])
         except Exception as e:
             self.notification_block.add_toast(
                 Adw.Toast(title=_("Failed to open file manager"), timeout=3)
@@ -714,7 +714,7 @@ class ExplorerPanel(Gtk.Box):
     def on_open_file_manager_here(self, action, parameter):
         """Handler for 'Open in file manager' for current directory"""
         try:
-            subprocess.run(["xdg-open", os.path.expanduser(self.main_path)])
+            subprocess.run(["gio", "open", os.path.expanduser(self.main_path)])
         except Exception as e:
             self.notification_block.add_toast(
                 Adw.Toast(title=_("Failed to open file manager"), timeout=3)

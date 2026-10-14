@@ -340,6 +340,49 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - ✅ meson 构建脚本（`meson.build`、`src/meson.build`、`data/meson.build`、`meson_options.txt`）无 Flatpak 相关引用
 - ✅ 项目根目录无 Flatpak manifest 文件（`io.github.qwersyk.Newelle.json` 等）
 
+### 变更主题：MCP 接口合并与剥离（2026-10-14）
+
+合并上游 `FrancescoCaracciolo/Newelle` 新增的 MCP 接口（`MCPInterface`），随后将其完全剥离。
+
+#### 合并内容
+
+上游新增 2 个提交：
+- `0cbdb0e` **Add MCP interface** — 新增 MCP 服务器接口
+- `feef987` **Make settings window resizable** — 设置窗口可调整大小
+
+合并时恢复了以下文件以支持 MCP 接口：
+- `src/handlers/interfaces/interface.py`（接口基类 `Interface`）
+- `src/handlers/interfaces/mcp_interface.py`（`MCPInterface`）
+- `src/handlers/interfaces/__init__.py`（包导出）
+
+#### 已删除的功能文件（3 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/handlers/interfaces/__init__.py` | 接口处理器包初始化 |
+| `src/handlers/interfaces/interface.py` | 接口基类 `Interface` |
+| `src/handlers/interfaces/mcp_interface.py` | MCP 接口处理器 `MCPInterface` |
+
+#### 已修改的文件（2 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/constants.py` | 注释掉 `MCPInterface` 的 import 行及 `AVAILABLE_INTERFACES` 定义 |
+| `src/meson.build` | 注释掉 `interface_sources` 列表 |
+
+#### 当前 Interfaces 模块状态
+
+剥离后，`src/handlers/interfaces/` 目录已完全移除。
+
+`AVAILABLE_INTERFACES` 及相关引用均已注释保留（`#` 前缀），便于后续恢复。
+
+#### 验证结果
+
+- ✅ `python3 -m py_compile src/constants.py` 语法检查通过
+- ✅ `constants.py` 导入成功，`AVAILABLE_INTERFACES` 已不存在
+- ✅ 全项目搜索确认无残留的未注释引用（`MCPInterface`、`AVAILABLE_INTERFACES`、`interface_sources` 等均已注释）
+- ✅ `src/handlers/interfaces/` 目录已不存在
+
 ### 其他变更（与 Interfaces 剥离无关）
 
 - `data/io.github.qwersyk.Newelle.desktop.in`：将 `Exec=newelle` 改为 `Exec=env DRI_PRIME=1 newelle`（含 mini-window/voice-mode 动作），用于强制使用独立显卡渲染

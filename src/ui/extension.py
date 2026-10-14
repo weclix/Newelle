@@ -225,7 +225,7 @@ class ExtensionPage(Adw.PreferencesPage):
             "clicked",
             lambda _button: subprocess.Popen(
                 [
-                    "xdg-open",
+                    "gio", "open",
                     "https://github.com/qwersyk/Newelle/wiki/User-guide-to-Extensions",
                 ]
             ),
@@ -243,7 +243,7 @@ class ExtensionPage(Adw.PreferencesPage):
         download_button.connect(
             "clicked",
             lambda _button: subprocess.Popen(
-                ["xdg-open", "https://github.com/topics/newelle-extension"]
+                ["gio", "open", "https://github.com/topics/newelle-extension"]
             ),
         )
         download_row.add_suffix(download_button)
