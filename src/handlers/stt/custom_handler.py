@@ -1,6 +1,7 @@
 from subprocess import check_output
 from .stt import STTHandler
-from ...utility.system import get_spawn_command
+# Flatpak support removed
+# from ...utility.system import get_spawn_command
 
 class CustomSRHandler(STTHandler):
     
@@ -17,15 +18,16 @@ class CustomSRHandler(STTHandler):
             },
         ]
 
-    @staticmethod
-    def requires_sandbox_escape() -> bool:
-        """If the handler requires to run commands on the user host system"""
-        return True
+    # Flatpak support removed
+    # @staticmethod
+    # def requires_sandbox_escape() -> bool:
+    #     """If the handler requires to run commands on the user host system"""
+    #     return True
 
     def recognize_file(self, path):
         command = self.get_setting("command")
         if command is not None:
-            res = check_output(get_spawn_command() + ["bash", "-c", command.replace("{0}", path)]).decode("utf-8")
+            res = check_output(["bash", "-c", command.replace("{0}", path)]).decode("utf-8")
             return str(res)
         return None
 

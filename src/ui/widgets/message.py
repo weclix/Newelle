@@ -837,7 +837,9 @@ class Message(Gtk.Box):
 
         if not self.controller.newelle_settings.virtualization:
             shell_command = add_S_to_sudo(shell_command)
-            terminal_command = get_spawn_command() + ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
+            # Flatpak support removed: no spawn prefix needed
+            # terminal_command = get_spawn_command() + ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
+            terminal_command = ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
         else:
             terminal_command = ["bash", "-c", "export TERM=xterm-256color;" + shell_command]
 

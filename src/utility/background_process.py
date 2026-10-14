@@ -30,9 +30,9 @@ Simple usage:
     ...
     self.server.stop()
 
-Note: when the command is launched through `flatpak-spawn --host`, the actual
-server runs on the host as a separate session and is not reachable via the
-local process group; terminating the `flatpak-spawn` wrapper is still the
+Note: when the command is launched on the host, the actual
+server runs as a separate session and is not reachable via the
+local process group; terminating the wrapper is still the
 best-effort action taken here.
 """
 

@@ -29,13 +29,8 @@ from .subagents import SubagentsPage
 from .widgets import ComboRowHelper, CopyBox 
 from .widgets import MultilineEntry
 from ..utility.system import (
-    can_escape_sandbox,
-    get_flatpak_x11_override_command,
-    get_spawn_command,
     open_website,
     open_folder,
-    is_flatpak,
-    needs_voice_mode_x11_override,
 ) 
 
 from ..controller import NewelleController
@@ -84,7 +79,8 @@ class Settings(Adw.Window):
         self.custom_prompts = self.controller.newelle_settings.custom_prompts 
         self.prompts_settings = self.controller.newelle_settings.prompts_settings
         self.prompts = self.controller.newelle_settings.prompts
-        self.sandbox = can_escape_sandbox()
+        # Flatpak support removed
+        self.sandbox = False
        
         self.handlers = self.controller.handlers
         # Page building
@@ -125,7 +121,7 @@ class Settings(Adw.Window):
         duplicate_llm.connect("clicked", self.on_duplicate_llm)
         llm_header_actions.append(duplicate_llm)
         help = Gtk.Button(css_classes=["flat"], icon_name="info-outline-symbolic")
-        help.connect("clicked", lambda button : Popen(get_spawn_command() + ["xdg-open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]))
+        help.connect("clicked", lambda button : Popen(["xdg-open", "https://github.com/qwersyk/Newelle/wiki/User-guide-to-the-available-LLMs"]))
         llm_header_actions.append(help)
         self.LLM.set_header_suffix(llm_header_actions)
         # Add LLMs
@@ -591,20 +587,21 @@ class Settings(Adw.Window):
         self.neural_network = Adw.PreferencesGroup(title=_('Neural Network Control'))
         self.general_page.add(self.neural_network) 
 
+        # Flatpak support removed
         # Only show virtualization option if running in Flatpak
-        if is_flatpak():
-            row = Adw.ActionRow(title=_("Command virtualization"), subtitle=_("Run commands in a virtual machine"))
-            switch = Gtk.Switch(valign=Gtk.Align.CENTER)
-            row.add_suffix(switch)
-            # Set default value for the switch
-            if not self.sandbox:
-                switch.set_active(True)
-                self.settings.set_boolean("virtualization", True)
-            else:
-                switch.set_active(self.settings.get_boolean("virtualization"))
-            # Connect the function
-            switch.connect("state-set", self.toggle_virtualization)
-            self.neural_network.add(row)
+        # if is_flatpak():
+        #     row = Adw.ActionRow(title=_("Command virtualization"), subtitle=_("Run commands in a virtual machine"))
+        #     switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+        #     row.add_suffix(switch)
+        #     # Set default value for the switch
+        #     if not self.sandbox:
+        #         switch.set_active(True)
+        #         self.settings.set_boolean("virtualization", True)
+        #     else:
+        #         switch.set_active(self.settings.get_boolean("virtualization"))
+        #     # Connect the function
+        #     switch.connect("state-set", self.toggle_virtualization)
+        #     self.neural_network.add(row)
         
         row = Adw.ActionRow(title=_("Parallel Tool Execution"), subtitle=_("Allow the model to execute multiple tools in parallel"))
         switch = Gtk.Switch(valign=Gtk.Align.CENTER)
@@ -2382,11 +2379,10 @@ class Settings(Adw.Window):
         # Add server form
         add_row = Adw.ExpanderRow(title=_("Add Server"), subtitle=_("Add a new MCP server"), icon_name="list-add-symbolic")
         
-        # Server type selector. stdio spawns a local command: outside flatpak it
-        # runs directly; inside flatpak it runs on the host via flatpak-spawn,
-        # which requires sandbox escape (granted by the manifest's talk-name).
+        # Server type selector. stdio spawns a local command.
+        # Flatpak support removed
         self.mcp_server_type = "http"
-        can_use_stdio = (not is_flatpak()) or can_escape_sandbox()
+        can_use_stdio = True
         
         if can_use_stdio:
             type_row = Adw.ActionRow(title=_("Server Type"), subtitle=_("HTTP or local command (stdio)"))
@@ -2508,10 +2504,8 @@ class Settings(Adw.Window):
         self.mcp_stdio_rows = []
         
         # Command entry (required for stdio)
-        if is_flatpak():
-            cmd_subtitle = _("Executable path or command name (runs on the host system)")
-        else:
-            cmd_subtitle = _("Executable path or command name")
+        # Flatpak support removed
+        cmd_subtitle = _("Executable path or command name")
         cmd_row = Adw.ActionRow(title=_("Command"), subtitle=cmd_subtitle)
         cmd_row.add_css_class("property")
         self.mcp_command_entry = Gtk.Entry(valign=Gtk.Align.CENTER, placeholder_text="npx", hexpand=True, width_chars=30)
@@ -3546,37 +3540,38 @@ class Settings(Adw.Window):
         )
         self.VoicePage.add(group)
 
-        if needs_voice_mode_x11_override():
-            command = get_flatpak_x11_override_command()
-            warning = Adw.ActionRow(
-                title=_("X11 access is missing"),
-                subtitle=_(
-                    "Voice Mode cannot position itself correctly on Wayland without X11 access. Run this command, then restart Newelle."
-                ),
-            )
-            warning.add_css_class("warning")
-            warning.set_icon_name("dialog-warning-symbolic")
-            copy_button = Gtk.Button(
-                icon_name="edit-copy-symbolic",
-                valign=Gtk.Align.CENTER,
-                tooltip_text=_("Copy command"),
-                css_classes=["flat"],
-            )
-            warning.add_suffix(copy_button)
-            group.add(warning)
-            command_row = Adw.ActionRow(
-                title=_("Override command"),
-                subtitle=command,
-            )
-            group.add(command_row)
-
-            def copy_override_command(_button):
-                display = self.get_display() or Gdk.Display.get_default()
-                if display is None:
-                    return
-                display.get_clipboard().set(command)
-
-            copy_button.connect("clicked", copy_override_command)
+        # Flatpak support removed
+        # if needs_voice_mode_x11_override():
+        #     command = get_flatpak_x11_override_command()
+        #     warning = Adw.ActionRow(
+        #         title=_("X11 access is missing"),
+        #         subtitle=_(
+        #             "Voice Mode cannot position itself correctly on Wayland without X11 access. Run this command, then restart Newelle."
+        #         ),
+        #     )
+        #     warning.add_css_class("warning")
+        #     warning.set_icon_name("dialog-warning-symbolic")
+        #     copy_button = Gtk.Button(
+        #         icon_name="edit-copy-symbolic",
+        #         valign=Gtk.Align.CENTER,
+        #         tooltip_text=_("Copy command"),
+        #         css_classes=["flat"],
+        #     )
+        #     warning.add_suffix(copy_button)
+        #     group.add(warning)
+        #     command_row = Adw.ActionRow(
+        #         title=_("Override command"),
+        #         subtitle=command,
+        #     )
+        #     group.add(command_row)
+        #
+        #     def copy_override_command(_button):
+        #         display = self.get_display() or Gdk.Display.get_default()
+        #         if display is None:
+        #             return
+        #         display.get_clipboard().set(command)
+        #
+        #     copy_button.connect("clicked", copy_override_command)
 
         chat_row = Adw.ComboRow(
             title=_("Voice pill chat"),
@@ -3883,7 +3878,8 @@ class Settings(Adw.Window):
         
         # Add extra buttons 
         self.queue_download_button(handler, row)
-        self.add_flatpak_waning_button(handler, row)
+        # Flatpak support removed
+        # self.add_flatpak_waning_button(handler, row)
        
         # Add copy settings button if it's secondary 
         if secondary:
@@ -3951,7 +3947,8 @@ class Settings(Adw.Window):
         return self.handlers.get_constants_from_object(handler)
 
     def _handler_selection_blocked(self, handler: Handler) -> bool:
-        return (not self.sandbox and handler.requires_sandbox_escape()) or not handler.is_installed()
+        # Flatpak support removed: no sandbox escape check
+        return not handler.is_installed()
 
     def _apply_handler_row_blocked_style(self, button: Gtk.CheckButton, handler: Handler) -> None:
         button.set_opacity(0.45 if self._handler_selection_blocked(handler) else 1.0)
@@ -4021,10 +4018,11 @@ class Settings(Adw.Window):
 
         handler = self.get_object(constants, button.get_name(), secondary)
 
-        if not self.sandbox and handler.requires_sandbox_escape():
-            self._restore_previous_handler_row(constants, secondary, setting_name, button)
-            self.show_flatpak_sandbox_notice()
-            return
+        # Flatpak support removed
+        # if not self.sandbox and handler.requires_sandbox_escape():
+        #     self._restore_previous_handler_row(constants, secondary, setting_name, button)
+        #     self.show_flatpak_sandbox_notice()
+        #     return
 
         if not handler.is_installed():
             self._restore_previous_handler_row(constants, secondary, setting_name, button)
@@ -4305,12 +4303,13 @@ class Settings(Adw.Window):
             toggle (): 
             status (): 
         """
-        if not self.sandbox and not status:
-            self.show_flatpak_sandbox_notice()            
-            toggle.set_active(True)
-            self.settings.set_boolean("virtualization", True)
-        else:
-            self.settings.set_boolean("virtualization", status)
+        # Flatpak support removed
+        # if not self.sandbox and not status:
+        #     self.show_flatpak_sandbox_notice()            
+        #     toggle.set_active(True)
+        #     self.settings.set_boolean("virtualization", True)
+        # else:
+        self.settings.set_boolean("virtualization", status)
 
     def _on_extra_settings_rebuild(self, constants: dict[str, Any], _handler: Handler):
         if constants == AVAILABLE_RAGS:
@@ -4361,26 +4360,27 @@ class Settings(Adw.Window):
             elif type(row) is Adw.ExpanderRow:
                 row.add_action(actionbutton)
 
-    def add_flatpak_waning_button(self, handler : Handler, row : Adw.ExpanderRow | Adw.ActionRow | Adw.ComboRow):
-        """Add flatpak warning button in case the application does not have enough permissions
-        On click it will show a warning about this issue and how to solve it
-
-        Args:
-            handler: an instance of the handler
-            row: the row where to add the button
-        """
-        actionbutton = Gtk.Button(css_classes=["flat"], valign=Gtk.Align.CENTER)
-        if handler.requires_sandbox_escape() and not self.sandbox:
-            icon = Gtk.Image.new_from_gicon(Gio.ThemedIcon(name="warning-outline-symbolic"))
-            actionbutton.connect("clicked", self.show_flatpak_sandbox_notice)
-            actionbutton.add_css_class("error")
-            actionbutton.set_child(icon)
-            if type(row) is Adw.ActionRow:
-                row.add_suffix(actionbutton)
-            elif type(row) is Adw.ExpanderRow:
-                row.add_action(actionbutton)
-            elif type(row) is Adw.ComboRow:
-                row.add_suffix(actionbutton)
+    # Flatpak support removed
+    # def add_flatpak_waning_button(self, handler : Handler, row : Adw.ExpanderRow | Adw.ActionRow | Adw.ComboRow):
+    #     """Add flatpak warning button in case the application does not have enough permissions
+    #     On click it will show a warning about this issue and how to solve it
+    #
+    #     Args:
+    #         handler: an instance of the handler
+    #         row: the row where to add the button
+    #     """
+    #     actionbutton = Gtk.Button(css_classes=["flat"], valign=Gtk.Align.CENTER)
+    #     if handler.requires_sandbox_escape() and not self.sandbox:
+    #         icon = Gtk.Image.new_from_gicon(Gio.ThemedIcon(name="warning-outline-symbolic"))
+    #         actionbutton.connect("clicked", self.show_flatpak_sandbox_notice)
+    #         actionbutton.add_css_class("error")
+    #         actionbutton.set_child(icon)
+    #         if type(row) is Adw.ActionRow:
+    #             row.add_suffix(actionbutton)
+    #         elif type(row) is Adw.ExpanderRow:
+    #             row.add_action(actionbutton)
+    #         elif type(row) is Adw.ComboRow:
+    #             row.add_suffix(actionbutton)
 
     def install_model(self, button: Gtk.Button, handler):
         """Display a spinner and trigger the dependency download on another thread
@@ -4507,34 +4507,35 @@ class Settings(Adw.Window):
             wbbutton.connect("clicked", lambda _: open_folder(website))
         return wbbutton
 
-    def show_flatpak_sandbox_notice(self, el=None):
-        """Create a MessageDialog that explains the issue with missing permissions on flatpak
-
-        Args:
-            el (): 
-        """
-        # Create a modal window with the warning
-        dialog = Adw.MessageDialog(
-            title="Permission Error",
-            modal=True,
-            transient_for=self,
-            destroy_with_parent=True
-        )
-
-        # Imposta il contenuto della finestra
-        dialog.set_heading(_("Not enough permissions"))
-
-        # Aggiungi il testo dell'errore
-        dialog.set_body_use_markup(True)
-        dialog.set_body(_("Newelle does not have enough permissions to run commands on your system, please run the following command"))
-        dialog.add_response("close", _("Understood"))
-        dialog.set_default_response("close")
-        dialog.set_extra_child(CopyBox("flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle", "bash"))
-        dialog.set_close_response("close")
-        dialog.set_response_appearance("close", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect('response', lambda dialog, response_id: dialog.destroy())
-        # Show the window
-        dialog.present()
+    # Flatpak support removed
+    # def show_flatpak_sandbox_notice(self, el=None):
+    #     """Create a MessageDialog that explains the issue with missing permissions on flatpak
+    #
+    #     Args:
+    #         el (): 
+    #     """
+    #     # Create a modal window with the warning
+    #     dialog = Adw.MessageDialog(
+    #         title="Permission Error",
+    #         modal=True,
+    #         transient_for=self,
+    #         destroy_with_parent=True
+    #     )
+    #
+    #     # Imposta il contenuto della finestra
+    #     dialog.set_heading(_("Not enough permissions"))
+    #
+    #     # Aggiungi il testo dell'errore
+    #     dialog.set_body_use_markup(True)
+    #     dialog.set_body(_("Newelle does not have enough permissions to run commands on your system, please run the following command"))
+    #     dialog.add_response("close", _("Understood"))
+    #     dialog.set_default_response("close")
+    #     dialog.set_extra_child(CopyBox("flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle", "bash"))
+    #     dialog.set_close_response("close")
+    #     dialog.set_response_appearance("close", Adw.ResponseAppearance.DESTRUCTIVE)
+    #     dialog.connect('response', lambda dialog, response_id: dialog.destroy())
+    #     # Show the window
+    #     dialog.present()
 
     def delete_pip_path(self):
         """Delete the pip path folder"""

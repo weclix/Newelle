@@ -5,8 +5,9 @@ from gettext import gettext as _
 import os
 import threading
 from ..utility.screenshot import capture_screenshot
-from ..utility.system import is_flatpak
-from ..utility.system import get_spawn_command
+# Flatpak support removed
+# from ..utility.system import is_flatpak
+# from ..utility.system import get_spawn_command
 from ..utility.strings import quote_string, add_S_to_sudo
 from ..utility.command_runner import (
     CommandRunner,
@@ -48,7 +49,9 @@ class DefaultToolsIntegration(NewelleExtension):
 
         if not self.settings.get_boolean("virtualization"):
             shell_command = add_S_to_sudo(shell_command)
-            terminal_command = get_spawn_command() + ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
+            # Flatpak support removed: no spawn prefix needed
+            # terminal_command = get_spawn_command() + ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
+            terminal_command = ["bash", "-c", "export TERM=xterm-256color;alias sudo=\"sudo -S\";" + shell_command]
         else:
             terminal_command = ["bash", "-c", "export TERM=xterm-256color;" + shell_command]
 
@@ -179,8 +182,9 @@ class DefaultToolsIntegration(NewelleExtension):
         return sorted(groups.values(), key=lambda group: str(group["chat_name"]).lower())
 
     def _host_prefix(self) -> list[str]:
-        if is_flatpak() and not self._request_settings().get_boolean("virtualization"):
-            return get_spawn_command()
+        # Flatpak support removed: no spawn prefix needed
+        # if is_flatpak() and not self._request_settings().get_boolean("virtualization"):
+        #     return get_spawn_command()
         return []
 
     def _working_dir(self) -> str:

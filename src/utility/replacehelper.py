@@ -1,6 +1,7 @@
 import os 
 import subprocess
-from .system import get_spawn_command
+# Flatpak support removed
+# from .system import get_spawn_command
 import time
 from .system import is_wayland 
 import re 
@@ -25,7 +26,9 @@ class ReplaceHelper:
         """
         if ReplaceHelper.DISTRO is None:
             try:
-                ReplaceHelper.DISTRO = subprocess.check_output(get_spawn_command() + ['bash', '-c', 'lsb_release -ds']).decode('utf-8').strip()
+                # Flatpak support removed: no spawn prefix needed
+                # ReplaceHelper.DISTRO = subprocess.check_output(get_spawn_command() + ['bash', '-c', 'lsb_release -ds']).decode('utf-8').strip()
+                ReplaceHelper.DISTRO = subprocess.check_output(['bash', '-c', 'lsb_release -ds']).decode('utf-8').strip()
             except subprocess.CalledProcessError:
                 ReplaceHelper.DISTRO = "Unknown"
         

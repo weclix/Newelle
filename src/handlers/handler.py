@@ -254,10 +254,11 @@ class Handler():
         """ Return if the LLM is a secondary one"""
         return self.schema_key == "secondary-settings"
 
-    @staticmethod
-    def requires_sandbox_escape() -> bool:
-        """If the handler requires to run commands on the user host system"""
-        return False
+    # Flatpak support removed
+    # @staticmethod
+    # def requires_sandbox_escape() -> bool:
+    #     """If the handler requires to run commands on the user host system"""
+    #     return False
 
     def get_extra_settings(self) -> list:
         """

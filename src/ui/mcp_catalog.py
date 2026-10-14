@@ -28,9 +28,6 @@ from ..utility.download_manager import (
     get_download_manager,
 )
 from ..utility.system import (
-    can_escape_sandbox,
-    get_spawn_command,
-    is_flatpak,
     open_website,
 )
 from . import _IMAGE_REQUEST_HEADERS, _pixbuf_from_image_data
@@ -666,8 +663,7 @@ def _ensure_git_repository(additional_setup, setup_dir, task=None):
             )
         with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
             process = subprocess.Popen(
-                get_spawn_command()
-                + [
+                [
                     "git",
                     "clone",
                     "--depth",
@@ -740,10 +736,11 @@ def _ensure_git_repository(additional_setup, setup_dir, task=None):
         staging_path = None
     except FileNotFoundError as exc:
         missing_command = _missing_command_name(exc, "git")
-        if missing_command == "flatpak-spawn":
-            raise RuntimeError(
-                _("Flatpak host access is required for automatic MCP setup.")
-            ) from exc
+        # Flatpak support removed: flatpak-spawn is no longer used
+        # if missing_command == "flatpak-spawn":
+        #     raise RuntimeError(
+        #         _("Flatpak host access is required for automatic MCP setup.")
+        #     ) from exc
         raise RuntimeError(
             _("Git is required for automatic MCP setup; '{}' was not found.").format(
                 missing_command
@@ -781,27 +778,28 @@ def _find_gimp_plugin_directory():
     return max(version_directories, key=_gimp_version_key) / "plug-ins" / "gimp-mcp-plugin"
 
 
-_FLATPAK_GIMP_PLUGIN_INSTALLER = """set -eu
-source_path=$1
-selected=""
-for root in "$HOME/.config/GIMP" "$HOME/.var/app/org.gimp.GIMP/config/GIMP"; do
-    if [ -d "$root" ]; then
-        candidate=$(find "$root" -mindepth 1 -maxdepth 1 -type d -name '3.*' | sort -V | tail -n 1)
-        if [ -n "$candidate" ]; then
-            selected=$candidate
-            break
-        fi
-    fi
-done
-if [ -z "$selected" ]; then
-    echo "Could not find a GIMP 3.x configuration directory. Launch GIMP once, then enable automatic setup again." >&2
-    exit 2
-fi
-target="$selected/plug-ins/gimp-mcp-plugin"
-mkdir -p "$target"
-cp "$source_path" "$target/gimp-mcp-plugin.py"
-chmod +x "$target/gimp-mcp-plugin.py"
-"""
+# Flatpak support removed
+# _FLATPAK_GIMP_PLUGIN_INSTALLER = """set -eu
+# source_path=$1
+# selected=""
+# for root in "$HOME/.config/GIMP" "$HOME/.var/app/org.gimp.GIMP/config/GIMP"; do
+#     if [ -d "$root" ]; then
+#         candidate=$(find "$root" -mindepth 1 -maxdepth 1 -type d -name '3.*' | sort -V | tail -n 1)
+#         if [ -n "$candidate" ]; then
+#             selected=$candidate
+#             break
+#         fi
+#     fi
+# done
+# if [ -z "$selected" ]; then
+#     echo "Could not find a GIMP 3.x configuration directory. Launch GIMP once, then enable automatic setup again." >&2
+#     exit 2
+# fi
+# target="$selected/plug-ins/gimp-mcp-plugin"
+# mkdir -p "$target"
+# cp "$source_path" "$target/gimp-mcp-plugin.py"
+# chmod +x "$target/gimp-mcp-plugin.py"
+# """
 
 
 def _install_gimp_plugin(additional_setup, setup_dir):
@@ -815,29 +813,30 @@ def _install_gimp_plugin(additional_setup, setup_dir):
     if not source_path.is_file():
         raise RuntimeError(_("The downloaded GIMP plug-in file is missing."))
 
-    if is_flatpak():
-        result = subprocess.run(
-            get_spawn_command()
-            + [
-                "sh",
-                "-c",
-                _FLATPAK_GIMP_PLUGIN_INSTALLER,
-                "newelle-gimp-plugin-installer",
-                str(source_path),
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "").strip()
-            raise RuntimeError(
-                _("Could not install the GIMP plug-in{}.").format(
-                    f": {detail[-500:]}" if detail else ""
-                )
-            )
-        return
+    # Flatpak support removed
+    # if is_flatpak():
+    #     result = subprocess.run(
+    #         get_spawn_command()
+    #         + [
+    #             "sh",
+    #             "-c",
+    #             _FLATPAK_GIMP_PLUGIN_INSTALLER,
+    #             "newelle-gimp-plugin-installer",
+    #             str(source_path),
+    #         ],
+    #         check=False,
+    #         capture_output=True,
+    #         text=True,
+    #         timeout=30,
+    #     )
+    #     if result.returncode != 0:
+    #         detail = (result.stderr or result.stdout or "").strip()
+    #         raise RuntimeError(
+    #             _("Could not install the GIMP plug-in{}.").format(
+    #                 f": {detail[-500:]}" if detail else ""
+    #             )
+    #         )
+    #     return
 
     target_directory = _find_gimp_plugin_directory()
     target_directory.mkdir(parents=True, exist_ok=True)
@@ -1517,7 +1516,8 @@ class ConnectApplicationView(Gtk.Box):
         action_box.append(self.connect_button)
         content.append(action_box)
 
-        can_use_stdio = (not is_flatpak()) or can_escape_sandbox()
+        # Flatpak support removed
+        can_use_stdio = True
         if server["type"] == "stdio" and not can_use_stdio:
             self.connect_button.set_sensitive(False)
             self.connect_button.set_tooltip_text(

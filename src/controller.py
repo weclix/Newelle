@@ -29,7 +29,8 @@ from .handlers.websearch import WebSearchHandler
 from .handlers.image_generator import ImageGeneratorHandler
 # from .handlers.interfaces.interface import Interface
 
-from .utility.system import is_flatpak
+# Flatpak support removed
+# from .utility.system import is_flatpak
 from .utility.pip import install_module
 from .utility.profile_settings import (
     ROOT_PROFILE,
@@ -604,11 +605,11 @@ class NewelleController(WorkspaceController):
         self.data_dir = GLib.get_user_data_dir()
         self.cache_dir = GLib.get_user_cache_dir()
         self.chats_path = os.path.join(os.path.dirname(self.data_dir), "datachats.pkl")
-        if not is_flatpak():
-            self.config_dir = os.path.join(self.config_dir, DIR_NAME)
-            self.data_dir = os.path.join(self.config_dir, DIR_NAME)
-            self.cache_dir = os.path.join(self.cache_dir, DIR_NAME)
-            self.chats_path = os.path.join(self.data_dir, "chats.pkl")
+        # Flatpak support removed
+        self.config_dir = os.path.join(self.config_dir, DIR_NAME)
+        self.data_dir = os.path.join(self.config_dir, DIR_NAME)
+        self.cache_dir = os.path.join(self.cache_dir, DIR_NAME)
+        self.chats_path = os.path.join(self.data_dir, "chats.pkl")
 
         self.pip_path = os.path.join(self.config_dir, "pip")
         self.models_dir = os.path.join(self.config_dir, "models")
@@ -2274,7 +2275,8 @@ class NewelleController(WorkspaceController):
         if name == "tts_on":
             return request_settings.tts_enabled
         elif name == "virtualization_on":
-            return request_settings.virtualization and is_flatpak()
+            # Flatpak support removed
+            return False
         elif name == "auto_run":
             return request_settings.auto_run
         elif name == "websearch_on":

@@ -9,7 +9,8 @@ from ..utility.build_dependencies import (
     find_missing_build_dependencies,
     suggest_install_command,
 )
-from ..utility.system import can_escape_sandbox
+# Flatpak support removed
+# from ..utility.system import can_escape_sandbox
 
 
 class BuildDependencyWarning(Gtk.Box):
@@ -20,7 +21,8 @@ class BuildDependencyWarning(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(12)
         self._cache = {}
-        self._can_inspect_host = can_escape_sandbox()
+        # Flatpak support removed
+        self._can_inspect_host = True
 
         title = Gtk.Label(label=_("Missing Build Dependencies"))
         title.add_css_class("heading")

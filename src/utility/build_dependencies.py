@@ -12,7 +12,8 @@ import subprocess
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
-from .system import get_spawn_command, is_flatpak
+# Flatpak support removed
+# from .system import get_spawn_command, is_flatpak
 
 
 @dataclass(frozen=True)
@@ -184,7 +185,9 @@ _INSTALL_COMMANDS = {
 
 def _run_host(command: list[str], *, timeout: int = 5) -> subprocess.CompletedProcess:
     return subprocess.run(
-        get_spawn_command() + command,
+        # Flatpak support removed: no spawn prefix needed
+        # get_spawn_command() + command,
+        command,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,
@@ -195,24 +198,25 @@ def _run_host(command: list[str], *, timeout: int = 5) -> subprocess.CompletedPr
 
 def _available_host_commands(commands: Iterable[str]) -> set[str]:
     commands = tuple(dict.fromkeys(commands))
-    if not is_flatpak():
-        return {command for command in commands if shutil.which(command)}
+    # Flatpak support removed: always check commands directly on the host
+    # if not is_flatpak():
+    return {command for command in commands if shutil.which(command)}
 
-    try:
-        # Arguments are passed separately and expanded by the fixed script, so
-        # dependency names are never interpolated into shell source.
-        result = _run_host([
-            "sh",
-            "-c",
-            'for command do command -v "$command" >/dev/null 2>&1 && printf "%s\\n" "$command"; done; exit 0',
-            "sh",
-            *commands,
-        ])
-    except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
-        return set()
-    if result.returncode != 0:
-        return set()
-    return set(result.stdout.splitlines())
+    # try:
+    #     # Arguments are passed separately and expanded by the fixed script, so
+    #     # dependency names are never interpolated into shell source.
+    #     result = _run_host([
+    #         "sh",
+    #         "-c",
+    #         'for command do command -v "$command" >/dev/null 2>&1 && printf "%s\\n" "$command"; done; exit 0',
+    #         "sh",
+    #         *commands,
+    #     ])
+    # except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+    #     return set()
+    # if result.returncode != 0:
+    #     return set()
+    # return set(result.stdout.splitlines())
 
 
 def _host_pkg_config_available(package: str) -> bool:
@@ -292,14 +296,15 @@ def _distribution_from_values(values: dict[str, str]) -> LinuxDistribution | Non
 def detect_linux_distribution() -> LinuxDistribution | None:
     """Detect a supported host distribution from ``/etc/os-release``."""
     try:
-        if is_flatpak():
-            result = _run_host(["cat", "/etc/os-release"])
-            if result.returncode != 0:
-                return None
-            text = result.stdout
-        else:
-            with open("/etc/os-release", encoding="utf-8") as release_file:
-                text = release_file.read()
+        # Flatpak support removed: always read /etc/os-release directly
+        # if is_flatpak():
+        #     result = _run_host(["cat", "/etc/os-release"])
+        #     if result.returncode != 0:
+        #         return None
+        #     text = result.stdout
+        # else:
+        with open("/etc/os-release", encoding="utf-8") as release_file:
+            text = release_file.read()
     except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
         return None
     return _distribution_from_values(parse_os_release(text))

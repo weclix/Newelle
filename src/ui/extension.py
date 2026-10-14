@@ -5,7 +5,8 @@ from threading import Thread
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ..controller import NewelleController
-from ..utility.system import can_escape_sandbox, get_spawn_command
+# Flatpak support removed
+# from ..utility.system import can_escape_sandbox, get_spawn_command
 from .extensions_catalog import ExtensionMarketplaceView, install_extension_files
 from .extra_settings import ExtraSettingsBuilder
 from .widgets import CopyBox
@@ -31,7 +32,8 @@ class ExtensionPage(Adw.PreferencesPage):
         self.extension_path = controller.extension_path
         self.pip_directory = controller.pip_path
         self.extensions_cache = controller.extensions_cache
-        self.sandbox = can_escape_sandbox()
+        # Flatpak support removed
+        self.sandbox = False
         self.page_groups = []
         self.marketplace_initialized = False
         self.installed_page = Gtk.Box(
@@ -205,7 +207,8 @@ class ExtensionPage(Adw.PreferencesPage):
         row.add_suffix(delete_button)
 
         self.extra_settings_rows[(extension.key, "extension", False)]["row"] = row
-        self.add_flatpak_warning_button(extension, row)
+        # Flatpak support removed
+        # self.add_flatpak_warning_button(extension, row)
         self.extensiongroup.add(row)
 
     def _add_extension_actions(self):
@@ -221,8 +224,7 @@ class ExtensionPage(Adw.PreferencesPage):
         guide_button.connect(
             "clicked",
             lambda _button: subprocess.Popen(
-                get_spawn_command()
-                + [
+                [
                     "xdg-open",
                     "https://github.com/qwersyk/Newelle/wiki/User-guide-to-Extensions",
                 ]
@@ -241,8 +243,7 @@ class ExtensionPage(Adw.PreferencesPage):
         download_button.connect(
             "clicked",
             lambda _button: subprocess.Popen(
-                get_spawn_command()
-                + ["xdg-open", "https://github.com/topics/newelle-extension"]
+                ["xdg-open", "https://github.com/topics/newelle-extension"]
             ),
         )
         download_row.add_suffix(download_button)
@@ -264,53 +265,54 @@ class ExtensionPage(Adw.PreferencesPage):
     def _convert_extension_constants(self, _constants):
         return "extension"
 
-    def add_flatpak_warning_button(self, handler, row):
-        if not handler.requires_sandbox_escape() or self.sandbox:
-            return
-
-        action_button = Gtk.Button(
-            icon_name="warning-outline-symbolic",
-            valign=Gtk.Align.CENTER,
-            css_classes=["flat", "error"],
-        )
-        action_button.connect("clicked", self.show_flatpak_sandbox_notice)
-        if isinstance(row, Adw.ExpanderRow):
-            row.add_action(action_button)
-        else:
-            row.add_suffix(action_button)
-
-    def show_flatpak_sandbox_notice(self, _button=None):
-        dialog = Adw.MessageDialog(
-            title=_("Permission Error"),
-            modal=True,
-            transient_for=self._parent_window(),
-            destroy_with_parent=True,
-        )
-        dialog.set_heading(_("Not enough permissions"))
-        dialog.set_body_use_markup(True)
-        dialog.set_body(
-            _(
-                "Newelle does not have enough permissions to run commands on your system, please run the following command"
-            )
-        )
-        dialog.add_response("close", _("Understood"))
-        dialog.set_default_response("close")
-        dialog.set_extra_child(
-            CopyBox(
-                "flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle",
-                "bash",
-            )
-        )
-        dialog.set_close_response("close")
-        dialog.set_response_appearance(
-            "close",
-            Adw.ResponseAppearance.DESTRUCTIVE,
-        )
-        dialog.connect(
-            "response",
-            lambda current_dialog, _response_id: current_dialog.destroy(),
-        )
-        dialog.present()
+    # Flatpak support removed
+    # def add_flatpak_warning_button(self, handler, row):
+    #     if not handler.requires_sandbox_escape() or self.sandbox:
+    #         return
+    #
+    #     action_button = Gtk.Button(
+    #         icon_name="warning-outline-symbolic",
+    #         valign=Gtk.Align.CENTER,
+    #         css_classes=["flat", "error"],
+    #     )
+    #     action_button.connect("clicked", self.show_flatpak_sandbox_notice)
+    #     if isinstance(row, Adw.ExpanderRow):
+    #         row.add_action(action_button)
+    #     else:
+    #         row.add_suffix(action_button)
+    #
+    # def show_flatpak_sandbox_notice(self, _button=None):
+    #     dialog = Adw.MessageDialog(
+    #         title=_("Permission Error"),
+    #         modal=True,
+    #         transient_for=self._parent_window(),
+    #         destroy_with_parent=True,
+    #     )
+    #     dialog.set_heading(_("Not enough permissions"))
+    #     dialog.set_body_use_markup(True)
+    #     dialog.set_body(
+    #         _(
+    #             "Newelle does not have enough permissions to run commands on your system, please run the following command"
+    #         )
+    #     )
+    #     dialog.add_response("close", _("Understood"))
+    #     dialog.set_default_response("close")
+    #     dialog.set_extra_child(
+    #         CopyBox(
+    #             "flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle",
+    #             "bash",
+    #         )
+    #     )
+    #     dialog.set_close_response("close")
+    #     dialog.set_response_appearance(
+    #         "close",
+    #         Adw.ResponseAppearance.DESTRUCTIVE,
+    #     )
+    #     dialog.connect(
+    #         "response",
+    #         lambda current_dialog, _response_id: current_dialog.destroy(),
+    #     )
+    #     dialog.present()
 
     def change_status(self, _switch, state, extension_id):
         if state:

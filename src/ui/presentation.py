@@ -2,7 +2,8 @@ from gi.repository import Gtk, Adw
 
 from .settings import Settings
 from .widgets import CopyBox
-from ..utility.system import can_escape_sandbox, is_flatpak
+# Flatpak support removed
+# from ..utility.system import can_escape_sandbox, is_flatpak
 import subprocess
 
 
@@ -123,15 +124,16 @@ class PresentationWindow(Adw.Window):
             },
         ]
         
+        # Flatpak support removed
         # Only show the virtualization page if running in Flatpak
-        if is_flatpak():
-            pages.append({
-                "title": _("Command virtualization"),
-                "description": _("Newelle can be used to run commands on your system, but pay attention at what you run! <b>The LLM is not under our control, so it might generate malicious code!</b>\\nBy default, your commands will be <b>virtualized in Flatpak environment</b>, but pay attention!"),
-                "widget": self.__steal_from_settings(settings.neural_network),
-                "actions": [
-                ] 
-            })
+        # if is_flatpak():
+        #     pages.append({
+        #         "title": _("Command virtualization"),
+        #         "description": _("Newelle can be used to run commands on your system, but pay attention at what you run! <b>The LLM is not under our control, so it might generate malicious code!</b>\\nBy default, your commands will be <b>virtualized in Flatpak environment</b>, but pay attention!"),
+        #         "widget": self.__steal_from_settings(settings.neural_network),
+        #         "actions": [
+        #         ] 
+        #     })
         
         pages.append({
                 "title": _("Extensions"),
@@ -145,20 +147,21 @@ class PresentationWindow(Adw.Window):
                     }
                 ]
             })
+        # Flatpak support removed
         # Show the warning only if there are not enough permissions
-        if not can_escape_sandbox():
-            pages.append({
-                "title": _("Permission Error"),
-                "description": _("Newelle does not have enough permissions to run commands on your system."),
-                "picture": "/io/github/qwersyk/Newelle/images/error.svg",
-                "actions": [
-                    {
-                        "label": "Learn more",
-                        "classes": ["suggested-action"],
-                        "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/qwersyk/Newelle?tab=readme-ov-file#permission"]),
-                    }
-                ]
-            })
+        # if not can_escape_sandbox():
+        #     pages.append({
+        #         "title": _("Permission Error"),
+        #         "description": _("Newelle does not have enough permissions to run commands on your system."),
+        #         "picture": "/io/github/qwersyk/Newelle/images/error.svg",
+        #         "actions": [
+        #             {
+        #                 "label": "Learn more",
+        #                 "classes": ["suggested-action"],
+        #                 "callback": lambda x: subprocess.Popen(["xdg-open", "https://github.com/qwersyk/Newelle?tab=readme-ov-file#permission"]),
+        #             }
+        #         ]
+        #     })
         pages.append({
                 "title": _("Begin using the app"),
                 "description": None,
@@ -210,7 +213,9 @@ class PresentationWindow(Adw.Window):
             
         """
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, hexpand=False)
-        copy = CopyBox("flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle", "bash")
+        # Flatpak support removed
+        # copy = CopyBox("flatpak --user override --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle", "bash")
+        copy = CopyBox("", "bash")
         copy.set_hexpand(False)
         copy.set_vexpand(True)
         img = Gtk.Image.new_from_icon_name("warning-outline-symbolic")

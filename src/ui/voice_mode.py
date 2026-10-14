@@ -21,11 +21,12 @@ from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 from ..controller import NewelleController
 from ..ui_controller import HeadlessController
 from ..utility.strings import clean_message_tts, remove_thinking_blocks
-from ..utility.system import (
-    get_flatpak_x11_override_command,
-    has_flatpak_x11_permission,
-    is_flatpak,
-)
+# Flatpak support removed
+# from ..utility.system import (
+#     get_flatpak_x11_override_command,
+#     has_flatpak_x11_permission,
+#     is_flatpak,
+# )
 from ..utility.vad import VoiceActivityDetector
 
 try:
@@ -1029,16 +1030,19 @@ class VoiceModeWindow(Gtk.Window):
     def _maybe_prompt_x11_override(self):
         if self._layer_shell_active or self._x11_active:
             return
-        if not is_flatpak() or has_flatpak_x11_permission():
-            return
-        if self.settings.get_boolean("voice-mode-x11-override-dont-show"):
-            return
-        GLib.idle_add(self._show_x11_override_dialog)
+        # Flatpak support removed
+        # if not is_flatpak() or has_flatpak_x11_permission():
+        #     return
+        # if self.settings.get_boolean("voice-mode-x11-override-dont-show"):
+        #     return
+        # GLib.idle_add(self._show_x11_override_dialog)
+        return
 
     def _show_x11_override_dialog(self):
         if self._closing or self._destroying:
             return GLib.SOURCE_REMOVE
-        command = get_flatpak_x11_override_command()
+        # Flatpak support removed
+        command = ""
         dialog = Adw.AlertDialog(
             heading=_("X11 access needed"),
             body=_(

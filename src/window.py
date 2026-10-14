@@ -25,7 +25,7 @@ from .ui.widgets import MultilineEntry, ProfileRow, DisplayLatex, InlineLatex, T
 from .ui.stdout_monitor import StdoutMonitorDialog
 from .utility.stdout_capture import StdoutMonitor
 from .constants import AVAILABLE_LLMS, SCHEMA_ID, SETTINGS_GROUPS
-from .utility.system import get_spawn_command, open_website, is_flatpak
+from .utility.system import open_website
 from .utility.strings import (
     clean_bot_response,
     convert_think_codeblocks,
@@ -3174,7 +3174,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         """
         console_permissions = ""
         if not self.controller.newelle_settings.virtualization:
-            console_permissions = " ".join(get_spawn_command())
+            # Flatpak support removed
+            console_permissions = ""
         commands = command.split(" && ")
         txt = ""
         path = self.main_path
@@ -3274,7 +3275,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         """Add a terminal tab"""
         command = "" if command is None else command + ";"
 
-        cmd = get_spawn_command() + ["bash", "-c", "export TERM=xterm-256color;" + command + " exec bash"]
+        # Flatpak support removed
+        cmd = ["bash", "-c", "export TERM=xterm-256color;" + command + " exec bash"]
         terminal = Terminal(cmd)
         terminal.set_vexpand(True)
         terminal.set_hexpand(True)

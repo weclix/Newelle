@@ -18,7 +18,8 @@ from ..utility.download_manager import (
     DownloadKind,
     get_download_manager,
 )
-from ..utility.system import get_spawn_command, is_flatpak
+# Flatpak support removed
+# from ..utility.system import get_spawn_command, is_flatpak
 
 _ = getattr(builtins, "_", gettext.gettext)
 
@@ -181,7 +182,7 @@ def _gpu_vram_bytes(backend):
     if backend in ("cuda", "vulkan", "auto"):
         try:
             result = subprocess.run(
-                get_spawn_command() + [
+                [
                     "nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits",
                 ],
                 capture_output=True, text=True, timeout=5, check=False,
@@ -634,7 +635,8 @@ class ModelLibraryWindow(Adw.Window):
             has_gpu_device = Path("/dev/nvidia0").exists() or any(
                 Path("/dev/dri").glob("renderD*")
             )
-            self.machine_backend = "unknown" if has_gpu_device or is_flatpak() else "cpu"
+            # Flatpak support removed
+            self.machine_backend = "unknown" if has_gpu_device else "cpu"
         self._update_machine_details()
         self.apply_filter()
         return GLib.SOURCE_REMOVE

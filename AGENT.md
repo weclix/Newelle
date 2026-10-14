@@ -282,6 +282,64 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - ✅ 已清理 `__pycache__` 中 3 个引擎的过期 `.pyc` 文件
 - ✅ `_build/` 下 meson 构建产物仍含陈旧引用，重新构建时会自动刷新
 
+## 当前变更记录（2026-10-14）
+
+### 变更主题：Flatpak 支持剥离
+
+对 Flatpak 支持进行了完全剥离，移除了所有 Flatpak 相关函数、沙箱检查及警告 UI。
+
+#### 已删除的功能函数（`src/utility/system.py`）
+
+以下 Flatpak 相关函数已从 `src/utility/system.py` 中删除：
+
+| 函数 | 说明 |
+|------|------|
+| `is_flatpak()` | 检查是否运行在 Flatpak 沙箱中 |
+| `get_flatpak_x11_override_command()` | 获取 Flatpak X11 覆盖命令 |
+| `_flatpak_sockets()` | 获取 Flatpak sockets |
+| `has_flatpak_x11_permission()` | 检查 Flatpak X11 权限 |
+| `needs_voice_mode_x11_override()` | 检查是否需要 voice mode X11 覆盖 |
+| `can_escape_sandbox()` | 检查是否能逃逸沙箱 |
+| `get_spawn_command()` | 获取 spawn 命令（含 flatpak-spawn 前缀） |
+
+同时更新了 `has_backend()`/`detect_cuda_version()` 中对 `get_spawn_command` 的调用。
+
+#### 已修改的文件（15 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/utility/system.py` | 删除 7 个 Flatpak 函数；更新 `has_backend`/`detect_cuda_version` 调用 |
+| `src/integrations/mcp.py` | 注释 `is_flatpak`/`get_spawn_command` 引用，更新文档字符串 |
+| `src/integrations/default_tools.py` | 注释 `is_flatpak`/`get_spawn_command` 引用 |
+| `src/utility/build_dependencies.py` | 注释 `is_flatpak`/`get_spawn_command` 引用 |
+| `src/utility/replacehelper.py` | 注释 `is_flatpak`/`get_spawn_command` 引用 |
+| `src/ui/widgets/message.py` | 注释 `is_flatpak`/`get_spawn_command` 引用 |
+| `src/ui/widgets/chat_tab.py` | 注释 `is_flatpak`/`get_spawn_command` 引用 |
+| `src/utility/file_search.py` | 注释 flatpak-spawn 用法 |
+| `src/ui/mcp_catalog.py` | 注释 `_FLATPAK_GIMP_PLUGIN_INSTALLER` 常量和 flatpak-spawn 检查 |
+| `src/ui/extension.py` | 注释 `add_flatpak_warning_button`/`show_flatpak_sandbox_notice` 方法；`self.sandbox` 改为 `False` |
+| `src/ui/presentation.py` | 注释 flatpak 命令 CopyBox |
+| `src/ui/settings.py` | 注释 `add_flatpak_waning_button`/`show_flatpak_sandbox_notice` 方法；`self.sandbox` 改为 `False`；`_handler_selection_blocked` 移除沙箱检查 |
+| `src/handlers/handler.py` | 注释 `requires_sandbox_escape()` 方法 |
+| `src/handlers/stt/custom_handler.py` | 注释 `requires_sandbox_escape()` 方法 |
+| `src/utility/background_process.py` | 更新文档字符串 |
+
+#### 当前 Flatpak 支持状态
+
+剥离后，项目中不再包含任何 Flatpak 相关功能：
+
+- `src/utility/system.py` 中无 Flatpak 函数
+- 所有 Flatpak 引用均以注释形式保留（`#` 前缀），便于后续恢复
+- `self.sandbox` 属性改为 `False`（应用不再运行在沙箱中）
+- `requires_sandbox_escape()` 方法已注释（不再需要沙箱逃逸检查）
+
+#### 验证结果
+
+- ✅ `python3 -m py_compile` 语法检查通过（所有修改文件）
+- ✅ 全项目搜索确认无残留的未注释 Flatpak 引用（`is_flatpak`、`get_spawn_command`、`flatpak-spawn`、`requires_sandbox_escape` 等均已注释或删除）
+- ✅ meson 构建脚本（`meson.build`、`src/meson.build`、`data/meson.build`、`meson_options.txt`）无 Flatpak 相关引用
+- ✅ 项目根目录无 Flatpak manifest 文件（`io.github.qwersyk.Newelle.json` 等）
+
 ### 其他变更（与 Interfaces 剥离无关）
 
 - `data/io.github.qwersyk.Newelle.desktop.in`：将 `Exec=newelle` 改为 `Exec=env DRI_PRIME=1 newelle`（含 mini-window/voice-mode 动作），用于强制使用独立显卡渲染
@@ -307,5 +365,6 @@ meson install -C _build
 - 被剥离的 TTS 引擎引用同样以注释形式保留（`#` 前缀），便于后续恢复
 - 被剥离的 STT 引擎引用同样以注释形式保留（`#` 前缀），便于后续恢复
 - 被剥离的图片生成引擎引用同样以注释形式保留（`#` 前缀），便于后续恢复
+- 被剥离的 Flatpak 引用同样以注释形式保留（`#` 前缀），便于后续恢复
 - `po/` 目录下的 `.po` 翻译文件仍可能包含已删除文件的路径引用，这些是自动生成文件，重新构建时会更新
 - 若需恢复某个提供商/模型/引擎，需同时恢复其功能文件、`constants.py` 条目、`__init__.py` 导入及 `meson.build` 引用

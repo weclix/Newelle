@@ -5,7 +5,8 @@ import json
 import os
 import time
 from gi.repository import GLib
-from ..utility.system import is_flatpak, can_escape_sandbox
+# Flatpak support removed
+# from ..utility.system import is_flatpak, can_escape_sandbox
 
 
 class _CachedTool:
@@ -40,7 +41,9 @@ class MCPIntegration(NewelleExtension):
     def _get_config_dir(self):
         """Return the Newelle config directory (where OAuth creds are stored)."""
         base = GLib.get_user_config_dir()
-        return base if is_flatpak() else os.path.join(base, "Newelle")
+        # Flatpak support removed: always use the Newelle subdirectory
+        # return base if is_flatpak() else os.path.join(base, "Newelle")
+        return os.path.join(base, "Newelle")
 
     def _get_server_info(self, server):
         """Extract server info from both old (string) and new (dict) formats"""
@@ -451,27 +454,27 @@ class MCPIntegration(NewelleExtension):
     def _stdio_server_params(self, command, args, env):
         """Build StdioServerParameters for a stdio server.
 
-        Inside a Flatpak sandbox the configured command (npx, node, python, …)
-        is not available, so run it on the host via ``flatpak-spawn --host``.
+        The configured command (npx, node, python, …) is run directly on the
+        host.
 
         The MCP SDK spawns the server with a minimal allowlist environment
         (HOME, PATH, USER, …) that drops ``XDG_RUNTIME_DIR`` and
-        ``DBUS_SESSION_BUS_ADDRESS``; flatpak-spawn needs those to reach the
-        session helper, so the full current environment is passed through here.
-        Each user-supplied variable is also forwarded explicitly with ``--env``
-        so it reaches the host command.
+        ``DBUS_SESSION_BUS_ADDRESS``, so the full current environment is passed
+        through here. Each user-supplied variable is also forwarded explicitly
+        with ``--env`` so it reaches the host command.
         """
         from mcp.client.stdio import StdioServerParameters
 
         args = args or []
-        if is_flatpak() and can_escape_sandbox():
-            spawn_args = ["--host"]
-            if env and isinstance(env, dict):
-                for key, value in env.items():
-                    spawn_args.append(f"--env={key}={value}")
-            spawn_args.append(command)
-            spawn_args.extend(args)
-            return StdioServerParameters(command="flatpak-spawn", args=spawn_args, env=dict(os.environ))
+        # Flatpak support removed: run the command directly on the host
+        # if is_flatpak() and can_escape_sandbox():
+        #     spawn_args = ["--host"]
+        #     if env and isinstance(env, dict):
+        #         for key, value in env.items():
+        #             spawn_args.append(f"--env={key}={value}")
+        #     spawn_args.append(command)
+        #     spawn_args.extend(args)
+        #     return StdioServerParameters(command="flatpak-spawn", args=spawn_args, env=dict(os.environ))
         process_env = dict(os.environ)
         if env and isinstance(env, dict):
             process_env.update(env)

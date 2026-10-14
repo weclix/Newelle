@@ -18,24 +18,25 @@ def _ripgrep_command() -> Optional[tuple[str, ...]]:
     if executable is not None:
         return (executable,)
 
+    # Flatpak support removed: no flatpak-spawn fallback
     # The Flatpak has permission to run host commands. This makes an existing
     # host ripgrep installation useful without adding a package dependency to
     # the application or changing behavior when it is unavailable.
-    flatpak_spawn = shutil.which("flatpak-spawn")
-    if not os.getenv("container") or flatpak_spawn is None:
-        return None
-    try:
-        probe = subprocess.run(
-            (flatpak_spawn, "--host", "which", "rg"),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=2,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    if probe.returncode == 0:
-        return (flatpak_spawn, "--host", "rg")
+    # flatpak_spawn = shutil.which("flatpak-spawn")
+    # if not os.getenv("container") or flatpak_spawn is None:
+    #     return None
+    # try:
+    #     probe = subprocess.run(
+    #         (flatpak_spawn, "--host", "which", "rg"),
+    #         stdin=subprocess.DEVNULL,
+    #         stdout=subprocess.DEVNULL,
+    #         stderr=subprocess.DEVNULL,
+    #         timeout=2,
+    #     )
+    # except (OSError, subprocess.TimeoutExpired):
+    #     return None
+    # if probe.returncode == 0:
+    #     return (flatpak_spawn, "--host", "rg")
     return None
 
 

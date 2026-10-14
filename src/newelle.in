@@ -32,8 +32,8 @@ localedir = '@localedir@'
 
 sys.path.insert(1, pkgdatadir)
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-locale.bindtextdomain('newelle', localedir)
-locale.textdomain('newelle')
+gettext.bindtextdomain('newelle', localedir)
+gettext.textdomain('newelle')
 gettext.install('newelle', localedir)
 
 def parse_args():

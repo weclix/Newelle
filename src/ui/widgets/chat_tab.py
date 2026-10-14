@@ -29,7 +29,8 @@ from ...utility.strings import (
     remove_markdown,
     remove_emoji,
 )
-from ...utility.system import is_flatpak
+# Flatpak support removed
+# from ...utility.system import is_flatpak
 from ...utility.media import extract_supported_files, file_matches_patterns
 from ...tools import Command
 
@@ -699,9 +700,9 @@ class ChatTab(Gtk.Box):
             {"setting_name": "websearch-on", "title": _("Web search")},
         ]
         
-        # Only add virtualization option if running in Flatpak
-        if is_flatpak():
-            entries.append({"setting_name": "virtualization", "title": _("Virtualization")})
+        # Flatpak support removed: virtualization option no longer needed
+        # if is_flatpak():
+        #     entries.append({"setting_name": "virtualization", "title": _("Virtualization")})
         
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         container.set_margin_start(12)
