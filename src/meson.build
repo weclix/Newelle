@@ -240,6 +240,11 @@ image_generator_sources = [
   # 'handlers/image_generator/openrouter_image_handler.py',
   ]
 
+interface_sources = [
+  'handlers/interfaces/__init__.py',
+  'handlers/interfaces/interface.py',
+  'handlers/interfaces/mcp_interface.py',
+]
 utility_sources = [
   'utility/screenshot.py',
   'utility/__init__.py',
