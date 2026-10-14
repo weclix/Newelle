@@ -1,9 +1,7 @@
 from .interface import Interface
-from .chat_interface import ChatInterface
-from .api_handler import APIInterface
+from .mcp_interface import MCPInterface
 
 __all__ = [
     "Interface",
-    "ChatInterface",
-    "APIInterface",
+    "MCPInterface",
 ]
