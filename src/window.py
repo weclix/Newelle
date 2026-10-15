@@ -1872,6 +1872,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
                 reload_types.add(ReloadType.PROMPTS)
             elif group == "tools":
                 reload_types.add(ReloadType.TOOLS)
+            elif group == "subagents":
+                reload_types.add(ReloadType.TOOLS)
             elif group == "interface":
                 reload_types.add(ReloadType.RELOAD_CHAT_LIST)
             elif group == "general":
