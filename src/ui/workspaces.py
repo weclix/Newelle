@@ -392,16 +392,17 @@ class WorkspaceWindow:
                 self.chat_tabs.transfer_page(page, cached, cached.get_n_pages())
             self.update_settings(reloads)
             self.main_path = self.controller.newelle_settings.main_path
-            explorer = self.get_current_explorer_panel()
-            if explorer is None:
-                for i in range(self.canvas_tabs.get_n_pages()):
-                    candidate = self.canvas_tabs.get_nth_page(i).get_child()
-                    if hasattr(candidate, "set_main_path"):
-                        explorer = candidate
-                        break
-            if explorer is not None:
-                explorer.set_main_path(self.main_path)
-                explorer.update_folder()
+            # 已剥离：内置文件管理器
+            # explorer = self.get_current_explorer_panel()
+            # if explorer is None:
+            #     for i in range(self.canvas_tabs.get_n_pages()):
+            #         candidate = self.canvas_tabs.get_nth_page(i).get_child()
+            #         if hasattr(candidate, "set_main_path"):
+            #             explorer = candidate
+            #             break
+            # if explorer is not None:
+            #     explorer.set_main_path(self.main_path)
+            #     explorer.update_folder()
             self.refresh_profiles_box()
             self.refresh_workspace_picker()
         finally:

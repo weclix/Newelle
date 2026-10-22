@@ -12,7 +12,7 @@ from gi.repository import Gtk, GLib, Pango, Gio, Gdk
 from ...utility.message_chunk import get_message_chunks, MessageChunk, normalize_tool_arguments
 from ...utility.source_attribution import CitationSource, extract_source_section
 from ...utility.strings import markwon_to_pango, remove_thinking_blocks, simple_markdown_to_pango, quote_string, add_S_to_sudo
-from ...utility.system import get_spawn_command, open_in_external_terminal
+from ...utility.system import open_in_external_terminal
 from pylatexenc.latex2text import LatexNodes2Text
 
 from .copybox import CopyBox
@@ -717,12 +717,8 @@ class Message(Gtk.Box):
                 return
 
             main_window = self._get_main_window()
-            ui_controller = getattr(main_window, "ui_controller", None)
-            if ui_controller is not None:
-                use_integrated = not self.controller.settings.get_boolean("external-browser")
-                ui_controller.open_link(source.target, False, use_integrated)
-            else:
-                Gio.AppInfo.launch_default_for_uri(source.target, None)
+            # 已剥离：内置浏览器，改为外部浏览器打开
+            Gio.AppInfo.launch_default_for_uri(source.target, None)
         except Exception as error:
             print(f"Failed to open citation source: {error}")
 
@@ -912,7 +908,8 @@ class Message(Gtk.Box):
         main_window = self._get_main_window()
 
         def open_browser_later():
-            main_window.ui_controller.new_browser_tab(f"http://localhost:{port}", new=False)
+            # 已剥离：内置浏览器，改为外部浏览器打开
+            Gio.AppInfo.launch_default_for_uri(f"http://localhost:{port}", None)
             return GLib.SOURCE_REMOVE
 
         GLib.timeout_add(100, open_browser_later)

@@ -19,7 +19,8 @@ from .websearch import WebSearchWidget
 from .thinking import ThinkingWidget
 from .documents_reader import DocumentReaderWidget
 from .tipscarousel import TipsCarousel
-from .browser import BrowserWidget
+# 已剥离：内置浏览器
+# from .browser import BrowserWidget
 from .terminal_dialog import Terminal, TerminalDialog
 from .code_editor import CodeEditorWidget
 from .tool import ToolWidget, ToolCallSlot, ToolCallsGroupWidget
@@ -62,7 +63,8 @@ __all__ = [
     "ThinkingWidget",
     "DocumentReaderWidget",
     "TipsCarousel",
-    "BrowserWidget",
+    # 已剥离：内置浏览器
+    # "BrowserWidget",
     "Terminal",
     "TerminalDialog",
     "CodeEditorWidget",

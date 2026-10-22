@@ -41,7 +41,8 @@ src/ui/widgets/markuptextview.py
 src/ui/widgets/multiline.py
 src/ui/widgets/profilerow.py
 src/ui/widgets/terminal_dialog.py
-src/ui/widgets/browser.py
+# 已剥离：内置浏览器
+# src/ui/widgets/browser.py
 src/ui/widgets/code_editor.py
 src/ui/widgets/copybox.py
 src/ui/widgets/website.py
@@ -49,7 +50,7 @@ src/ui/widgets/websearch.py
 src/ui/widgets/thinking.py
 src/ui/widgets/file.py
 src/ui/widgets/tipscarousel.py
-src/ui/explorer.py
+# src/ui/explorer.py  # 已剥离：内置文件管理器
 src/ui/shortcuts.py
 src/ui/stdout_monitor.py
 src/ui/extension.py

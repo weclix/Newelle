@@ -1,6 +1,7 @@
 import subprocess
 import os
 import re
+import shlex
 
 def is_wayland() -> bool:
     """
@@ -42,6 +43,44 @@ def open_folder(folder):
         folder (): location of the folder 
     """
     subprocess.Popen(["gio", "open", folder])
+
+
+def open_in_external_terminal(command: str, external_terminal: str) -> bool:
+    """
+    Run a command in the external terminal chosen by the user.
+
+    The external terminal setting is a command template that may contain
+    ``{0}``, which is replaced with the command to run. When the template has
+    no placeholder, the command is appended as the last argument.
+
+    Args:
+        command: shell command to run in the terminal
+        external_terminal: external terminal command template
+
+    Returns:
+        bool: True if the terminal was started, False otherwise
+    """
+    template = (external_terminal or "").strip()
+    if template == "":
+        return False
+    try:
+        arguments = shlex.split(template)
+    except ValueError:
+        return False
+    if len(arguments) == 0:
+        return False
+    placeholder_found = False
+    for i, argument in enumerate(arguments):
+        if "{0}" in argument:
+            arguments[i] = argument.replace("{0}", command)
+            placeholder_found = True
+    if not placeholder_found:
+        arguments.append(command)
+    try:
+        subprocess.Popen(arguments)
+    except OSError:
+        return False
+    return True
 
 
 def has_backend(backend: str, spawn: bool = True) -> bool:

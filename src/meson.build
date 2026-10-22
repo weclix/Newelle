@@ -11,7 +11,7 @@ gnome.compile_resources('newelle',
 
 python = import('python')
 conf = configuration_data() 
-conf.set('PYTHON', python.find_installation('python3').path())
+conf.set('PYTHON', python.find_installation('python3').full_path())
 profile = get_option('profile')
 version_full = meson.project_version()
 if profile == 'development'
@@ -77,7 +77,7 @@ ui_sources = [
   'ui/shortcuts.py',
   'ui/mini_window.py',
   'ui/voice_mode.py',
-  'ui/explorer.py',
+  # 'ui/explorer.py',  # 已剥离：内置文件管理器
   'ui/stdout_monitor.py',
   'ui/model_library.py',
   'ui/mcp_catalog.py',
@@ -118,7 +118,8 @@ widgets_sources = [
   'ui/widgets/thinking.py',
   'ui/widgets/documents_reader.py',
   'ui/widgets/tipscarousel.py',
-  'ui/widgets/browser.py',
+  # 已剥离：内置浏览器
+  # 'ui/widgets/browser.py',
   'ui/widgets/code_editor.py',
   'ui/widgets/tool.py',
   'ui/widgets/skill.py',

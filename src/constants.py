@@ -815,7 +815,7 @@ SETTINGS_GROUPS = {
         },
         "interface": {
             "title": _("Interface"),
-            "settings": ["hidden-files", "reverse-order", "display-latex", "expand-reasoning", "compact-mode", "external-terminal-on", "external-terminal", "zoom", "send-on-enter", "initial-browser-page", "external-browser", "browser-search-string", "browser-session-persist", "editor-color-scheme", "hide-history-on-launch", "remember-profile", "user-name", "font-family", "font-size", "line-height", "monospace-font-family", "monospace-font-size", "monospace-line-height", "hide-warning"],
+            "settings": ["hidden-files", "reverse-order", "display-latex", "expand-reasoning", "compact-mode", "external-terminal-on", "external-terminal", "zoom", "send-on-enter", "editor-color-scheme", "hide-history-on-launch", "remember-profile", "user-name", "font-family", "font-size", "line-height", "monospace-font-family", "monospace-font-size", "monospace-line-height", "hide-warning"],  # 已剥离：内置浏览器（移除 initial-browser-page/external-browser/browser-search-string/browser-session-persist）
             "description": _("Interface settings, hidden files, reverse order, zoom..."),
         },
         "general": {

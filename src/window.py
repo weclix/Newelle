@@ -19,8 +19,8 @@ from .ui.settings import Settings
 from .ui.profile import ProfileDialog, TransferSettingsDialog
 from .ui.workspaces import WorkspaceWindow
 from .ui.presentation import PresentationWindow
-from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, BrowserWidget, Terminal, CodeEditorWidget, ToolWidget, CallPanel
-from .ui.explorer import ExplorerPanel
+from .ui.widgets import File, CopyBox, BarChartBox, MarkupTextView, DocumentReaderWidget, TipsCarousel, Terminal, CodeEditorWidget, ToolWidget, CallPanel  # 已剥离：内置浏览器（移除 BrowserWidget）
+# from .ui.explorer import ExplorerPanel  # 已剥离：内置文件管理器（ExplorerPanel），功能性文件已删除
 from .ui.widgets import MultilineEntry, ProfileRow, DisplayLatex, InlineLatex, ThinkingWidget, Message, ChatRow, FolderRow, ChatHistory, ChatTab
 from .ui.stdout_monitor import StdoutMonitorDialog
 from .utility.stdout_capture import StdoutMonitor
@@ -367,7 +367,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.add_chat_button.connect("clicked", lambda *_: self._on_create_chat_tab(None))
         self.chat_header.pack_start(self.add_chat_button)
 
-        # Explorer panel 
+        # 已剥离：内置文件管理器（原 Explorer panel 初始化已移除）
         self.main_program_block.set_show_sidebar(False)
 
         # Add the initial chat tab
@@ -447,7 +447,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.canvas_tab_bar = Adw.TabBar(autohide=True, view=self.canvas_tabs, css_classes=["inline"])
         self.canvas_overview = Adw.TabOverview(view=self.canvas_tabs, child=self.canvas_tabs, show_end_title_buttons=False, show_start_title_buttons=False, enable_new_tab=True)
         self.canvas_button.connect("clicked", lambda x:  self.canvas_overview.set_open(not self.canvas_overview.get_open()))
-        self.canvas_overview.connect("create-tab", self.add_explorer_tab)
+        # self.canvas_overview.connect("create-tab", self.add_explorer_tab)  # 已剥离：内置文件管理器
         
         # Add new tab menu button
         self.new_tab_button = Gtk.MenuButton(css_classes=["flat"])
@@ -476,7 +476,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.canvas_box.append(self.canvas_header)
         self.canvas_box.append(self.canvas_tab_bar)
         self.canvas_box.append(self.canvas_overview)
-        self.add_explorer_tab(None, self.main_path)
+        # self.add_explorer_tab(None, self.main_path)  # 已剥离：内置文件管理器
         bin = Adw.BreakpointBin(child=self.main, width_request=300, height_request=300)
         breakpoint = Adw.Breakpoint(condition=Adw.BreakpointCondition.new_length(Adw.BreakpointConditionLengthType.MAX_WIDTH, 900, Adw.LengthUnit.PX))
         breakpoint.add_setter(self.main, "collapsed", True)
@@ -506,9 +506,9 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         """Rebuild the add-tab popover after mini-app extensions change."""
         self.extensionloader = self.controller.extensionloader
         menu_entries = [
-            (_("Explorer Tab"), "folder-symbolic", self.add_explorer_tab),
+            # (_("Explorer Tab"), "folder-symbolic", self.add_explorer_tab),  # 已剥离：内置文件管理器
             (_("Terminal Tab"), "gnome-terminal-symbolic", self.add_terminal_tab),
-            (_("Browser Tab"), "internet-symbolic", self.add_browser_tab),
+            # (_("Browser Tab"), "internet-symbolic", self.add_browser_tab),  # 已剥离：内置浏览器
             (_("Start Call"), "call-start-symbolic", self.start_call_tab),
             (_("Image Generator"), "insert-image-symbolic", self.add_image_generator_tab),
         ]
@@ -3187,13 +3187,14 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             if "cd " in t:
                 txt += t
                 p = (t.split("cd "))[min(len(t.split("cd ")), 1)]
-                explorer = self.get_current_explorer_panel()
-                if explorer is not None:
-                    v = explorer.get_target_directory(path, p)
-                    if not v[0]:
-                        Adw.Toast(title=_("Wrong folder path"), timeout=2)
-                    else:
-                        path = v[1]
+                # 已剥离：内置文件管理器
+                # explorer = self.get_current_explorer_panel()
+                # if explorer is not None:
+                #     v = explorer.get_target_directory(path, p)
+                #     if not v[0]:
+                #         Adw.Toast(title=_("Wrong folder path"), timeout=2)
+                #     else:
+                #         path = v[1]
             else:
                 txt += console_permissions + " " + t
         process = subprocess.Popen(
@@ -3231,10 +3232,11 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             ]
         if os.path.exists(os.path.expanduser(path)):
             self.main_path = path
-            explorer = self.get_current_explorer_panel()
-            if explorer is not None:
-                explorer.main_path = path
-            GLib.idle_add(self.update_explorer_panels)
+            # 已剥离：内置文件管理器
+            # explorer = self.get_current_explorer_panel()
+            # if explorer is not None:
+            #     explorer.main_path = path
+            # GLib.idle_add(self.update_explorer_panels)
         else:
             Adw.Toast(title=_("Failed to open the folder"), timeout=2)
         if len(outputs[0][1]) > 1000:
@@ -3242,32 +3244,34 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             outputs = ((outputs[0][0], new_value),)
         return outputs[0]
 
-    def update_explorer_panels(self):
-        tabs = self.canvas_tabs.get_n_pages()
-        for i in range(tabs):
-            page = self.canvas_tabs.get_nth_page(i)
-            child = page.get_child()
-            if child is not None and hasattr(child, "main_path"):
-                child.update_folder()
-    
-    def get_current_explorer_panel(self) -> ExplorerPanel | None:
-        """Get the current explorer panel if focused
+    # 已剥离：内置文件管理器
+    # def update_explorer_panels(self):
+    #     tabs = self.canvas_tabs.get_n_pages()
+    #     for i in range(tabs):
+    #         page = self.canvas_tabs.get_nth_page(i)
+    #         child = page.get_child()
+    #         if child is not None and hasattr(child, "main_path"):
+    #             child.update_folder()
+    #
+    # def get_current_explorer_panel(self) -> ExplorerPanel | None:
+    #     """Get the current explorer panel if focused
+    #
+    #     Returns:
+    #         the current explorer panel
+    #     """
+    #     tab = self.canvas_tabs.get_selected_page()
+    #     if tab is not None and hasattr(tab.get_child(), "main_path"):
+    #         return tab.get_child()
 
-        Returns:
-            the current explorer panel 
-        """
-        tab = self.canvas_tabs.get_selected_page()
-        if tab is not None and hasattr(tab.get_child(), "main_path"):
-            return tab.get_child()
-
-    def get_current_browser_panel(self) -> BrowserWidget | None:
-        """Get the current browser panel if focused
-
-        Returns: the current browser panel 
-        """
-        tab = self.canvas_tabs.get_selected_page()
-        if tab is not None and hasattr(tab.get_child(), "webview"):
-            return tab.get_child()
+    # 已剥离：内置浏览器
+    # def get_current_browser_panel(self) -> BrowserWidget | None:
+    #     """Get the current browser panel if focused
+    #
+    #     Returns: the current browser panel 
+    #     """
+    #     tab = self.canvas_tabs.get_selected_page()
+    #     if tab is not None and hasattr(tab.get_child(), "webview"):
+    #         return tab.get_child()
 
     def show_sidebar(self):
         self.main_program_block.set_name("visible")
@@ -3294,63 +3298,65 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.show_sidebar()
         return tab
 
-    def add_browser_tab(self, action=None, param=None, url=None):
-        """Add a browser tab"""
-        if url is None:
-            url = self.controller.newelle_settings.initial_browser_page
-        if self.controller.newelle_settings.browser_session_persist:
-            session = self.controller.config_dir + "/bsession.json"
-        else:
-            session = None
-        browser = BrowserWidget(url,self.controller.newelle_settings.browser_search_string, session)
-        
-        # Add the tab
-        tab = self.canvas_tabs.append(browser)
-        tab.set_title("Browser")
-        tab.set_icon(Gio.ThemedIcon(name="internet-symbolic"))
-        # Update tab title when page changes
-        def on_page_changed(browser, url, title, favicon):
-            if title:
-                tab.set_title(title)
-            if favicon:
-                tab.set_icon(favicon)
-        
-        browser.connect("page-changed", on_page_changed)
-        browser.connect("attach-clicked", self._on_attach_clicked)
-        def update_favicon():
-            tab.set_icon(browser.favicon_pixbuf)
-        browser.connect("favicon-changed", lambda b,s: update_favicon())
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab
-
-    def _on_attach_clicked(self, browser):
-        text = "```website\n" + browser.get_current_url() + "\n```"
-        self.chat.append({"User": "User", "Message": text})
-        self.chat_history.show_message(text, False, is_user=True)
+    # 已剥离：内置浏览器
+    # def add_browser_tab(self, action=None, param=None, url=None):
+    #     """Add a browser tab"""
+    #     if url is None:
+    #         url = self.controller.newelle_settings.initial_browser_page
+    #     if self.controller.newelle_settings.browser_session_persist:
+    #         session = self.controller.config_dir + "/bsession.json"
+    #     else:
+    #         session = None
+    #     browser = BrowserWidget(url,self.controller.newelle_settings.browser_search_string, session)
+    #     
+    #     # Add the tab
+    #     tab = self.canvas_tabs.append(browser)
+    #     tab.set_title("Browser")
+    #     tab.set_icon(Gio.ThemedIcon(name="internet-symbolic"))
+    #     # Update tab title when page changes
+    #     def on_page_changed(browser, url, title, favicon):
+    #         if title:
+    #             tab.set_title(title)
+    #         if favicon:
+    #             tab.set_icon(favicon)
+    #     
+    #     browser.connect("page-changed", on_page_changed)
+    #     browser.connect("attach-clicked", self._on_attach_clicked)
+    #     def update_favicon():
+    #         tab.set_icon(browser.favicon_pixbuf)
+    #     browser.connect("favicon-changed", lambda b,s: update_favicon())
+    #     self.show_sidebar()
+    #     self.canvas_tabs.set_selected_page(tab)
+    #     return tab
+    #
+    # def _on_attach_clicked(self, browser):
+    #     text = "```website\n" + browser.get_current_url() + "\n```"
+    #     self.chat.append({"User": "User", "Message": text})
+    #     self.chat_history.show_message(text, False, is_user=True)
     
-    def add_explorer_tab(self, tabview=None, path=None):
-        """Add an explorer tab
-
-        Args:
-            path (): path of the tab
-        """
-        if path is None:
-            path = self.main_path
-        if not os.path.isdir(os.path.expanduser(path)):
-            return self.add_editor_tab(None, path)
-        panel = ExplorerPanel(self.controller, path)
-        tab = self.canvas_tabs.append(panel)
-        panel.set_tab(tab)
-        panel.connect("new-tab-requested", self.add_explorer_tab)
-        panel.connect("path-changed", self.update_path)
-        panel.connect("open-terminal-requested", lambda panel, path: self.add_terminal_tab(None, None, path))
-        self.show_sidebar()
-        self.canvas_tabs.set_selected_page(tab)
-        return tab
-
-    def update_path(self, panel, path):
-        self.main_path = path
+    # 已剥离：内置文件管理器
+    # def add_explorer_tab(self, tabview=None, path=None):
+    #     """Add an explorer tab
+    #
+    #     Args:
+    #         path (): path of the tab
+    #     """
+    #     if path is None:
+    #         path = self.main_path
+    #     if not os.path.isdir(os.path.expanduser(path)):
+    #         return self.add_editor_tab(None, path)
+    #     panel = ExplorerPanel(self.controller, path)
+    #     tab = self.canvas_tabs.append(panel)
+    #     panel.set_tab(tab)
+    #     panel.connect("new-tab-requested", self.add_explorer_tab)
+    #     panel.connect("path-changed", self.update_path)
+    #     panel.connect("open-terminal-requested", lambda panel, path: self.add_terminal_tab(None, None, path))
+    #     self.show_sidebar()
+    #     self.canvas_tabs.set_selected_page(tab)
+    #     return tab
+    #
+    # def update_path(self, panel, path):
+    #     self.main_path = path
 
     def add_editor_tab(self, tabview=None, file=None):
         if file is not None:

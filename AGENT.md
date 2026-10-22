@@ -8,7 +8,90 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - **源码目录**：`src/`
 - **核心模块**：`controller.py`、`main.py`、`window.py`、`modes.py`、`skills.py`、`tools.py`、`extensions.py`、`ui_controller.py`
 
-## 当前变更记录（2026-10-12）
+## 当前变更记录（2026-10-21）
+
+### 变更主题：内置文件管理器剥离
+
+对内置文件管理器（ExplorerPanel）进行了完全剥离，移除了画布中的 Explorer 标签页功能。所有引用均按既定剥离模式注释保留（`# 已剥离：内置文件管理器`），保证可逆性。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/ui/explorer.py` | 文件管理器面板 `ExplorerPanel`（约 730 行） |
+
+#### 已修改的文件（7 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/window.py` | 注释掉 `ExplorerPanel` 导入、`canvas_overview.connect`（新建标签页信号）、`add_explorer_tab` 初始化调用、`menu_entries` 中的 "Explorer Tab" 条目、`run_command` 中 `cd` 命令的 explorer 路径解析、命令执行后的 explorer 路径同步、`update_explorer_panels`/`get_current_explorer_panel`/`add_explorer_tab`/`update_path` 方法 |
+| `src/ui_controller.py` | 注释掉 `workspace_action("path")` 中的 explorer 面板路径同步、`new_explorer_tab` 方法、stub 类中的 `newiexplorer_tab` |
+| `src/ui/voice_mode.py` | 注释掉 `VoiceOverlay` 中的 `new_explorer_tab` 转发方法 |
+| `src/ui/workspaces.py` | 注释掉工作区切换时的 explorer 面板路径同步块 |
+| `src/ui/widgets/chat_history.py` | 注释掉目录点击时 `new_explorer_tab` 调用，改为统一走 `gio open` |
+| `src/meson.build` | 注释掉 `ui_sources` 中的 `ui/explorer.py` |
+| `po/POTFILES` | 注释掉 `src/ui/explorer.py` 条目 |
+
+#### 保留的通用逻辑
+
+- `window.py` 中 `on_tab_switched` 的 `hasattr(child, "main_path")` 检查为通用逻辑（终端标签页也使用 `main_path`），予以保留
+- `self.main_path` 在 `window.py:141` 从 `newelle_settings.main_path` 初始化，与 explorer 无关，不受影响
+
+#### 当前文件管理器状态
+
+剥离后，画布标签页仅保留：Chat、Terminal、Browser、Image Generator、Code Editor。目录点击行为统一为系统文件管理器打开（`gio open`）。
+
+#### 验证结果
+
+- ✅ `python -m py_compile` 对全部 5 个修改的 Python 文件语法检查通过
+- ✅ `src/` 下 grep 确认无残留的非注释 explorer 引用
+- ✅ `main.py:719` 的 `self.win.update_folder()` 为既有问题（改动前 `window.py` 即无此方法定义），与本次剥离无关，未处理
+
+### 变更主题：内置浏览器剥离
+
+对内置浏览器（BrowserWidget）进行了完全剥离，移除了画布中的 Browser 标签页功能。所有引用均按既定剥离模式注释保留（`# 已剥离：内置浏览器`），保证可逆性。链接打开行为统一改为外部浏览器（`open_website` / `Gio.AppInfo.launch_default_for_uri`）。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/ui/widgets/browser.py` | 浏览器面板 `BrowserWidget` |
+
+#### 已修改的文件（10 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/window.py` | 注释掉 `BrowserWidget` 导入、`menu_entries` 中的 "Browser Tab" 条目、`get_current_browser_panel`/`add_browser_tab`/`_on_attach_clicked` 方法 |
+| `src/ui_controller.py` | 注释掉 `new_browser_tab`/`open_link` 方法、stub 类中的对应方法、`open_website` 导入 |
+| `src/ui/voice_mode.py` | 注释掉 `VoiceOverlay` 中的 `new_browser_tab`/`open_link` 转发方法 |
+| `src/ui/settings.py` | 注释掉 `build_browser_settings()` 调用及 `build_browser_settings`/`delete_browser_session` 方法 |
+| `src/constants.py` | 从 `settings` 列表移除 `initial-browser-page`/`external-browser`/`browser-search-string`/`browser-session-persist` |
+| `src/controller.py` | 注释掉 `external_browser`/`initial_browser_page`/`browser_search_string`/`browser_session_persist` 设置读取 |
+| `src/ui/widgets/__init__.py` | 注释掉 `BrowserWidget` 导入及 `__all__` 条目 |
+| `src/ui/widgets/message.py` | 引用点击与本地服务打开改为外部浏览器（`Gio.AppInfo.launch_default_for_uri`） |
+| `src/integrations/websearch.py` | `website-clicked` 改为 `open_website(link)` 外部打开 |
+| `src/integrations/website_reader.py` | `open_website` 方法改为调用 `open_website(button.url)` 外部打开 |
+| `src/meson.build` | 注释掉 `ui_sources` 中的 `ui/widgets/browser.py` |
+| `po/POTFILES` | 注释掉 `src/ui/widgets/browser.py` 条目 |
+| `data/io.github.qwersyk.Newelle.gschema.xml` | 注释掉 `external-browser`/`initial-browser-page`/`browser-search-string`/`browser-session-persist` 键 |
+
+#### 保留的通用逻辑
+
+- WebKit 依赖仍被其他组件使用（`extensions_catalog.py`、`mermaid.py`、`divergence.py`），故 `meson.build` 中的 WebKit 依赖保留
+- `modes.py:142`、`window.py:2757/2762` 的 `help-browser-symbolic`/`web-browser-symbolic` 为图标名称列表，与浏览器组件无关，予以保留
+- `mcp_oauth.py` 的 `webbrowser.open` 为 OAuth 外部浏览器认证，与内置浏览器无关，予以保留
+
+#### 当前浏览器状态
+
+剥离后，画布标签页仅保留：Chat、Terminal、Image Generator、Code Editor。链接打开行为统一为系统默认浏览器打开。
+
+#### 验证结果
+
+- ✅ `python -m py_compile` 对全部 10 个修改的 Python 文件语法检查通过
+- ✅ `data/io.github.qwersyk.Newelle.gschema.xml` XML 解析通过
+- ✅ `src/` 下 grep 确认无残留的非注释浏览器引用
+
+## 变更记录（2026-10-12）
 
 ### 变更主题：LLM 提供商剥离
 

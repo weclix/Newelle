@@ -2351,8 +2351,9 @@ class NewelleController(WorkspaceController):
             return request_settings.automatic_stt
         elif name == "profile_name":
             return request_settings.current_profile
-        elif name == "external_browser":
-            return request_settings.external_browser
+        # 已剥离：内置浏览器
+        # elif name == "external_browser":
+        #     return request_settings.external_browser
         elif name == "call":
             return self.is_call_request
         elif name == "skills_available":
@@ -3675,10 +3676,11 @@ class NewelleSettings:
         self.websearch_settings = self.settings.get_string("websearch-settings")
         self.parallel_tool_execution = settings.get_boolean("parallel-tool-execution")
         self.max_tool_calls = settings.get_int("max-tool-calls")
-        self.external_browser = settings.get_boolean("external-browser")
-        self.initial_browser_page = settings.get_string("initial-browser-page")
-        self.browser_search_string = settings.get_string("browser-search-string")
-        self.browser_session_persist = settings.get_boolean("browser-session-persist")
+        # 已剥离：内置浏览器
+        # self.external_browser = settings.get_boolean("external-browser")
+        # self.initial_browser_page = settings.get_string("initial-browser-page")
+        # self.browser_search_string = settings.get_string("browser-search-string")
+        # self.browser_session_persist = settings.get_boolean("browser-session-persist")
         self.editor_color_scheme = settings.get_string("editor-color-scheme")
         self.tools_settings = settings.get_string("tools-settings")
         self.tools_settings_dict = json.loads(self.tools_settings)

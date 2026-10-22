@@ -1,7 +1,8 @@
 import re
 from gi.repository import Adw, Gtk
 
-from .utility.system import open_website
+# 已剥离：内置浏览器（open_website 不再被 open_link 使用）
+# from .utility.system import open_website
 
 class UIController:
     """Interface exposed to Extensions in order to modify the UI"""
@@ -33,16 +34,17 @@ class UIController:
         if action == "path":
             controller._remote_workspace_action(action, workspace_id, **data)
             window.main_path = controller.active_workspace["path"]
-            explorer = window.get_current_explorer_panel()
-            if explorer is None:
-                for index in range(window.canvas_tabs.get_n_pages()):
-                    candidate = window.canvas_tabs.get_nth_page(index).get_child()
-                    if hasattr(candidate, "set_main_path"):
-                        explorer = candidate
-                        break
-            if explorer is not None:
-                explorer.set_main_path(window.main_path)
-                explorer.update_folder()
+            # 已剥离：内置文件管理器
+            # explorer = window.get_current_explorer_panel()
+            # if explorer is None:
+            #     for index in range(window.canvas_tabs.get_n_pages()):
+            #         candidate = window.canvas_tabs.get_nth_page(index).get_child()
+            #         if hasattr(candidate, "set_main_path"):
+            #             explorer = candidate
+            #             break
+            # if explorer is not None:
+            #     explorer.set_main_path(window.main_path)
+            #     explorer.update_folder()
         elif action == "switch":
             if not window.switch_workspace(workspace_id):
                 raise RuntimeError("Workspace switch blocked by active work")
@@ -162,46 +164,48 @@ class UIController:
             self.window.canvas_tabs.set_selected_page(tab)
         return tab
 
-    def new_browser_tab(self, url:str|None = None, new:bool=True) -> Adw.TabPage:
-        """Add a new browser tab
+    # 已剥离：内置浏览器
+    # def new_browser_tab(self, url:str|None = None, new:bool=True) -> Adw.TabPage:
+    #     """Add a new browser tab
+    #
+    #     Args:
+    #         url (): url to open
+    #         new (bool): if false an browser tab is focused, open in that tab, otherwise create a new one
+    #     """
+    #     if not new:
+    #         browser = self.window.get_current_browser_panel()
+    #         if browser is not None:
+    #             browser.navigate_to(url)
+    #             return browser.get_parent()
+    #     return self.window.add_browser_tab(url=url)
+    #
+    # def open_link(self, url:str|None, new:bool=False, use_integrated_browser : bool = True):
+    #     """Open a link
+    #
+    #     Args:
+    #         url (): url to open
+    #         new (bool): if false an browser tab is focused, open in that tab, otherwise create a new one
+    #         use_integrated_browser (bool): if true, use the integrated browser, otherwise open the link in the default browser
+    #     """
+    #     if use_integrated_browser:
+    #         return self.new_browser_tab(url=url, new=new)
+    #     else:
+    #         open_website(url)
 
-        Args:
-            url (): url to open
-            new (bool): if false an browser tab is focused, open in that tab, otherwise create a new one
-        """
-        if not new:
-            browser = self.window.get_current_browser_panel()
-            if browser is not None:
-                browser.navigate_to(url)
-                return browser.get_parent()
-        return self.window.add_browser_tab(url=url)
-
-    def open_link(self, url:str|None, new:bool=False, use_integrated_browser : bool = True):
-        """Open a link
-
-        Args:
-            url (): url to open
-            new (bool): if false an browser tab is focused, open in that tab, otherwise create a new one
-            use_integrated_browser (bool): if true, use the integrated browser, otherwise open the link in the default browser
-        """
-        if use_integrated_browser:
-            return self.new_browser_tab(url=url, new=new)
-        else:
-            open_website(url)
-
-    def new_explorer_tab(self, path:str, new:bool=True) -> Adw.TabPage:
-        """Add a new explorer tab
-
-        Args:
-            path (str): path to open (full)
-            new (bool): if false an explorer tab is focused, open in that tab, otherwise create a new one
-        """
-        if not new:
-            explorer = self.window.get_current_explorer_panel()
-            if explorer is not None:
-                explorer.go_to_path(path)
-                return explorer.get_parent()
-        return self.window.add_explorer_tab(path=path)
+    # 已剥离：内置文件管理器
+    # def new_explorer_tab(self, path:str, new:bool=True) -> Adw.TabPage:
+    #     """Add a new explorer tab
+    #
+    #     Args:
+    #         path (str): path to open (full)
+    #         new (bool): if false an explorer tab is focused, open in that tab, otherwise create a new one
+    #     """
+    #     if not new:
+    #         explorer = self.window.get_current_explorer_panel()
+    #         if explorer is not None:
+    #             explorer.go_to_path(path)
+    #             return explorer.get_parent()
+    #     return self.window.add_explorer_tab(path=path)
 
     def new_editor_tab(self, file:str) -> Adw.TabPage:
         """Add a new editor tab
@@ -305,12 +309,14 @@ class HeadlessController(UIController):
 
     def add_tab(self, child: Gtk.Widget, focus=True) -> Adw.TabPage:
         pass
-    def new_browser_tab(self, url:str|None = None, new:bool=True) -> Adw.TabPage:
-        pass
-    def open_link(self, url:str|None, new:bool=False, use_integrated_browser : bool = True):
-        pass
-    def newiexplorer_tab(self, path:str, new:bool=True) -> Adw.TabPage:
-        pass
+    # 已剥离：内置浏览器
+    # def new_browser_tab(self, url:str|None = None, new:bool=True) -> Adw.TabPage:
+    #     pass
+    # def open_link(self, url:str|None, new:bool=False, use_integrated_browser : bool = True):
+    #     pass
+    # 已剥离：内置文件管理器
+    # def newiexplorer_tab(self, path:str, new:bool=True) -> Adw.TabPage:
+    #     pass
     def new_editor_tab(self, file: str) -> Adw.TabPage:
         pass
     def new_terminal_tab(self, command: str | None = None) -> Adw.TabPage:

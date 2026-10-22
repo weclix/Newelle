@@ -6,6 +6,7 @@ from ..utility.message_chunk import get_message_chunks
 from ..ui import load_image_with_callback
 from ..utility.website_scraper import WebsiteScraper
 from ..utility.source_attribution import format_source_context
+from ..utility.system import open_website
 from ..tools import Tool, ToolResult
 
 CHUNK_SIZE = 512 
@@ -102,12 +103,12 @@ class WebsiteReader(NewelleExtension):
         website_url = codeblock
          
         button = WebsiteButton(website_url)
-        button.connect("clicked", self.open_website)
+        button.connect("clicked", self._on_website_clicked)
         threading.Thread(target=self.get_article, args=(button,)).start()
         return button
 
-    def open_website(self, button: WebsiteButton):
-        self.ui_controller.open_link(button.url, False, not self.settings.get_boolean("external-browser"))
+    def _on_website_clicked(self, button: WebsiteButton):
+        open_website(button.url)  # 已剥离：内置浏览器，改为外部浏览器打开
 
     def restore_gtk_widget(self, codeblock: str, lang: str) -> Gtk.Widget | None:
         return super().restore_gtk_widget(codeblock, lang)

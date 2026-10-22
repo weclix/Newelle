@@ -240,6 +240,7 @@
 	      <key name="window-height" type="i">
           <default>800</default>
         </key>
+        <!-- 已剥离：内置浏览器
         <key name="external-browser" type="b">
           <default>false</default>
         </key>
@@ -252,6 +253,7 @@
         <key name="browser-session-persist" type="b">
           <default>true</default>
         </key>
+        -->
         <key name="editor-color-scheme" type="s">
           <default>"Adwaita-dark"</default>
         </key>

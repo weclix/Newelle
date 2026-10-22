@@ -1,5 +1,6 @@
 import threading
 from ..utility.message_chunk import get_message_chunks
+from ..utility.system import open_website
 from ..extensions import NewelleExtension
 from ..ui.widgets import WebSearchWidget
 from ..tools import ToolResult, Tool, Command
@@ -86,7 +87,7 @@ class WebsearchIntegration(NewelleExtension):
         for title, link, favicon in tuple(sources):
             widget.add_website(title, link, favicon)
         widget.finish(result)
-        widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link, False, not self.settings.get_boolean("external-browser")))
+        widget.connect("website-clicked", lambda widget,link : open_website(link))  # 已剥离：内置浏览器，改为外部浏览器打开
         return widget 
 
     def restore_gtk_widget(self, codeblock: str, lang: str, tool_uuid) -> Gtk.Widget | None:
@@ -103,7 +104,7 @@ class WebsearchIntegration(NewelleExtension):
     def get_gtk_widget(self, codeblock: str, lang: str, tool_uuid) -> Gtk.Widget | None:
         self.tool_uuid = tool_uuid
         search_widget = WebSearchWidget(search_term=codeblock)
-        search_widget.connect("website-clicked", lambda widget,link : self.ui_controller.open_link(link, False, not self.settings.get_boolean("external-browser")))
+        search_widget.connect("website-clicked", lambda widget,link : open_website(link))  # 已剥离：内置浏览器，改为外部浏览器打开
         self.widgets[codeblock] = search_widget 
         if tool_uuid:
             tool_uuid = str(tool_uuid)

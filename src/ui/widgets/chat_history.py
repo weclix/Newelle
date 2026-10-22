@@ -1968,7 +1968,9 @@ class ChatHistory(Gtk.Box):
 
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
-                self.window.window.ui_controller.new_explorer_tab(file_path, False)
+                # 已剥离：内置文件管理器
+                # self.window.window.ui_controller.new_explorer_tab(file_path, False)
+                subprocess.run(["gio", "open", file_path])
             else:
                 subprocess.run(["gio", "open", file_path])
         else:

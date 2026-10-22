@@ -560,14 +560,16 @@ class VoiceWorkspaceUIController(HeadlessController):
     def add_tab(self, child, focus=True):
         return self.display_ui.add_tab(child, focus)
 
-    def new_browser_tab(self, url=None, new=True):
-        return self.display_ui.new_browser_tab(url, new)
+    # 已剥离：内置浏览器
+    # def new_browser_tab(self, url=None, new=True):
+    #     return self.display_ui.new_browser_tab(url, new)
+    #
+    # def open_link(self, url, new=False, use_integrated_browser=True):
+    #     return self.display_ui.open_link(url, new, use_integrated_browser)
 
-    def open_link(self, url, new=False, use_integrated_browser=True):
-        return self.display_ui.open_link(url, new, use_integrated_browser)
-
-    def new_explorer_tab(self, path, new=True):
-        return self.display_ui.new_explorer_tab(path, new)
+    # 已剥离：内置文件管理器
+    # def new_explorer_tab(self, path, new=True):
+    #     return self.display_ui.new_explorer_tab(path, new)
 
     def new_editor_tab(self, file):
         return self.display_ui.new_editor_tab(file)
