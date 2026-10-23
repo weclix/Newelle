@@ -8,6 +8,37 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - **源码目录**：`src/`
 - **核心模块**：`controller.py`、`main.py`、`window.py`、`modes.py`、`skills.py`、`tools.py`、`extensions.py`、`ui_controller.py`
 
+## 当前变更记录（2026-10-23）
+
+### 变更主题：线程编辑功能剥离
+
+对线程编辑功能进行了完全剥离，移除了线程编辑窗口及相关功能。所有引用均按既定剥离模式注释保留，保证可逆性。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/ui/thread_editing.py` | 线程编辑窗口 `ThreadEditing` |
+
+#### 已修改的文件（5 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/main.py` | 注释掉 `ThreadEditing` 导入、`thread_editing` action 注册、`thread_editing_action` 方法 |
+| `src/window.py` | 注释掉菜单项 `menu.append(_("Thread editing"), "app.thread_editing")` |
+| `src/ui/widgets/chat_history.py` | 注释掉占位提示项 `{"title": _("Thread Editing"), ...}` |
+| `src/meson.build` | 注释掉 `ui_sources` 中的 `ui/thread_editing.py` |
+| `po/POTFILES` | 注释掉 `src/ui/thread_editing.py` 条目 |
+
+#### 当前线程编辑状态
+
+剥离后，`src/ui/thread_editing.py` 已删除，项目中不再包含线程编辑功能。
+
+#### 验证结果
+
+- ✅ `python -m py_compile` 对全部 3 个修改的 Python 文件语法检查通过
+- ✅ `src/` 下 grep 确认无残留的非注释线程编辑引用
+
 ## 当前变更记录（2026-10-21）
 
 ### 变更主题：内置文件管理器剥离

@@ -15,7 +15,7 @@ from gi.repository import Gtk, Adw, Gio, Gdk, GLib
 from .ui.settings import Settings
 from .window import MainWindow
 from .ui.shortcuts import Shortcuts
-from .ui.thread_editing import ThreadEditing
+# from .ui.thread_editing import ThreadEditing
 from .ui.scheduled_tasks import ScheduledTasksWindow
 from .ui.downloads import DownloadsWindow
 from .ui.mini_window import MiniWindow
@@ -325,9 +325,9 @@ class MyApp(Adw.Application):
         action = Gio.SimpleAction.new("settings", None)
         action.connect('activate', self.settings_action)
         self.add_action(action)
-        action = Gio.SimpleAction.new("thread_editing", None)
-        action.connect('activate', self.thread_editing_action)
-        self.add_action(action)
+        # action = Gio.SimpleAction.new("thread_editing", None)
+        # action.connect('activate', self.thread_editing_action)
+        # self.add_action(action)
         action = Gio.SimpleAction.new("scheduled_tasks", None)
         action.connect('activate', self.scheduled_tasks_action)
         self.add_action(action)
@@ -435,9 +435,9 @@ class MyApp(Adw.Application):
                         translator_credits="\n".join(["Amine Saoud (Arabic) https://github.com/amiensa","Heimen Stoffels (Dutch) https://github.com/Vistaus","Albano Battistella (Italian) https://github.com/albanobattistella","Oliver Tzeng (Traditional Chinese, all languages) https://github.com/olivertzeng","Aritra Saha (Bengali, Hindi) https://github.com/olumolu","NorwayFun (Georgian) https://github.com/NorwayFun"]),
                         copyright='© 2025 qwersyk').present()
 
-    def thread_editing_action(self, *a):
-        threadediting = ThreadEditing(self)
-        threadediting.present()
+    # def thread_editing_action(self, *a):
+    #     threadediting = ThreadEditing(self)
+    #     threadediting.present()
 
     def scheduled_tasks_action(self, *a):
         scheduled_tasks = ScheduledTasksWindow(self)

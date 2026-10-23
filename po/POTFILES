@@ -32,7 +32,7 @@ src/integrations/website_reader.py
 src/integrations/websearch.py
 src/ui/profile.py
 src/ui/screenrecorder.py
-src/ui/thread_editing.py
+# src/ui/thread_editing.py
 src/ui/widgets/barchart.py
 src/ui/widgets/comborow.py
 src/ui/widgets/documents_reader.py

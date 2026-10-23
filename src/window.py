@@ -167,7 +167,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         menu_button = Gtk.MenuButton()
         menu_button.set_icon_name("open-menu-symbolic")
         menu = Gio.Menu()
-        menu.append(_("Thread editing"), "app.thread_editing")
+        # menu.append(_("Thread editing"), "app.thread_editing")
         menu.append(_("Scheduled tasks"), "app.scheduled_tasks")
         menu.append(_("Downloads"), "app.downloads")
         menu.append(_("Settings"), "app.settings")
