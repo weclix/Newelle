@@ -1,0 +1,22 @@
+# Maintainer: tritium <weclix@outlook.com>
+pkgname=com.tritium.newelle
+pkgver=1.6
+pkgrel=0
+pkgdesc="Your Ultimate Virtual Assistant"
+url="https://github.com/weclix/Newelle"
+license=('GPL-3.0-or-later')
+arch=('x86_64')
+depends=(gnome-shell gtksourceview5)
+makedepends=(meson pkgconf cmake appstream-glib)
+source=(newelle-$pkgver.$pkgrel.tgz::$url/archive/refs/heads/master.tar.gz)
+sha256sums=('SKIP')
+
+build() {
+	meson setup _build  --prefix=$pkgdir --buildtype=release
+	meson compile -C _build
+}
+
+package() {
+  	meson install -C _build 
+  	chmod +x "$pkgdir/usr/bin/newelle"
+}
