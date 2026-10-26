@@ -105,9 +105,10 @@ class Settings(Adw.Window):
             on_before_rebuild=self._on_extra_settings_rebuild,
         )
         self._llm_primary_rows = []
-        self._llm_primary_other_rows = []
+        # 已剥离：其他 LLM 展开器（所有项已被剥离）
+        # self._llm_primary_other_rows = []
         self._llm_secondary_rows = []
-        self._llm_secondary_other_rows = []
+        # self._llm_secondary_other_rows = []
         # Build the LLMs settings
         self.LLM = Adw.PreferencesGroup(title=_('Language Model'))
         # Add duplication and help buttons.
@@ -127,17 +128,18 @@ class Settings(Adw.Window):
         self.LLMPage.add(self.LLM)
         group = Gtk.CheckButton()
         selected = self.settings.get_string("language-model")
-        others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
-        self._llm_primary_other_group = others_row
+        # 已剥离：其他 LLM 展开器（所有项已被剥离）
+        # others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
+        # self._llm_primary_other_group = others_row
         for model_key in AVAILABLE_LLMS:
            row = self.build_row(AVAILABLE_LLMS, model_key, selected, group)
-           if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
-               others_row.add_row(row)
-               self._llm_primary_other_rows.append(row)
-           else:
-                self.LLM.add(row)
-                self._llm_primary_rows.append(row)
-        self.LLM.add(others_row)
+           # if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
+           #     others_row.add_row(row)
+           #     self._llm_primary_other_rows.append(row)
+           # else:
+           self.LLM.add(row)
+           self._llm_primary_rows.append(row)
+        # self.LLM.add(others_row)
         # Secondary LLM settings
         self.SECONDARY_LLM = Adw.PreferencesGroup(title=_('Secondary LLM'))
         self.LLMPage.add(self.SECONDARY_LLM)
@@ -150,18 +152,19 @@ class Settings(Adw.Window):
         # Add LLMs
         group = Gtk.CheckButton()
         selected = self.settings.get_string("secondary-language-model")
-        others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
+        # 已剥离：其他 LLM 展开器（所有项已被剥离）
+        # others_row = Adw.ExpanderRow(title=_('Other LLMs'), subtitle=_("Other available LLM providers"))
         self._llm_secondary_model_group = secondary_LLM
-        self._llm_secondary_other_group = others_row
+        # self._llm_secondary_other_group = others_row
         for model_key in AVAILABLE_LLMS:
            row = self.build_row(AVAILABLE_LLMS, model_key, selected, group, True)
-           if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
-               others_row.add_row(row)
-               self._llm_secondary_other_rows.append(row)
-           else:
-               secondary_LLM.add_row(row)
-               self._llm_secondary_rows.append(row)
-        secondary_LLM.add_row(others_row)
+           # if "secondary" in AVAILABLE_LLMS[model_key] and AVAILABLE_LLMS[model_key]["secondary"]:
+           #     others_row.add_row(row)
+           #     self._llm_secondary_other_rows.append(row)
+           # else:
+           secondary_LLM.add_row(row)
+           self._llm_secondary_rows.append(row)
+        # secondary_LLM.add_row(others_row)
         self.SECONDARY_LLM.add(secondary_LLM)
 
         # Vision routing is a separate action row in the same group.
@@ -1017,17 +1020,18 @@ class Settings(Adw.Window):
         """Refresh primary and secondary LLM choices in this live window."""
         for row in self._llm_primary_rows:
             self.LLM.remove(row)
-        for row in self._llm_primary_other_rows:
-            self._llm_primary_other_group.remove(row)
+        # 已剥离：其他 LLM 展开器（所有项已被剥离）
+        # for row in self._llm_primary_other_rows:
+        #     self._llm_primary_other_group.remove(row)
         for row in self._llm_secondary_rows:
             self._llm_secondary_model_group.remove(row)
-        for row in self._llm_secondary_other_rows:
-            self._llm_secondary_other_group.remove(row)
+        # for row in self._llm_secondary_other_rows:
+        #     self._llm_secondary_other_group.remove(row)
         # Keep the catch-all expander after all regular providers.  If it stays
         # attached while rows are rebuilt, newly added providers are appended
         # after it and make “Other LLMs” jump up the list.
-        self.LLM.remove(self._llm_primary_other_group)
-        self._llm_secondary_model_group.remove(self._llm_secondary_other_group)
+        # self.LLM.remove(self._llm_primary_other_group)
+        # self._llm_secondary_model_group.remove(self._llm_secondary_other_group)
 
         llm_constant = self.convert_constants(AVAILABLE_LLMS)
         for settings_key in list(self.settingsrows):
@@ -1039,21 +1043,21 @@ class Settings(Adw.Window):
                 del self.settingsrows[settings_key]
 
         self._llm_primary_rows = []
-        self._llm_primary_other_rows = []
+        # self._llm_primary_other_rows = []
         self._llm_secondary_rows = []
-        self._llm_secondary_other_rows = []
+        # self._llm_secondary_other_rows = []
 
         primary_group = Gtk.CheckButton()
         selected = self.settings.get_string("language-model")
         for model_key in AVAILABLE_LLMS:
             row = self.build_row(AVAILABLE_LLMS, model_key, selected, primary_group)
-            if AVAILABLE_LLMS[model_key].get("secondary", False):
-                self._llm_primary_other_group.add_row(row)
-                self._llm_primary_other_rows.append(row)
-            else:
-                self.LLM.add(row)
-                self._llm_primary_rows.append(row)
-        self.LLM.add(self._llm_primary_other_group)
+            # if AVAILABLE_LLMS[model_key].get("secondary", False):
+            #     self._llm_primary_other_group.add_row(row)
+            #     self._llm_primary_other_rows.append(row)
+            # else:
+            self.LLM.add(row)
+            self._llm_primary_rows.append(row)
+        # self.LLM.add(self._llm_primary_other_group)
 
         secondary_group = Gtk.CheckButton()
         selected = self.settings.get_string("secondary-language-model")
@@ -1065,13 +1069,13 @@ class Settings(Adw.Window):
                 secondary_group,
                 True,
             )
-            if AVAILABLE_LLMS[model_key].get("secondary", False):
-                self._llm_secondary_other_group.add_row(row)
-                self._llm_secondary_other_rows.append(row)
-            else:
-                self._llm_secondary_model_group.add_row(row)
-                self._llm_secondary_rows.append(row)
-        self._llm_secondary_model_group.add_row(self._llm_secondary_other_group)
+            # if AVAILABLE_LLMS[model_key].get("secondary", False):
+            #     self._llm_secondary_other_group.add_row(row)
+            #     self._llm_secondary_other_rows.append(row)
+            # else:
+            self._llm_secondary_model_group.add_row(row)
+            self._llm_secondary_rows.append(row)
+        # self._llm_secondary_model_group.add_row(self._llm_secondary_other_group)
 
     @staticmethod
     def _suggest_duplicated_llm_key(source_key: str) -> str:
