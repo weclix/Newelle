@@ -94,23 +94,10 @@ If Newelle is already opened, you can use CTRL+G to toggle mini window mode.
 #### 1. Setup Hotkeys
 As an example, to set the mini window launch's hotkey to Ctrl+Space, execute this command:
 ```bash
-flatpak run io.github.qwersyk.Newelle --mini
+newelle --mini
 ```
 or `newelle --mini` if not installed via flatpak.
 After that, enable the hotkey in settings.
-
-#### 2. Enable Window Centering
-For GNOME desktop environment users, you may need to enable automatic window centering:
-
-```bash
-gsettings set org.gnome.mutter center-new-windows true
-```
-
-<picture>
-  <source srcset="https://raw.githubusercontent.com/qwersyk/Newelle/master/screenshots/5.png" media="(prefers-color-scheme: light)">
-  <source srcset="https://raw.githubusercontent.com/qwersyk/Newelle/master/screenshots/5b.png" media="(prefers-color-scheme: dark)">
-  <img src="https://raw.githubusercontent.com/qwersyk/Newelle/master/screenshots/5.png" alt="screenshot">
-</picture>
 
 # Installation
 
@@ -142,10 +129,6 @@ There are two ways of doing this
   </picture>
 </a>
 
-With nix, you can run the app without installing by executing this command:
-```sh
-nix-shell -p newelle
-```
 
 <a href="https://github.com/qwersyk/Newelle/actions">
   <picture>
@@ -173,38 +156,7 @@ nix-shell -p newelle
 1. Ensure you have set up both flatpak and flathub
 2. Install Newelle by executing: `flatpak install flathub io.github.qwersyk.Newelle`
 
-# Permission
-
-> [!IMPORTANT]
-> The Flathub version of Newelle is restricted to the `.var/app/io.github.qwersyk.Newelle` folder and operates within a
-> Flatpak virtualized environment, limiting its capabilities.
-
-To extend Newelle's permissions, either execute this command to temporarily grant its access:
-```sh
-flatpak run --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle
-```
-or adjust the permissions permanently using [Flatseal](https://flathub.org/apps/details/com.github.tchx84.Flatseal):
-  - Open Flatseal, find "newelle" and enable both "All user files" and "Session Bus"
-	- Add `org.freedesktop.Flatpak` to run outside the sandbox.
 > [!WARNING]
 > Be cautious when enabling these options. They reduce security by exposing your data and terminal. Avoid sharing
 > personal information, and understand that we can't guarantee the privacy of your chat data or prevent potential risks
 > from proprietary models.
-
-# Honorable Mentions of Newelle's forks
-
-<a href="https://github.com/NyarchLinux/NyarchAssistant">
-  <picture>
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/nyarch.svg" media="(prefers-color-scheme: light)">
-    <source srcset="https://raw.githubusercontent.com/qwersyk/Assets/main/nyarch-dark.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/qwersyk/Assets/main/nyarch.svg" alt="nyarch">
-  </picture>
-</a>
-
-**[Nyarch Assistant](https://github.com/NyarchLinux/NyarchAssistant)** - Your ultimate Waifu AI Assistant
-
-<picture>
-  <source srcset="https://raw.githubusercontent.com/NyarchLinux/NyarchAssistant/refs/heads/master/screenshots/1w.png" media="(prefers-color-scheme: light)">
-  <source srcset="https://raw.githubusercontent.com/NyarchLinux/NyarchAssistant/refs/heads/master/screenshots/1b.png" media="(prefers-color-scheme: dark)">
-  <img src="https://raw.githubusercontent.com/NyarchLinux/NyarchAssistant/refs/heads/master/screenshots/1w.png" alt="screenshot">
-</picture>
