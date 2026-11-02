@@ -143,7 +143,7 @@ class Message(Gtk.Box):
 
     def _ui_sync_content(self, message: str, serial: int = -1):
         """Internal method to synchronize UI (Main Thread only)."""
-        if serial != getattr(self, '_render_serial', 0):
+        if self.state.get("cancelled", False) or serial != getattr(self, '_render_serial', 0):
             return False
 
         # Chat histories are populated before their tab is necessarily rooted
@@ -480,14 +480,14 @@ class Message(Gtk.Box):
     def _trigger_auto_send_message(self):
         chat_tab = self._get_chat_tab()
         chat_history = self._get_chat_history()
-        if not chat_tab.status:
+        if self.state.get("cancelled", False) or not chat_tab.status:
             return
 
         chat_tab.status = False
         if chat_history is not None:
             chat_history.update_button_text()
             chat_history.scrolled_chat()
-        threading.Thread(target=chat_tab.send_message).start()
+        chat_tab.send_message(manual=False)
 
     def _try_auto_send_after_copyboxes(self):
         if self._copybox_auto_send_sent:
@@ -868,7 +868,7 @@ class Message(Gtk.Box):
         terminal.present()
 
     def _persist_console_output(self, copybox, output):
-        if output is None:
+        if output is None or self.state.get("cancelled", False):
             return
 
         chat = self._get_chat_tab().chat
@@ -1316,7 +1316,7 @@ class Message(Gtk.Box):
             box.append(slot)
 
     def _run_tool_call_with_placeholder(self, tool, tool_uuid, state, restore, slot, msg_uuid):
-        if slot is not None and not slot.active:
+        if state.get("cancelled", False) or (slot is not None and not slot.active):
             return
 
         if not restore and slot is not None:
@@ -1337,7 +1337,7 @@ class Message(Gtk.Box):
 
         def run_tool():
             try:
-                if slot is not None and not slot.active:
+                if state.get("cancelled", False) or (slot is not None and not slot.active):
                     return
                 if not restore:
                     max_tool_calls = getattr(
@@ -1424,6 +1424,8 @@ class Message(Gtk.Box):
                 if widget:
                     # Tool wants custom widget. Placeholder was ToolWidget.
                     def swap_widget():
+                        if state.get("cancelled", False):
+                            return
                         active_group = current_group()
                         if slot is not None and active_group is not None:
                             active_group.replace_slot_widget(slot, widget)
@@ -1463,22 +1465,36 @@ class Message(Gtk.Box):
                     chat_id, state["id_message"], tool.name, tool_uuid
                 )
                 def get_response(reply_from_console):
+                    if state.get("cancelled", False):
+                        return
                     if not restore:
                         response = result.get_output()
                         context_messages = result.get_context_messages()
                         if not restore:
                             try: chat_tab.active_tool_results.remove(result)
                             except: pass
-                        if result.is_cancelled:
+                        if result.is_cancelled or state.get("cancelled", False):
                             if current_group() is not None:
                                 GLib.idle_add(self._set_tool_slot_state, slot, "cancelled")
                             return
                         if response is None and not context_messages:
                             code = (not tool_failed, None)
                         else:
-                            state["should_continue"] = True
                             code = (not tool_failed, response)
-                            console_output = response or "Tool returned additional context."
+                    else:
+                        code = (True, reply_from_console)
+                        context_messages = self.controller.get_tool_context_messages(
+                            chat_id, state["id_message"], tool.name, tool_uuid
+                        )
+
+                    def apply_response():
+                        # Commit on the same thread as Stop's history removal.
+                        # A worker that finished late must not restore the tail.
+                        if state.get("cancelled", False) or result.is_cancelled:
+                            return GLib.SOURCE_REMOVE
+                        if not restore and (code[1] is not None or context_messages):
+                            state["should_continue"] = True
+                            console_output = code[1] or "Tool returned additional context."
                             formatted = f"[Tool: {tool.name}, ID: {tool_uuid}]\n{console_output}"
                             self.controller.append_chat_message(
                                 chat_id,
@@ -1497,19 +1513,18 @@ class Message(Gtk.Box):
                                         "ToolContext": True,
                                     },
                                 )
-                    else:
-                        code = (True, reply_from_console)
-                        context_messages = self.controller.get_tool_context_messages(
-                            chat_id, state["id_message"], tool.name, tool_uuid
-                        )
-                    
-                    GLib.idle_add(on_result, code, context_messages)
+                        on_result(code, context_messages)
+                        return GLib.SOURCE_REMOVE
+
+                    GLib.idle_add(apply_response)
  
                 t = threading.Thread(target=get_response, args=(reply_from_console,))
                 state["running_threads"].append(t)
                 if self.controller.newelle_settings.parallel_tool_execution or restore:
                     t.start()
             except Exception as e:
+                if state.get("cancelled", False):
+                    return
                 error_text = f"Error: {e}"
                 if not restore:
                     state["should_continue"] = True
@@ -1562,6 +1577,8 @@ class Message(Gtk.Box):
     # --- Execution Logic ---
 
     def _queue_execution(self, func):
+        if self.state.get("cancelled", False):
+            return
         if self.streaming:
             # Queue
             self.state.setdefault("pending_executions", []).append(func)
@@ -1589,21 +1606,46 @@ class Message(Gtk.Box):
                 func()
             self.state["pending_executions"] = []
 
+    def cancel_streaming(self):
+        """Discard pending renders and tools before removing a message."""
+        self.streaming = False
+        self.restore = True
+        self._render_serial = getattr(self, "_render_serial", 0) + 1
+        self.state["cancelled"] = True
+        self.state["pending_executions"] = []
+        self.state["should_continue"] = False
+
+        for chunk_type, widget, _chunk in self.widgets_map:
+            if chunk_type == "text" and not isinstance(widget, list):
+                self._stop_stream_fade(widget)
+
+        if self.thinking_widget:
+            self.thinking_widget.stop_thinking()
+            self.thinking_widget = None
+
+        for slot in self._tool_slots_in_order():
+            self._set_tool_slot_state(slot, "cancelled")
+
     def _run_console_command(self, cmd, restore, console_reply, expander, state):
          # Logic from window.py _process_console_codeblock closure
          chat_id = self._get_chat_tab().chat_id
          def run_command():
+            if state.get("cancelled", False):
+                return
             if not restore:
                 code = self._get_main_window().execute_terminal_command(cmd)
-                self.controller.append_chat_message(
-                    chat_id,
-                    {"User": "Console", "Message": " " + str(code[1])},
-                )
             else:
                  code = (True, console_reply)
             
             text = f"[User {self._get_main_window().main_path}]:$ {cmd}\n{code[1]}"
             def apply_result():
+                 if state.get("cancelled", False):
+                      return GLib.SOURCE_REMOVE
+                 if not restore:
+                      self.controller.append_chat_message(
+                          chat_id,
+                          {"User": "Console", "Message": " " + str(code[1])},
+                      )
                  expander.set_child(Gtk.Label(wrap=True, wrap_mode=Pango.WrapMode.WORD_CHAR, label=text[:8000], selectable=True))
                  if not code[0]:
                       # Error
@@ -1625,12 +1667,16 @@ class Message(Gtk.Box):
         
         if widget:
              def on_result(code):
+                  if state.get("cancelled", False):
+                       return
                   if not code[0]: pass # Error
         else:
              text_expander = Gtk.Expander(label=lang, css_classes=["toolbar", "osd"], margin_top=10, margin_start=10, margin_bottom=10, margin_end=10)
              text_expander.set_expanded(False)
              box.append(text_expander)
              def on_result(code):
+                  if state.get("cancelled", False):
+                       return
                   text_expander.set_child(Gtk.Label(wrap=True, wrap_mode=Pango.WrapMode.WORD_CHAR, label=f"{value}\n{code[1]}", selectable=True))
 
         def get_response():
