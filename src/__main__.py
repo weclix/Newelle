@@ -1,49 +1,41 @@
-#!@PYTHON@
-
-# newelle.in
+# __main__.py
 #
-# Copyright 2023 Yehor Qwersyk
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Launcher for the installed Python package (entry point newelle.__main__:main).
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import os
-import sys
-import signal
-import locale
 import gettext
-import argparse
+import os
+import signal
+import sys
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 
-VERSION = '@VERSION@'
-pkgdatadir = '@pkgdatadir@'
-localedir = '@localedir@'
+APP_ID = 'io.github.qwersyk.Newelle'
+DATA_DIR = Path(__file__).resolve().parent / '_data'
+SHARE_DIR = DATA_DIR / 'share'
 
-sys.path.insert(1, pkgdatadir)
-signal.signal(signal.SIGINT, signal.SIG_DFL)
-gettext.bindtextdomain('newelle', localedir)
-gettext.textdomain('newelle')
-gettext.install('newelle', localedir)
 
-def parse_args():
-    parser = argparse.ArgumentParser(prog='newelle', add_help=False)
-    # parser.add_argument('--interface', '-I', metavar='INTERFACE',
-    #                     help='Start an interface without the GUI (e.g. api, gui-api)')
-    # parser.add_argument('--list-interfaces', action='store_true',
-    #                     help='List available interfaces and exit')
-    args, remaining = parser.parse_known_args()
-    return args, remaining
+def setup_environment():
+    """Expose the bundled schema, icons and translations to GLib and GTK.
+
+    GLib reads these variables once, so this must run before Gio or Gtk is used.
+    The schema goes through GSETTINGS_SCHEMA_DIR because it takes precedence
+    over every data dir; a stale schema left in ~/.local/share by an old
+    install would otherwise shadow the bundled one.
+    """
+    schema_dirs = [str(SHARE_DIR / 'glib-2.0' / 'schemas')]
+    if os.environ.get('GSETTINGS_SCHEMA_DIR'):
+        schema_dirs.append(os.environ['GSETTINGS_SCHEMA_DIR'])
+    os.environ['GSETTINGS_SCHEMA_DIR'] = os.pathsep.join(schema_dirs)
+
+    data_dirs = os.environ.get('XDG_DATA_DIRS') or '/usr/local/share:/usr/share'
+    os.environ['XDG_DATA_DIRS'] = os.pathsep.join([str(SHARE_DIR), data_dirs])
+
+    localedir = str(SHARE_DIR / 'locale')
+    gettext.bindtextdomain('newelle', localedir)
+    gettext.textdomain('newelle')
+    gettext.install('newelle', localedir)
 
 
 def preload_gtk4_layer_shell():
@@ -75,7 +67,7 @@ def forward_voice_request(arguments):
             '/org/freedesktop/DBus',
             'org.freedesktop.DBus',
             'GetNameOwner',
-            GLib.Variant('(s)', ('io.github.qwersyk.Newelle',)),
+            GLib.Variant('(s)', (APP_ID,)),
             GLib.VariantType.new('(s)'),
             Gio.DBusCallFlags.NO_AUTO_START,
             1000,
@@ -122,38 +114,27 @@ def forward_voice_request(arguments):
     return 0
 
 
-if __name__ == '__main__':
+def main():
+    setup_environment()
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     preload_gtk4_layer_shell()
-    args, remaining = parse_args()
 
-    # if args.list_interfaces:
-    #     from gi.repository import Gio
-    #     from newelle.constants import AVAILABLE_INTERFACES
-    #     print("Available interfaces:")
-    #     for key, info in AVAILABLE_INTERFACES.items():
-    #         print(f"  {key:15s} - {info['title']}")
-    #     sys.exit(0)
-
-    # if args.interface:
-    #     import gi
-    #     gi.require_version('Gtk', '4.0')
-    #     gi.require_version('Adw', '1')
-    #     from gi.repository import Gio
-    #     resource = Gio.Resource.load(os.path.join(pkgdatadir, 'newelle.gresource'))
-    #     resource._register()
-
-    #     from newelle import main
-    #     sys.exit(main.run_headless(args.interface, VERSION))
-
-    forwarded_status = forward_voice_request(remaining)
+    forwarded_status = forward_voice_request(sys.argv[1:])
     if forwarded_status is not None:
-        sys.exit(forwarded_status)
-
-    import gi
+        return forwarded_status
 
     from gi.repository import Gio
-    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'newelle.gresource'))
+    resource = Gio.Resource.load(str(DATA_DIR / 'newelle.gresource'))
     resource._register()
 
-    from newelle import main
-    sys.exit(main.main(VERSION))
+    try:
+        app_version = version('newelle')
+    except PackageNotFoundError:
+        app_version = 'unknown'
+
+    from newelle import main as app
+    return app.main(app_version)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

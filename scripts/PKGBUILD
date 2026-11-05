@@ -5,18 +5,25 @@ pkgrel=0
 pkgdesc="Your Ultimate Virtual Assistant"
 url="https://github.com/weclix/Newelle"
 license=('GPL-3.0-or-later')
-arch=('x86_64')
-depends=(libadwaita gtksourceview5)
-makedepends=(meson pkgconf cmake appstream-glib)
+arch=('any')
+# newspaper4k (website reading) is not in the official repos; install it from
+# the AUR or with pip.
+depends=(python python-gobject python-cairo gtk4 libadwaita gtksourceview5 vte4 webkitgtk-6.0 librsvg
+         python-openai python-requests python-numpy python-pillow python-matplotlib
+         python-pylatexenc python-pyaudio python-tiktoken python-tldextract)
+optdepends=(
+            'python-faiss: document RAG (AUR; also needs llama-index vector-stores-faiss and retrievers-bm25 from pip)'
+            'gstreamer: screen recording')
+makedepends=(python-build python-installer python-setuptools glib2 gettext)
 source=(newelle-$pkgver.$pkgrel.tgz::$url/archive/refs/heads/master.tar.gz)
 sha256sums=('SKIP')
 
 build() {
-	meson setup _build  --prefix=$pkgdir --buildtype=release
-	meson compile -C _build
+	cd Newelle-master
+	python -m build --wheel --no-isolation
 }
 
 package() {
-  	meson install -C _build 
-  	chmod +x "$pkgdir/usr/bin/newelle"
+	cd Newelle-master
+	python -m installer --destdir="$pkgdir" dist/*.whl
 }

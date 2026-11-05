@@ -1,0 +1,6 @@
+include COPYING README.md
+include src/newelle.gresource.xml
+graft data
+graft po
+prune data/screenshots
+global-exclude *.py[co] __pycache__

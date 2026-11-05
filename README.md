@@ -122,17 +122,15 @@ gsettings set org.gnome.mutter center-new-windows true
   </picture>
 </a>
 
-There are two ways of doing this
+Build from source:
 
-  * `install.sh`
-    1. Install the latest Gnome SDK
-    2. Run `sh install.sh`
-    3. Profit!
-  * Gnome Builder
-    1. Install GNOME Builder on your system.
-    2. Clone the Newelle repository from GitHub.
-    3. Open the project in GNOME Builder and compile it.
-    4. Once compiled, you can run the program from the compiled executable.
+1. Install GTK 4, libadwaita, GtkSourceView 5, VTE (GTK 4), WebKitGTK 6.0, librsvg and PyGObject
+   from your distribution, plus `glib-compile-resources`, `glib-compile-schemas` and `msgfmt`.
+2. Clone the Newelle repository from GitHub.
+3. Run `bash scripts/locale-install.bash`. It builds a wheel, installs it into
+   `~/.local/share/newelle-venv` and adds `newelle` to `~/.local/bin`.
+
+To build only the packages, run `python -m build`; the sdist and wheel are written to `dist/`.
 
 <a href="https://nixos.org">
   <picture>

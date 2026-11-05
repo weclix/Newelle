@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=84"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "newelle"
+version = "1.6.1"
+description = "Ultimate Virtual Assistant"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["COPYING"]
+requires-python = ">=3.14"
+# GTK4, libadwaita, GtkSourceView 5, VTE (GTK4), WebKitGTK 6.0, GStreamer,
+# librsvg and gtk4-layer-shell, plus their GObject Introspection typelibs,
+# must come from the system package manager. They cannot be installed by pip.
+dependencies = [
+  "PyGObject",
+  # GTK draw callbacks (usage charts, context ring) pass a cairo.Context,
+  # which PyGObject can only convert when pycairo is installed.
+  "pycairo",
+  "openai",
+  "requests",
+  "numpy",
+  "Pillow",
+  "matplotlib",
+  "pylatexenc",
+  "pyaudio",
+  "tiktoken",
+  "tldextract",
+  "newspaper4k",
+  "newspaper4k[nlp]",
+  "beautifulsoup4", 
+  "markdownify",
+  "mcp", 
+  "httpx",
+  "faiss-cpu",
+  "llama-index-core",
+  "llama-index-readers-file",
+  "llama-index-vector-stores-faiss",
+  "llama-index-retrievers-bm25",
+  "pysilero-vad"
+]
+
+[project.urls]
+Homepage = "https://github.com/weclix/Newelle"
+
+[project.gui-scripts]
+newelle = "newelle.__main__:main"
