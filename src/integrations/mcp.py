@@ -9,6 +9,44 @@ from gi.repository import GLib
 # from ..utility.system import is_flatpak, can_escape_sandbox
 
 
+def _mcp_attr(obj, snake: str, camel: str, default=None):
+    """Read an MCP SDK model field: mcp>=2 uses snake_case, mcp 1.x camelCase."""
+    value = getattr(obj, snake, None)
+    if value is None:
+        value = getattr(obj, camel, None)
+    return default if value is None else value
+
+
+def _open_streamable_http(url: str, headers: dict):
+    """Open a Streamable HTTP transport on both mcp 1.x and mcp>=2.
+
+    mcp>=2 removed ``streamablehttp_client`` (headers must go through an
+    http client) and yields (read, write) instead of (read, write, session_id).
+    """
+    import contextlib
+
+    try:
+        from mcp.client.streamable_http import streamable_http_client
+        from mcp.shared._httpx_utils import create_mcp_http_client
+    except ImportError:
+        from mcp.client.streamable_http import streamablehttp_client
+
+        @contextlib.asynccontextmanager
+        async def _legacy_transport():
+            async with streamablehttp_client(url=url, headers=headers) as streams:
+                yield streams[0], streams[1]
+
+        return _legacy_transport()
+
+    @contextlib.asynccontextmanager
+    async def _transport():
+        async with create_mcp_http_client(headers=headers) as http_client:
+            async with streamable_http_client(url, http_client=http_client) as streams:
+                yield streams[0], streams[1]
+
+    return _transport()
+
+
 class _CachedTool:
     """Lightweight stand-in for an MCP SDK tool object loaded from the cache."""
 
@@ -146,7 +184,7 @@ class MCPIntegration(NewelleExtension):
             identifier = self._get_server_identifier(server_info)
             if identifier not in cache:
                 cache[identifier] = {"tools": [], "cached_at": time.time()}
-            schema = tool.inputSchema if hasattr(tool, "inputSchema") else {}
+            schema = _mcp_attr(tool, "input_schema", "inputSchema", {})
             cache[identifier]["tools"].append({
                 "name": tool.name,
                 "description": tool.description,
@@ -318,13 +356,13 @@ class MCPIntegration(NewelleExtension):
             elif content_type == "image":
                 message = cls._image_context_message(
                     getattr(item, "data", None),
-                    getattr(item, "mimeType", None),
+                    _mcp_attr(item, "mime_type", "mimeType"),
                 )
                 if message is not None:
                     context_messages.append(message)
             elif content_type == "resource":
                 resource = getattr(item, "resource", None)
-                mime_type = getattr(resource, "mimeType", None)
+                mime_type = _mcp_attr(resource, "mime_type", "mimeType")
                 blob = getattr(resource, "blob", None)
                 if mime_type and str(mime_type).startswith("image/") and blob:
                     message = cls._image_context_message(blob, mime_type)
@@ -335,7 +373,7 @@ class MCPIntegration(NewelleExtension):
                 else:
                     output_parts.append(str(item))
             elif content_type == "resource_link":
-                mime_type = getattr(item, "mimeType", None)
+                mime_type = _mcp_attr(item, "mime_type", "mimeType")
                 uri = getattr(item, "uri", None)
                 if mime_type and str(mime_type).startswith("image/") and uri:
                     context_messages.append(f"```image\n{uri}\n```")
@@ -344,7 +382,7 @@ class MCPIntegration(NewelleExtension):
             else:
                 output_parts.append(str(item))
 
-        structured_content = getattr(value, "structuredContent", None)
+        structured_content = _mcp_attr(value, "structured_content", "structuredContent")
         if structured_content is not None:
             output_parts.append(json.dumps(structured_content, ensure_ascii=False))
 
@@ -414,7 +452,8 @@ class MCPIntegration(NewelleExtension):
             tools_group = server_info.get("title") or server_info.get("url", "MCP")
             tools.append(Tool(
                 tool.name, tool.description, self.execute_tool(tool.name),
-                tool.inputSchema, tools_group=tools_group, default_lazy_load=True,
+                _mcp_attr(tool, "input_schema", "inputSchema", {}),
+                tools_group=tools_group, default_lazy_load=True,
             ))
         if tools:
             tool_search = Tool(
@@ -484,7 +523,6 @@ class MCPIntegration(NewelleExtension):
         """Synchronous wrapper to get available tools (HTTP)"""
         import asyncio
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
         
         if headers is None:
             headers = {}
@@ -496,8 +534,7 @@ class MCPIntegration(NewelleExtension):
         request_url = (self._get_mcp_url_for_request(server_info) or url) if server_info else url
         
         async def _async_get_tools():
-            client_kwargs = {"url": request_url, "headers": resolved_headers}
-            async with streamablehttp_client(**client_kwargs) as (read, write, _):
+            async with _open_streamable_http(request_url, resolved_headers) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = await session.list_tools()
@@ -508,7 +545,6 @@ class MCPIntegration(NewelleExtension):
         """Synchronous wrapper to call a tool"""
         import asyncio
         from mcp import ClientSession
-        from mcp.client.streamable_http import streamablehttp_client
         
         if headers is None:
             headers = {}
@@ -520,8 +556,7 @@ class MCPIntegration(NewelleExtension):
         request_url = (self._get_mcp_url_for_request(server_info) or url) if server_info else url
         
         async def _async_call_tool():
-            client_kwargs = {"url": request_url, "headers": resolved_headers}
-            async with streamablehttp_client(**client_kwargs) as (read, write, _):
+            async with _open_streamable_http(request_url, resolved_headers) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     result = await session.call_tool(tool_name, arguments=arguments)

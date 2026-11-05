@@ -14,7 +14,6 @@ requires-python = ">=3.14"
 # librsvg and gtk4-layer-shell, plus their GObject Introspection typelibs,
 # must come from the system package manager. They cannot be installed by pip.
 dependencies = [
-  "PyGObject",
   # GTK draw callbacks (usage charts, context ring) pass a cairo.Context,
   # which PyGObject can only convert when pycairo is installed.
   "pycairo",
