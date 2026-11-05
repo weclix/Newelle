@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 import threading
 import os
 import shutil
@@ -10,7 +10,9 @@ from ...handlers.embeddings.embedding import EmbeddingHandler
 from ...handlers.llm import LLMHandler
 from ...handlers.rag.rag_handler import RAGHandler
 from ...handlers import ExtraSettings
-from ...utility.pip import find_module, install_module
+# 已剥离：运行模块安装器
+# from ...utility.pip import find_module, install_module
+from ..handler import find_module
 from ...utility.strings import clean_prompt, remove_thinking_blocks
 
 class LlamaIndexMemoryHandler(MemoryHandler):
@@ -36,9 +38,10 @@ class LlamaIndexMemoryHandler(MemoryHandler):
         return find_module("llama_index") is not None and find_module("tiktoken") is not None and find_module("faiss") is not None and find_module("llama_index.vector_stores") is not None
 
     def install(self):
-       if not self.is_installed(): 
-           dependencies = "tiktoken faiss-cpu llama-index-core llama-index-readers-file llama-index-vector-stores-faiss"
-           install_module(dependencies, self.pip_path)
+       # 已剥离：运行模块安装器
+       # if not self.is_installed():
+       #     dependencies = "tiktoken faiss-cpu llama-index-core llama-index-readers-file llama-index-vector-stores-faiss"
+       #     install_module(dependencies, self.pip_path)
        self._is_installed_cache = None
 
     def get_extra_settings(self) -> list:
@@ -168,25 +171,25 @@ class LlamaIndexMemoryHandler(MemoryHandler):
                 self._embedding_model = embedding_model
                 self._embedding_size = embedding_model.get_embedding_size()
                  
-            async def _aget_query_embedding(self, query: str) -> List[float]:
+            async def _aget_query_embedding(self, query: str) -> list[float]:
                 return self._get_query_embedding(query)
 
-            async def _aget_text_embedding(self, text: str) -> List[float]:
+            async def _aget_text_embedding(self, text: str) -> list[float]:
                 return self._get_text_embedding(text)
 
-            def _get_query_embedding(self, query: str) -> List[float]:
+            def _get_query_embedding(self, query: str) -> list[float]:
                 embeddings = self._embedding_model.get_embedding(
                     [query], purpose="query"
                 )
                 return embeddings[0]
 
-            def _get_text_embedding(self, text: str) -> List[float]:
+            def _get_text_embedding(self, text: str) -> list[float]:
                 embeddings = self._embedding_model.get_embedding(
                     [text], purpose="document"
                 )
                 return embeddings[0]
 
-            def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
+            def _get_text_embeddings(self, texts: list[str]) -> list[list[float]]:
                 embeddings = self._embedding_model.get_embedding(
                     texts, purpose="document"
                 )

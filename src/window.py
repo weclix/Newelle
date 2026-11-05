@@ -87,7 +87,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
 
     def build_main_window(self):
         # UI things
-        self.automatic_stt_status = False
+        # self.automatic_stt_status = False  # 已剥离：STT 自动听写
         self.model_loading_spinner_button = None
         self.model_loading_spinner_separator = None
         self.model_loading_status = False
@@ -111,7 +111,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self._recording_stopping = False
         self._recording_start_pending_button = None
         self._recording_start_source_id = None
-        self._tts_listener_tokens = []
+        # self._tts_listener_tokens = []  # 已剥离：TTS 组件
         # Stdout monitoring - Initialize and start from program start
         self.stdout_monitor_dialog = None
         self._init_stdout_monitoring()
@@ -198,12 +198,13 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
 
         # Header box - Contains the buttons that must go in the left side of the header
         self.headerbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        # Mute TTS Button
-        self.mute_tts_button = Gtk.Button(
-            css_classes=["flat"], icon_name="audio-volume-muted-symbolic", visible=False
-        )
-        self.mute_tts_button.connect("clicked", self.mute_tts)
-        self.headerbox.append(self.mute_tts_button)
+        # 已剥离：TTS 组件
+        # # Mute TTS Button
+        # self.mute_tts_button = Gtk.Button(
+        #     css_classes=["flat"], icon_name="audio-volume-muted-symbolic", visible=False
+        # )
+        # self.mute_tts_button.connect("clicked", self.mute_tts)
+        # self.headerbox.append(self.mute_tts_button)
         # Flap button
         self.flap_button_left = Gtk.ToggleButton.new()
         self.flap_button_left.set_icon_name(icon_name="sidebar-show-right-symbolic")
@@ -420,7 +421,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
 
     def _cleanup_on_destroy(self, window):
         """Clean up resources when window is destroyed"""
-        self._disconnect_tts_lifecycle()
+        # self._disconnect_tts_lifecycle()  # 已剥离：TTS 组件
         # Stop wakeword detection
         self.stop_wakeword_detection()
         # Stop stdout monitoring
@@ -926,7 +927,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
     def update_toggles(self, *_):
         """Update the quick toggles"""
         reloads = self.controller.update_settings()
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
+        # self.tts_enabled = self.controller.newelle_settings.tts_enabled  # 已剥离：TTS 组件
         self.rag_on = self.controller.newelle_settings.rag_on
         self.memory_on = self.controller.newelle_settings.memory_on
         self.virtualization = self.controller.newelle_settings.virtualization
@@ -937,7 +938,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         """Update settings from the quick settings"""
         reloads = self.controller.update_settings()
         self.model = self.controller.handlers.llm
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
+        # self.tts_enabled = self.controller.newelle_settings.tts_enabled  # 已剥离：TTS 组件
         self.rag_on = self.controller.newelle_settings.rag_on
         self.rag_on_documents = self.controller.newelle_settings.rag_on_documents
         self.memory_on = self.controller.newelle_settings.memory_on
@@ -974,11 +975,11 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.profile_settings = self.controller.newelle_settings.profile_settings
         self.memory_on = self.controller.newelle_settings.memory_on
         self.rag_on = self.controller.newelle_settings.rag_on
-        self.tts_enabled = self.controller.newelle_settings.tts_enabled
+        # self.tts_enabled = self.controller.newelle_settings.tts_enabled  # 已剥离：TTS 组件
         self.virtualization = self.controller.newelle_settings.virtualization
         self.prompts = self.controller.newelle_settings.prompts
         # Handlers
-        self.tts = self.controller.handlers.tts
+        # self.tts = self.controller.handlers.tts  # 已剥离：TTS 组件
         self.stt = self.controller.handlers.stt
         self.model = self.controller.handlers.llm
         self.secondary_model = self.controller.handlers.secondary_llm
@@ -994,8 +995,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             self.show_chat()
         if ReloadType.RELOAD_CHAT_LIST in reloads:
             self.update_history()
-        # Setup TTS
-        self._connect_tts_lifecycle()
+        # 已剥离：TTS 组件
+        # self._connect_tts_lifecycle()
         # Handle wakeword detection
         # Check if we need to restart wakeword detector
         should_be_listening = self.controller.newelle_settings.wakeword_enabled
@@ -1371,39 +1372,40 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.controller.handlers.handlers_cached.release()
         GLib.idle_add(show_presentation)
 
-    def mute_tts(self, button: Gtk.Button):
-        """Mute the TTS"""
-        self.focus_input()
-        if self.tts_enabled:
-            self.tts.stop()
-        return False
+    # 已剥离：TTS 组件
+    # def mute_tts(self, button: Gtk.Button):
+    #     """Mute the TTS"""
+    #     self.focus_input()
+    #     if self.tts_enabled:
+    #         self.tts.stop()
+    #     return False
 
-    def _disconnect_tts_lifecycle(self):
-        for handler, token in getattr(self, "_tts_listener_tokens", []):
-            handler.disconnect(token)
-        self._tts_listener_tokens = []
+    # def _disconnect_tts_lifecycle(self):
+    #     for handler, token in getattr(self, "_tts_listener_tokens", []):
+    #         handler.disconnect(token)
+    #     self._tts_listener_tokens = []
 
-    def _connect_tts_lifecycle(self):
-        """Keep one pair of main-window listeners across handler reloads."""
-        self._disconnect_tts_lifecycle()
-        if self.tts is None:
-            return
-        self._tts_listener_tokens = [
-            (
-                self.tts,
-                self.tts.connect(
-                    "start",
-                    lambda: GLib.idle_add(self.mute_tts_button.set_visible, True),
-                ),
-            ),
-            (
-                self.tts,
-                self.tts.connect(
-                    "stop",
-                    lambda: GLib.idle_add(self.mute_tts_button.set_visible, False),
-                ),
-            ),
-        ]
+    # def _connect_tts_lifecycle(self):
+    #     """Keep one pair of main-window listeners across handler reloads."""
+    #     self._disconnect_tts_lifecycle()
+    #     if self.tts is None:
+    #         return
+    #     self._tts_listener_tokens = [
+    #         (
+    #             self.tts,
+    #             self.tts.connect(
+    #                 "start",
+    #                 lambda: GLib.idle_add(self.mute_tts_button.set_visible, True),
+    #             ),
+    #         ),
+    #         (
+    #             self.tts,
+    #             self.tts.connect(
+    #                 "stop",
+    #                 lambda: GLib.idle_add(self.mute_tts_button.set_visible, False),
+    #             ),
+    #         ),
+    #     ]
 
     def start_wakeword_detection(self):
         """Start continuous wakeword detection"""
@@ -1852,8 +1854,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             if group == "LLM":
                 reload_types.add(ReloadType.LLM)
                 reload_types.add(ReloadType.SECONDARY_LLM)
-            elif group == "TTS":
-                reload_types.add(ReloadType.TTS)
+            # elif group == "TTS":  # 已剥离：TTS 组件
+            #     reload_types.add(ReloadType.TTS)
             elif group == "STT":
                 reload_types.add(ReloadType.STT)
             elif group == "Embedding":
@@ -1889,7 +1891,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self.offers = newsettings.offers
         self.memory_on = newsettings.memory_on
         self.rag_on = newsettings.rag_on
-        self.tts_enabled = newsettings.tts_enabled
+        # self.tts_enabled = newsettings.tts_enabled  # 已剥离：TTS 组件
         self.virtualization = newsettings.virtualization
         self.prompts = newsettings.prompts
 
@@ -1897,7 +1899,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self._batch_reload(reload_types)
 
         # Update handler references after reload
-        self.tts = self.controller.handlers.tts
+        # self.tts = self.controller.handlers.tts  # 已剥离：TTS 组件
         self.stt = self.controller.handlers.stt
         self.model = self.controller.handlers.llm
         self.secondary_model = self.controller.handlers.secondary_llm
@@ -1924,7 +1926,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         if ReloadType.TOOLS in reload_types:
             self.model_popup_settings.refresh_tools_list()
 
-        self._connect_tts_lifecycle()
+        # self._connect_tts_lifecycle()  # 已剥离：TTS 组件
 
         if ReloadType.LLM in reload_types:
             send_on_enter = not newsettings.send_on_enter
@@ -1964,7 +1966,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             reload_types.discard(ReloadType.LLM)
 
         # Call select_handlers ONCE for all remaining handler types
-        handler_types = {ReloadType.SECONDARY_LLM, ReloadType.TTS, ReloadType.STT,
+        handler_types = {ReloadType.SECONDARY_LLM, ReloadType.STT,
                 ReloadType.MEMORIES, ReloadType.EMBEDDINGS, ReloadType.RAG,
                 ReloadType.WEBSEARCH, ReloadType.WAKEWORD}
         if reload_types & handler_types:
@@ -2043,8 +2045,9 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         self._recording_stopping = False
         self._recording_start_pending_button = None
         self.recording_button = button  # Store the button for auto_stop_recording
-        if self.controller.newelle_settings.automatic_stt:
-            self.automatic_stt_status = True
+        # 已剥离：STT 自动听写
+        # if self.controller.newelle_settings.automatic_stt:
+        #     self.automatic_stt_status = True
         # button.set_child(Gtk.Spinner(spinning=True))
         button.set_icon_name("media-playback-stop-symbolic")
         try:
@@ -2096,7 +2099,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         """Stop a recording manually"""
         self.recording = False
         self._recording_stopping = True
-        self.automatic_stt_status = False
+        # self.automatic_stt_status = False  # 已剥离：STT 自动听写
         self.recorder.stop_recording()
         # self.auto_stop_recording()
 
@@ -2126,7 +2129,9 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             if direct:
                 result = self.controller.audio_input.prepare_audio_input(path)
             else:
-                result = self.stt.recognize_file(path)
+                # 已剥离：STT 听写（仅保留 direct audio input 与唤醒词）
+                # result = self.stt.recognize_file(path)
+                raise ValueError(_("Enable Direct audio input in the Voice settings to use recording"))
         except Exception as exc:
             GLib.idle_add(self.ui_controller.send_notification, str(exc))
             return

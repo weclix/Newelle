@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 import threading
 from time import time
 import numpy as np
@@ -13,7 +13,9 @@ from ...handlers.llm import LLMHandler
 from ...handlers.embeddings.embedding import EmbeddingHandler 
 from ...handlers import ExtraSettings 
 from .rag_handler import RAGHandler, RAGIndex, RAGRecord, RAGResult
-from ...utility.pip import find_module, install_module
+# 已剥离：运行模块安装器
+# from ...utility.pip import find_module, install_module
+from ..handler import find_module
 from ...tools import Tool, create_io_tool
 import os
 
@@ -53,7 +55,7 @@ class LlamaIndexHanlder(RAGHandler):
             ]
 
         r += [ 
-            ExtraSettings.NestedSetting("documents", _("Document extensions"), _("List of document extensions to index"), 
+            ExtraSettings.NestedSetting("documents", _("Document extensions"), _("list of document extensions to index"), 
                 [
                     ExtraSettings.ToggleSetting("md", _("Markdown"), _(".md files"), True),
                     ExtraSettings.ToggleSetting("txt", _("TXT"), _(".txt files"), True),
@@ -127,14 +129,20 @@ class LlamaIndexHanlder(RAGHandler):
         return documents
     
     def load(self):
+        # Dependencies are no longer installed at runtime; skip instead of
+        # crashing the loading thread on a missing llama_index submodule.
+        if not self.is_installed():
+            print("LlamaIndex RAG: missing dependencies, index not loaded. Install them with: pip install 'newelle[rag]'")
+            return
         if self.index_exists() and ((self.index is None and self.loading_thread is None) or self.loaded_index != self.get_paths()[1]):
             self.loading_thread = threading.Thread(target=self.load_index)
             self.loading_thread.start()
 
     def install(self):
-       if not find_module("llama_index") and not find_module("faiss"): 
-           dependencies = "tiktoken faiss-cpu llama-index-core llama-index-readers-file llama-index-vector-stores-faiss llama-index-retrievers-bm25"
-           install_module(dependencies, self.pip_path)
+       # 已剥离：运行模块安装器
+       # if not find_module("llama_index") and not find_module("faiss"):
+       #     dependencies = "tiktoken faiss-cpu llama-index-core llama-index-readers-file llama-index-vector-stores-faiss llama-index-retrievers-bm25"
+       #     install_module(dependencies, self.pip_path)
        self._is_installed_cache = None
 
     def is_installed(self) -> bool:
@@ -657,25 +665,25 @@ class LlamaIndexHanlder(RAGHandler):
                 self._embedding_model = embedding_model
                 self._embedding_size = embedding_model.get_embedding_size()
                  
-            async def _aget_query_embedding(self, query: str) -> List[float]:
+            async def _aget_query_embedding(self, query: str) -> list[float]:
                 return self._get_query_embedding(query)
 
-            async def _aget_text_embedding(self, text: str) -> List[float]:
+            async def _aget_text_embedding(self, text: str) -> list[float]:
                 return self._get_text_embedding(text)
 
-            def _get_query_embedding(self, query: str) -> List[float]:
+            def _get_query_embedding(self, query: str) -> list[float]:
                 embeddings = self._embedding_model.get_embedding(
                     [query], purpose="query"
                 )
                 return prepare(embeddings)[0]
 
-            def _get_text_embedding(self, text: str) -> List[float]:
+            def _get_text_embedding(self, text: str) -> list[float]:
                 embeddings = self._embedding_model.get_embedding(
                     [text], purpose="document"
                 )
                 return prepare(embeddings)[0]
 
-            def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
+            def _get_text_embeddings(self, texts: list[str]) -> list[list[float]]:
                 embeddings = self._embedding_model.get_embedding(
                     texts, purpose="document"
                 )
@@ -686,7 +694,7 @@ class LlamaIndexHanlder(RAGHandler):
         """Get tools provided by the RAG handler
 
         Returns:
-            list: List of tools for semantic search
+            list: list of tools for semantic search
         """
         r= [
             create_io_tool(
@@ -716,7 +724,7 @@ class LlamaIndexHanlder(RAGHandler):
 
         Args:
             query: The semantic search query
-            documents: List of documents to search. Format:
+            documents: list of documents to search. Format:
                 file:path/to/file - for local files
                 text:content - for direct text content
                 url:https://url - for URLs

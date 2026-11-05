@@ -1,7 +1,7 @@
 from .stt import STTHandler
 from .custom_handler import CustomSRHandler
 # from .sphinx_handler import SphinxHandler
-from .witai_handler import WitAIHandler
+# from .witai_handler import WitAIHandler
 # from .googlesr_handler import GoogleSRHandler
 # from .vosk_handler import VoskHandler
 from .whisper_handler import WhisperHandler 
@@ -15,7 +15,7 @@ __all__ = [
     "STTHandler",
     "CustomSRHandler",
     # "SphinxHandler",
-    "WitAIHandler",
+    # "WitAIHandler",
     # "GoogleSRHandler",
     # "VoskHandler",
     "WhisperHandler",

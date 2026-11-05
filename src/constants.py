@@ -3,14 +3,18 @@ from .handlers.llm import OpenAIHandler
 # from .handlers.llm import NewelleAPIHandler, G4FHandler
 # from .handlers.llm import ClaudeHandler, DeepseekHandler, GroqHandler, OllamaHandler, OllamaCloudHandler, CustomLLMHandler, GeminiHandler, MistralHandler, OpenRouterHandler, LlamaCPPHandler
 # from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
-from .handlers.tts import CustomOpenAITTSHandler
+# 已剥离：TTS 组件
+# from .handlers.tts import CustomOpenAITTSHandler
 # from .handlers.stt import GroqSRHandler, OpenAISRHandler, SphinxHandler, GoogleSRHandler, WhisperCPPHandler, WitAIHandler, VoskHandler, CustomSRHandler, OpenWakeWordHandler, MistralSTTHandler
 # from .handlers.stt import OpenAISRHandler, WhisperCPPHandler, WitAIHandler, CustomSRHandler, OpenWakeWordHandler
 # from .handlers.stt import OpenAISRHandler, WitAIHandler, CustomSRHandler, OpenWakeWordHandler
-from .handlers.stt import OpenAISRHandler, WitAIHandler, CustomSRHandler
+# from .handlers.stt import OpenAISRHandler, WitAIHandler, CustomSRHandler
+from .handlers.stt import OpenAISRHandler, CustomSRHandler
 from .handlers.embeddings import OpenAIEmbeddingHandler
 # from .handlers.embeddings import WordLlamaHandler, GeminiEmbeddingHanlder, OllamaEmbeddingHandler, Model2VecHandler, LlamaCPPEmbeddingHandler
-from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler, LongTermMemoryHandler
+# 已剥离：LlamaIndex 长期记忆
+# from .handlers.memory import UserSummaryHandler, LlamaIndexMemoryHandler, AgenticMemoryHandler, LongTermMemoryHandler
+from .handlers.memory import UserSummaryHandler, AgenticMemoryHandler, LongTermMemoryHandler
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler
 # from .handlers.websearch import DDGSeachHandler, TavilyHandler, TinyFishHandler
@@ -196,14 +200,14 @@ AVAILABLE_STT = {
     #     "class": GroqSRHandler,
     #     "secondary": True,
     # },
-    "witai": {
-        "key": "witai",
-        "title": _("Wit AI"),
-        "description": _("wit.ai speech recognition free API (language chosen on the website)"),
-        "website": "https://wit.ai",
-        "class": WitAIHandler,
-        "secondary": True,
-    },
+    # "witai": {
+    #     "key": "witai",
+    #     "title": _("Wit AI"),
+    #     "description": _("wit.ai speech recognition free API (language chosen on the website)"),
+    #     "website": "https://wit.ai",
+    #     "class": WitAIHandler,
+    #     "secondary": True,
+    # },
     # "vosk": {
     #     "key": "vosk",
     #     "title": _("Vosk API"),
@@ -238,7 +242,8 @@ AVAILABLE_STT = {
 }
 
 
-AVAILABLE_TTS = {
+# 已剥离：TTS 组件
+# AVAILABLE_TTS = {
     # "gtts": {
     #     "key": "gtts",
     #     "title": _("Google TTS"),
@@ -282,12 +287,12 @@ AVAILABLE_TTS = {
     #     "website": "https://docs.mistral.ai/studio-api/audio/text_to_speech",
     #     "class": MistralTTSHandler,
     # },
-    "custom_openai_tts": {
-        "key": "custom_openai_tts",
-        "title": _("Custom OpenAI TTS"),
-        "description": _("Custom OpenAI TTS"),
-        "class": CustomOpenAITTSHandler,
-    },
+    # "custom_openai_tts": {
+    #     "key": "custom_openai_tts",
+    #     "title": _("Custom OpenAI TTS"),
+    #     "description": _("Custom OpenAI TTS"),
+    #     "class": CustomOpenAITTSHandler,
+    # },
     # "espeak": {
     #     "key": "espeak",
     #     "title": _("Espeak TTS"),
@@ -300,7 +305,7 @@ AVAILABLE_TTS = {
     #     "description": _("Use a custom command as TTS, {0} will be replaced with the text"),
     #     "class": CustomTTSHandler,
     # }
-}
+# }
 
 AVAILABLE_EMBEDDINGS = {
     # "wordllama": {
@@ -360,12 +365,13 @@ AVAILABLE_MEMORIES = {
         "description": _("Long term memory using Agentic Memory. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
         "class": AgenticMemoryHandler,
     },
-    "llamaindex": {
-        "key": "llamaindex",
-        "title": _("Semantic Memory"),
-        "description": _("Long term memory using LlamaIndex. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
-        "class": LlamaIndexMemoryHandler,
-    },
+    # 已剥离：LlamaIndex 长期记忆
+    # "llamaindex": {
+    #     "key": "llamaindex",
+    #     "title": _("Semantic Memory"),
+    #     "description": _("Long term memory using LlamaIndex. Stores conversations in a vector store. Uses semantic search to retrieve memories."),
+    #     "class": LlamaIndexMemoryHandler,
+    # },
 }
 
 AVAILABLE_RAGS = {
@@ -728,7 +734,7 @@ AVAILABLE_PROMPTS = [
 
 # Available handlers without extensions
 DEFAULT_AVAILABLE_LLM = AVAILABLE_LLMS.copy()
-DEFAULT_AVAILABLE_TTS = AVAILABLE_TTS.copy()
+# DEFAULT_AVAILABLE_TTS = AVAILABLE_TTS.copy()  # 已剥离：TTS 组件
 DEFAULT_AVAILABLE_STT = AVAILABLE_STT.copy()
 DEFAULT_AVAILABLE_EMBEDDING = AVAILABLE_EMBEDDINGS.copy()
 DEFAULT_AVAILABLE_MEMORIES = AVAILABLE_MEMORIES.copy()
@@ -740,9 +746,9 @@ DEFAULT_AVAILABLE_PROMPTS = AVAILABLE_PROMPTS.copy()
 DEFAULT_PROMPTS = PROMPTS.copy()
 
 def restore_handlers():
-    global AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
+    global AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_EMBEDDINGS, AVAILABLE_MEMORIES, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS
     AVAILABLE_LLMS.clear()
-    AVAILABLE_TTS.clear()
+    # AVAILABLE_TTS.clear()  # 已剥离：TTS 组件
     AVAILABLE_STT.clear()
     AVAILABLE_EMBEDDINGS.clear()
     AVAILABLE_MEMORIES.clear()
@@ -751,7 +757,7 @@ def restore_handlers():
     # AVAILABLE_INTERFACES.clear()
     AVAILABLE_IMAGE_GENERATORS.clear()
     AVAILABLE_LLMS.update(deepcopy(DEFAULT_AVAILABLE_LLM))
-    AVAILABLE_TTS.update(deepcopy(DEFAULT_AVAILABLE_TTS))
+    # AVAILABLE_TTS.update(deepcopy(DEFAULT_AVAILABLE_TTS))  # 已剥离：TTS 组件
     AVAILABLE_STT.update(deepcopy(DEFAULT_AVAILABLE_STT))
     AVAILABLE_EMBEDDINGS.update(deepcopy(DEFAULT_AVAILABLE_EMBEDDING))
     AVAILABLE_MEMORIES.update(deepcopy(DEFAULT_AVAILABLE_MEMORIES))
@@ -773,14 +779,15 @@ SETTINGS_GROUPS = {
             "settings": ["secondary-llm-on", "secondary-llm-vision", "secondary-language-model", "language-model", "llm-settings", "llm-secondary-settings"],
             "description": _("LLM and Secondary LLM settings"),
         },
-        "TTS": {
-            "title": _("TTS"),
-            "settings": ["tts-on", "tts", "tts-voice"],
-            "description": _("Text to Speech settings"),
-        },
+        # 已剥离：TTS 组件
+        # "TTS": {
+        #     "title": _("TTS"),
+        #     "settings": ["tts-on", "tts", "tts-voice"],
+        #     "description": _("Text to Speech settings"),
+        # },
         "STT": {
             "title": _("STT"),
-            "settings": ["direct-audio-input", "audio-transcribe", "audio-transcription-timing", "stt-engine", "stt-settings", "automatic-stt", "stt-silence-detection-threshold", "stt-silence-detection-duration"],
+            "settings": ["direct-audio-input", "audio-transcribe", "audio-transcription-timing", "stt-engine", "stt-settings", "stt-silence-detection-threshold", "stt-silence-detection-duration"],
             "description": _("Speech to Text settings"),
         },
         "Embedding": {
@@ -850,8 +857,8 @@ SETTINGS_GROUPS = {
             "settings": ["voice-mode-position", "voice-mode-margin", "voice-mode-mode", "voice-mode-workspace",
                          "voice-mode-feedback", "voice-mode-chat",
                          "voice-pill-theme", "voice-pill-background", "voice-pill-foreground",
-                         "voice-pill-accent", "voice-pill-opacity",
-                         "voice-mode-x11-override-dont-show"],
+                         "voice-pill-accent", "voice-pill-opacity"#, "voice-mode-x11-override-dont-show"
+                         ],
             "description": _("Voice Mode pill appearance and positioning"),
         }
 

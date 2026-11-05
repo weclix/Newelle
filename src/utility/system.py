@@ -3,17 +3,6 @@ import os
 import re
 import shlex
 
-def is_wayland() -> bool:
-    """
-    Check if we are in a Wayland environment
-
-    Returns:
-        bool: True if we are in a Wayland environment
-    """
-    if os.getenv("WAYLAND_DISPLAY"):
-        return True
-    return False
-
 def voice_mode_layer_shell_available() -> bool:
     """Return whether GTK Layer Shell can position the Voice Mode pill."""
     try:

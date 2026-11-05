@@ -12,6 +12,7 @@ import re
 import tempfile
 from collections import deque
 
+# 已剥离：TTS 组件（clean_message_tts 保留文本清理用途）
 from ...utility.strings import clean_message_tts, remove_emoji, remove_markdown, remove_thinking_blocks
 from ...utility.vad import VoiceActivityDetector
 
@@ -244,9 +245,9 @@ class CallPanel(Gtk.Box):
         self.assistant_speaking = False
         self.user_speaking = False
         self.history_visible = False
-        self.listen_during_tts = True
-        self._tts_handler = None
-        self._tts_tokens = []
+        # self.listen_during_tts = True  # 已剥离：TTS 组件
+        # self._tts_handler = None
+        # self._tts_tokens = []
 
         # Conversation turn state
         self._call_generation = 0
@@ -562,17 +563,18 @@ class CallPanel(Gtk.Box):
         self.history_button.connect("clicked", self._on_history_clicked)
         right_controls.append(self.history_button)
 
-        # Auto-listen toggle button
-        self.listen_toggle_button = Gtk.ToggleButton(
-            css_classes=["call-button-history"],
-            tooltip_text=_("Auto-listen while agent speaks")
-        )
-        listen_icon = Gtk.Image.new_from_icon_name("call-emergency-symbolic")
-        listen_icon.set_pixel_size(24)
-        self.listen_toggle_button.set_child(listen_icon)
-        self.listen_toggle_button.set_active(True)
-        self.listen_toggle_button.connect("toggled", self._on_listen_toggle)
-        right_controls.append(self.listen_toggle_button)
+        # 已剥离：TTS 组件（播报时自动监听开关）
+        # # Auto-listen toggle button
+        # self.listen_toggle_button = Gtk.ToggleButton(
+        #     css_classes=["call-button-history"],
+        #     tooltip_text=_("Auto-listen while agent speaks")
+        # )
+        # listen_icon = Gtk.Image.new_from_icon_name("call-emergency-symbolic")
+        # listen_icon.set_pixel_size(24)
+        # self.listen_toggle_button.set_child(listen_icon)
+        # self.listen_toggle_button.set_active(True)
+        # self.listen_toggle_button.connect("toggled", self._on_listen_toggle)
+        # right_controls.append(self.listen_toggle_button)
 
         self.overlay.add_overlay(right_controls)
     
@@ -611,10 +613,10 @@ class CallPanel(Gtk.Box):
     
     def _on_speaker_clicked(self, button):
         """Handle speaker button click"""
-        # Stop TTS playback
-        if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
-            self.controller.handlers.tts.stop()
-        self._disconnect_tts_listeners()
+        # 已剥离：TTS 组件
+        # if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
+        #     self.controller.handlers.tts.stop()
+        # self._disconnect_tts_listeners()
 
     def _on_history_clicked(self, button):
         """Handle history toggle button click"""
@@ -626,13 +628,14 @@ class CallPanel(Gtk.Box):
         else:
             button.remove_css_class("call-button-history-active")
     
-    def _on_listen_toggle(self, button):
-        """Handle listen during TTS toggle"""
-        self.listen_during_tts = button.get_active()
-        if self.listen_during_tts:
-            button.remove_css_class("call-button-history-active")
-        else:
-            button.add_css_class("call-button-history-active")
+    # 已剥离：TTS 组件
+    # def _on_listen_toggle(self, button):
+    #     """Handle listen during TTS toggle"""
+    #     self.listen_during_tts = button.get_active()
+    #     if self.listen_during_tts:
+    #         button.remove_css_class("call-button-history-active")
+    #     else:
+    #         button.add_css_class("call-button-history-active")
     
     def _on_convert_to_chat_clicked(self, button):
         """Handle convert to chat button click"""
@@ -735,9 +738,9 @@ class CallPanel(Gtk.Box):
             self._pending_barge_in = None
             self._barge_in_capture = False
         
-        # Stop TTS
-        if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
-            self.controller.handlers.tts.stop()
+        # 已剥离：TTS 组件
+        # if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
+        #     self.controller.handlers.tts.stop()
         
         # Update UI
         GLib.idle_add(self._update_ui_after_end, ended_generation)
@@ -862,11 +865,13 @@ class CallPanel(Gtk.Box):
                     barge_in_capture = self._barge_in_capture
                     is_muted = self.is_muted
 
-                can_barge_in = (
-                    turn_in_progress
-                    and self.listen_during_tts
-                    and (self.assistant_speaking or barge_in_capture)
-                )
+                # 已剥离：TTS 组件（无 TTS，无打断）
+                can_barge_in = False
+                # can_barge_in = (
+                #     turn_in_progress
+                #     and self.listen_during_tts
+                #     and (self.assistant_speaking or barge_in_capture)
+                # )
                 microphone_suppressed = is_muted or (
                     turn_in_progress and not can_barge_in
                 )
@@ -898,11 +903,13 @@ class CallPanel(Gtk.Box):
                     else:
                         speech_buffer = list(audio_prebuffer)
                         started_new_capture = True
-                        capture_is_barge_in = (
-                            turn_in_progress
-                            and self.listen_during_tts
-                            and self.assistant_speaking
-                        )
+                        # 已剥离：TTS 组件（无打断）
+                        capture_is_barge_in = False
+                        # capture_is_barge_in = (
+                        #     turn_in_progress
+                        #     and self.listen_during_tts
+                        #     and self.assistant_speaking
+                        # )
                         if capture_is_barge_in:
                             with self._turn_lock:
                                 self._barge_in_capture = True
@@ -1004,11 +1011,11 @@ class CallPanel(Gtk.Box):
         self._update_activity_indicator()
         self.avatar_ring.add_css_class("call-avatar-ring-speaking")
         
-        # Interrupt TTS if playing
-        if self.assistant_speaking:
-            if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
-                self.controller.handlers.tts.stop()
-            self.assistant_speaking = False
+        # 已剥离：TTS 组件（不再打断）
+        # if self.assistant_speaking:
+        #     if hasattr(self.controller, 'handlers') and self.controller.handlers.tts:
+        #         self.controller.handlers.tts.stop()
+        #     self.assistant_speaking = False
     
     def _on_speech_ended(self, call_generation):
         """Called when speech ends"""
@@ -1151,14 +1158,16 @@ class CallPanel(Gtk.Box):
                 return
 
             # Get STT handler
-            stt = self.controller.handlers.stt
+            # 已剥离：STT 听写（STT 仅保留给唤醒词与音频转写使用）
+            # stt = self.controller.handlers.stt
             direct_audio = self.controller.settings.get_boolean("direct-audio-input")
-            if not direct_audio and (not stt or not stt.is_installed()):
+            # if not direct_audio and (not stt or not stt.is_installed()):
+            if not direct_audio:
                 GLib.idle_add(
                     self._add_message_to_history_if_current,
                     call_generation,
                     "System",
-                    _("Speech recognition not available"),
+                    _("Enable Direct audio input in the Voice settings"),
                     True
                 )
                 return
@@ -1167,8 +1176,8 @@ class CallPanel(Gtk.Box):
             if direct_audio:
                 text = self.controller.audio_input.prepare_audio_input(
                     audio_path, lambda: self._is_current_call(call_generation))
-            else:
-                text = stt.recognize_file(audio_path)
+            # else:
+            #     text = stt.recognize_file(audio_path)
             if not self._is_current_call(call_generation) or not text or text.strip() == "":
                 return
 
@@ -1241,8 +1250,9 @@ class CallPanel(Gtk.Box):
                     response,
                     False,
                 )
-                response = clean_message_tts(response)
-                self._play_tts(response, call_generation)
+                # 已剥离：TTS 组件（不再播报）
+                # response = clean_message_tts(response)
+                # self._play_tts(response, call_generation)
 
         except Exception as e:
             import traceback
@@ -1258,63 +1268,64 @@ class CallPanel(Gtk.Box):
                 True
             )
     
-    def _clean_response(self, response):
-        """Clean response for TTS"""
-        response = remove_thinking_blocks(response)
-        response = remove_markdown(response)
-        response = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', response)
-        # Remove emoji 
-        response = remove_emoji(response) 
-        return response.strip()
-    
-    def _play_tts(self, text, call_generation):
-        """Play TTS for the response"""
-        if not text or not self._is_current_call(call_generation):
-            return
-
-        tts = self.controller.handlers.tts
-        if not tts:
-            return
-        self._disconnect_tts_listeners()
-        self._tts_handler = tts
-
-        def on_tts_start():
-            GLib.idle_add(
-                self._set_assistant_speaking,
-                call_generation,
-                True,
-            )
-
-        def on_tts_stop():
-            GLib.idle_add(
-                self._set_assistant_speaking,
-                call_generation,
-                False,
-            )
-
-        self._tts_tokens = [
-            tts.connect("start", on_tts_start),
-            tts.connect("stop", on_tts_stop),
-        ]
-
-        try:
-            tts.play(text)
-        except Exception as e:
-            import traceback
-            print(f"TTS error: {e}")
-            print(traceback.format_exc())
-            GLib.idle_add(
-                self._set_assistant_speaking,
-                call_generation,
-                False,
-            )
-
-    def _disconnect_tts_listeners(self):
-        if self._tts_handler is not None:
-            for token in self._tts_tokens:
-                self._tts_handler.disconnect(token)
-        self._tts_tokens = []
-        self._tts_handler = None
+    # 已剥离：TTS 组件（语音播报）
+    # def _clean_response(self, response):
+    #     """Clean response for TTS"""
+    #     response = remove_thinking_blocks(response)
+    #     response = remove_markdown(response)
+    #     response = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', response)
+    #     # Remove emoji 
+    #     response = remove_emoji(response) 
+    #     return response.strip()
+    #
+    # def _play_tts(self, text, call_generation):
+    #     """Play TTS for the response"""
+    #     if not text or not self._is_current_call(call_generation):
+    #         return
+    #
+    #     tts = self.controller.handlers.tts
+    #     if not tts:
+    #         return
+    #     self._disconnect_tts_listeners()
+    #     self._tts_handler = tts
+    #
+    #     def on_tts_start():
+    #         GLib.idle_add(
+    #             self._set_assistant_speaking,
+    #             call_generation,
+    #             True,
+    #         )
+    #
+    #     def on_tts_stop():
+    #         GLib.idle_add(
+    #             self._set_assistant_speaking,
+    #             call_generation,
+    #             False,
+    #         )
+    #
+    #     self._tts_tokens = [
+    #         tts.connect("start", on_tts_start),
+    #         tts.connect("stop", on_tts_stop),
+    #     ]
+    #
+    #     try:
+    #         tts.play(text)
+    #     except Exception as e:
+    #         import traceback
+    #         print(f"TTS error: {e}")
+    #         print(traceback.format_exc())
+    #         GLib.idle_add(
+    #             self._set_assistant_speaking,
+    #             call_generation,
+    #             False,
+    #         )
+    #
+    # def _disconnect_tts_listeners(self):
+    #     if self._tts_handler is not None:
+    #         for token in self._tts_tokens:
+    #             self._tts_handler.disconnect(token)
+    #     self._tts_tokens = []
+    #     self._tts_handler = None
     
     def _set_assistant_speaking(self, call_generation, speaking):
         """Update assistant speaking state"""

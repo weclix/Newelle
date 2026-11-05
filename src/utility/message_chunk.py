@@ -1,7 +1,7 @@
 import re
 import json
 from dataclasses import dataclass, field
-from typing import List, Optional, Any
+from typing import Optional, Any
 
 @dataclass
 class MessageChunk:
@@ -11,7 +11,7 @@ class MessageChunk:
     tool_name: str = '' # Only used for tool_call
     tool_args: dict = field(default_factory=dict) # Only used for tool_call
     tool_id: str = '' # Only used for native tool calls
-    subchunks: Optional[List['MessageChunk']] = field(default_factory=list)
+    subchunks: Optional[list['MessageChunk']] = field(default_factory=list)
 
     def __str__(self):
         if self.type == "codeblock":
@@ -64,7 +64,7 @@ _HORIZONTAL_RULE_PATTERN = re.compile(r'^[ \t]*([-*_])[ \t]*\1[ \t]*\1[ \t]*(\1[
 # Chunk Processing Logic
 # ============================================================
 
-def append_chunk(chunks: List[MessageChunk], new_chunk: MessageChunk):
+def append_chunk(chunks: list[MessageChunk], new_chunk: MessageChunk):
     """Appends a chunk, merging consecutive text chunks."""
     if not chunks:
         chunks.append(new_chunk)
@@ -99,7 +99,7 @@ def is_markdown_table(block: str) -> bool:
     return num_header_cols == num_sep_cols and num_header_cols > 0
 
 
-def extract_tables(text: str) -> List[MessageChunk]:
+def extract_tables(text: str) -> list[MessageChunk]:
     chunks = []
     lines = text.splitlines()
     last_line_processed = 0
@@ -139,7 +139,7 @@ def extract_tables(text: str) -> List[MessageChunk]:
     return [c for c in chunks if c.type != "text" or c.text != ""]
 
 
-def extract_dividers(text: str) -> List[MessageChunk]:
+def extract_dividers(text: str) -> list[MessageChunk]:
     chunks = []
     last_index = 0
 
@@ -160,7 +160,7 @@ def extract_dividers(text: str) -> List[MessageChunk]:
     return [c for c in chunks if c.type != "text" or c.text != ""]
 
 
-def process_text_with_display_latex(text: str, allow_latex: bool) -> List[MessageChunk]:
+def process_text_with_display_latex(text: str, allow_latex: bool) -> list[MessageChunk]:
     if not allow_latex:
         return process_inline_elements(text, allow_latex=False)
 
@@ -247,7 +247,7 @@ def _mask_currency_dollars(text: str) -> str:
     )
 
 
-def process_inline_elements(text: str, allow_latex: bool) -> List[MessageChunk]:
+def process_inline_elements(text: str, allow_latex: bool) -> list[MessageChunk]:
     chunks = []
     if not allow_latex:
         if text: 
@@ -280,7 +280,7 @@ def process_inline_elements(text: str, allow_latex: bool) -> List[MessageChunk]:
     return [c for c in chunks if c.type != "text" or c.text != ""]
 
 
-def process_text_segment_no_think(text: str, allow_latex: bool) -> List[MessageChunk]:
+def process_text_segment_no_think(text: str, allow_latex: bool) -> list[MessageChunk]:
     if not text:
         return []
 
@@ -302,7 +302,7 @@ def process_text_segment_no_think(text: str, allow_latex: bool) -> List[MessageC
     return final_chunks
 
 
-def process_text_segment(text: str, allow_latex: bool) -> List[MessageChunk]:
+def process_text_segment(text: str, allow_latex: bool) -> list[MessageChunk]:
     """Processes text segment potentially containing <think> tags."""
     flat_chunks = []
     last_index = 0
@@ -367,7 +367,7 @@ def parse_potential_tool_json(text: str) -> Optional[dict]:
         pass
     return None
 
-def find_tool_calls(text: str) -> List[MessageChunk]:
+def find_tool_calls(text: str) -> list[MessageChunk]:
     """
     Extracts tool calls in JSON format from raw text.
     Handles { "name": ... } or { "tool": ... }
@@ -440,7 +440,7 @@ def find_tool_calls(text: str) -> List[MessageChunk]:
 # Main Function
 # ============================================================
 
-def get_message_chunks(message: str, allow_latex: bool = True) -> List[MessageChunk]:
+def get_message_chunks(message: str, allow_latex: bool = True) -> list[MessageChunk]:
     """
     Main function to parse message into chunks.
     Priority: Thinking Blocks OR CodeBlocks (by order of appearance) -> Naked Tools -> Markdown/Latex.
@@ -537,7 +537,7 @@ def get_message_chunks(message: str, allow_latex: bool = True) -> List[MessageCh
     return _group_inline_chunks(flat_chunks)
 
 
-def _group_inline_chunks(flat_chunks: List[MessageChunk]) -> List[MessageChunk]:
+def _group_inline_chunks(flat_chunks: list[MessageChunk]) -> list[MessageChunk]:
     """Groups consecutive Text and LatexInline chunks."""
     grouped_chunks = []
     current_inline_sequence = []

@@ -12,7 +12,8 @@ from .handlers import Handler
 
 from .handlers.llm import LLMHandler
 from .handlers.stt import STTHandler
-from .handlers.tts import TTSHandler
+# 已剥离：TTS 组件
+# from .handlers.tts import TTSHandler
 from .handlers.rag import RAGHandler
 from .handlers.memory import MemoryHandler
 from .handlers.embeddings import EmbeddingHandler
@@ -99,13 +100,13 @@ class NewelleExtension(Handler):
         self.schema_key = "extensions-settings"
         pass
 
-    def set_handlers(self, llm: LLMHandler, stt: STTHandler, tts:TTSHandler|None, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler):
+    def set_handlers(self, llm: LLMHandler, stt: STTHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler):
         """Set the handlers for the extension
 
         Args:
             llm: LLMHandler 
             stt: STTHandler 
-            tts: TTSHandler|None if disabled None is given 
+            # tts: TTSHandler|None if disabled None is given  # 已剥离：TTS 组件
             secondary_llm: LLMHandler (if disabled, is the same of LLMHandler) 
             embedding: EmbeddingHandler 
             rag: RAGHandler|None if disabled None is given 
@@ -113,7 +114,8 @@ class NewelleExtension(Handler):
         """
         self.llm = llm 
         self.stt = stt
-        self.tts = tts
+        # self.tts = tts  # 已剥离：TTS 组件
+        self.tts = None  # 保留属性，避免旧扩展访问 self.tts 时报错
         self.secondary_llm = secondary_llm
         self.embedding = embedding
         self.rag = rag
@@ -135,21 +137,22 @@ class NewelleExtension(Handler):
         """
         return [] 
 
-    def get_tts_handlers(self) -> list[dict]:
-        """
-        Returns the list of TTS handlers
-
-        Returns: 
-            list: list of TTS handlers in this format
-            {
-                "key": "key of the handler",
-                "title": "title of the handler",
-                "description": "description of the handler",
-                "class": TTSHandler - The class of the handler,
-            }
-            
-        """
-        return [] 
+    # 已剥离：TTS 组件
+    # def get_tts_handlers(self) -> list[dict]:
+    #     """
+    #     Returns the list of TTS handlers
+    #
+    #     Returns: 
+    #         list: list of TTS handlers in this format
+    #         {
+    #             "key": "key of the handler",
+    #             "title": "title of the handler",
+    #             "description": "description of the handler",
+    #             "class": TTSHandler - The class of the handler,
+    #         }
+    #         
+    #     """
+    #     return [] 
 
     def get_stt_handlers(self) -> list[dict]:
         """
@@ -473,7 +476,7 @@ class ExtensionLoader:
 
     _HANDLER_CONTRIBUTION_METHODS = {
         "llm": "get_llm_handlers",
-        "tts": "get_tts_handlers",
+        # "tts": "get_tts_handlers",  # 已剥离：TTS 组件
         "stt": "get_stt_handlers",
         "memory": "get_memory_handlers",
         "embedding": "get_embedding_handlers",
@@ -643,9 +646,9 @@ class ExtensionLoader:
             
         sys.path.remove(self.project_dir)
 
-    def set_handlers(self, llm: LLMHandler, stt: STTHandler, tts:TTSHandler|None, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None):
+    def set_handlers(self, llm: LLMHandler, stt: STTHandler, secondary_llm: LLMHandler, embedding: EmbeddingHandler, rag: RAGHandler|None, memory: MemoryHandler|None, websearch: WebSearchHandler | None):
         for extension in self.extensions:
-            extension.set_handlers(llm, stt, tts, secondary_llm, embedding, rag, memory, websearch)
+            extension.set_handlers(llm, stt, secondary_llm, embedding, rag, memory, websearch)
     
     def add_tools(self, tool_registry):
         for extension in self.extensions:
@@ -667,12 +670,12 @@ class ExtensionLoader:
         for tool in extension.get_tools():
             tool_registry.remove_tool(tool.name)
 
-    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
+    def add_handlers(self, AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=None):
         """Add the handlers of each extension to the available handlers
 
         Args:
             AVAILABLE_LLMS (): list of available llms
-            AVAILABLE_TTS (): list of available tts
+            # AVAILABLE_TTS (): list of available tts  # 已剥离：TTS 组件
             AVAILABLE_STT (): list of available stt
             AVAILABLE_MEMORIES (): list of available memories
             AVAILABLE_EMBEDDINGS (): list of available embeddings
@@ -686,9 +689,10 @@ class ExtensionLoader:
             handlers = extension.get_llm_handlers()
             for handler in handlers:
                 AVAILABLE_LLMS[handler["key"]] = handler
-            handlers = extension.get_tts_handlers()
-            for handler in handlers:
-                AVAILABLE_TTS[handler["key"]] = handler
+            # 已剥离：TTS 组件
+            # handlers = extension.get_tts_handlers()
+            # for handler in handlers:
+            #     AVAILABLE_TTS[handler["key"]] = handler
             handlers = extension.get_stt_handlers()
             for handler in handlers:
                 AVAILABLE_STT[handler["key"]] = handler
@@ -744,20 +748,21 @@ class ExtensionLoader:
             if modes:
                 mode_manager.add_modes(modes)
 
-    def remove_handlers(self, extension, AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
+    def remove_handlers(self, extension, AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAG, AVAILABLE_WEBSEARCH):
         """Remove handlers of an extension
 
         Args:
             AVAILABLE_LLMS (): list of available llms 
-            AVAILABLE_TTS (): list of available tts
+            # AVAILABLE_TTS (): list of available tts  # 已剥离：TTS 组件
             AVAILABLE_STT (): list of available stt
         """
         handlers = extension.get_llm_handlers()
         for handler in handlers:
             AVAILABLE_LLMS.pop(handler["key"])
-        handlers = extension.get_tts_handlers()
-        for handler in handlers:
-            AVAILABLE_TTS.pop(handler["key"])
+        # 已剥离：TTS 组件
+        # handlers = extension.get_tts_handlers()
+        # for handler in handlers:
+        #     AVAILABLE_TTS.pop(handler["key"])
         handlers = extension.get_stt_handlers()
         for handler in handlers:
             AVAILABLE_STT.pop(handler["key"])
@@ -882,9 +887,10 @@ class ExtensionLoader:
         for h in extension.get_llm_handlers():
             if not self.check_handler(h, LLMHandler):
                 return False
-        for h in extension.get_tts_handlers():
-            if not self.check_handler(h, TTSHandler):
-                return False
+        # 已剥离：TTS 组件
+        # for h in extension.get_tts_handlers():
+        #     if not self.check_handler(h, TTSHandler):
+        #         return False
         for h in extension.get_stt_handlers():
             if not self.check_handler(h, STTHandler):
                 return False

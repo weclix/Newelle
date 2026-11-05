@@ -1,6 +1,7 @@
 from abc import abstractmethod
-from ...utility.pip import find_module
-from ..handler import Handler
+# 已剥离：运行模块安装器
+# from ...utility.pip import find_module
+from ..handler import Handler, find_module
 
 
 class STTHandler(Handler):

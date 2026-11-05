@@ -3,7 +3,7 @@ import os
 import json
 import shlex
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class CommandAction(Enum):
@@ -229,7 +229,7 @@ class CommandPermissionManager:
                 self._default_risk_cache = "ask"
         return self._default_risk_cache
 
-    def check_command(self, command: str, working_dir: str = None) -> Tuple[CommandAction, str]:
+    def check_command(self, command: str, working_dir: str = None) -> tuple[CommandAction, str]:
         """Check if a command should be allowed, asked, or blocked.
 
         Returns:
@@ -258,7 +258,7 @@ class CommandPermissionManager:
         action = CommandAction(default)
         return self._adjust_for_path(action, "No matching rule, using default", working_dir, command)
 
-    def _check_custom_rules(self, command: str) -> Tuple[Optional[CommandAction], str]:
+    def _check_custom_rules(self, command: str) -> tuple[Optional[CommandAction], str]:
         rules = self._load_permission_rules()
         for rule in rules:
             if not isinstance(rule, dict):
@@ -283,7 +283,7 @@ class CommandPermissionManager:
                     return action, f"Matched custom rule (literal): {pattern}"
         return None, ""
 
-    def _check_builtin_risk(self, command: str) -> Tuple[Optional[CommandAction], str]:
+    def _check_builtin_risk(self, command: str) -> tuple[Optional[CommandAction], str]:
         lines = command.split("\n")
         
         highest_risk = None
@@ -462,7 +462,7 @@ class CommandPermissionManager:
 
         return max(levels, key=lambda level: level.restrictiveness)
 
-    def _adjust_for_path(self, action: CommandAction, reason: str, working_dir: str = None, command: str = None) -> Tuple[CommandAction, str]:
+    def _adjust_for_path(self, action: CommandAction, reason: str, working_dir: str = None, command: str = None) -> tuple[CommandAction, str]:
         if not working_dir:
             return action, reason
 

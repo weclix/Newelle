@@ -1,7 +1,7 @@
 import pyaudio
 import wave
 import struct
-from typing import Callable
+from collections.abc import Callable
 import os
 import math
 import threading

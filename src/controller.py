@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gettext import gettext as _
 from gi.repository import GLib, Gio, Adw
 import os
@@ -20,7 +21,8 @@ from .utility.message_chunk import get_message_chunks, normalize_tool_arguments
 
 from .extensions import NewelleExtension
 from .handlers.llm import LLMHandler
-from .handlers.tts import TTSHandler
+# 已剥离：TTS 组件
+# from .handlers.tts import TTSHandler
 from .handlers.stt import STTHandler
 from .handlers.rag import RAGHandler
 from .handlers.memory import MemoryHandler
@@ -31,7 +33,8 @@ from .handlers.image_generator import ImageGeneratorHandler
 
 # Flatpak support removed
 # from .utility.system import is_flatpak
-from .utility.pip import install_module
+# 已剥离：运行模块安装器
+# from .utility.pip import install_module
 from .utility.profile_settings import (
     ROOT_PROFILE,
     apply_profile_settings,
@@ -45,7 +48,7 @@ from .utility.profile_settings import (
     save_live_settings_to_profiles,
 )
 from .utility.source_attribution import format_source_context
-from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_STT, AVAILABLE_TTS, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers, restore_prompts
+from .constants import AVAILABLE_INTEGRATIONS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, DIR_NAME, SCHEMA_ID, PROMPTS, AVAILABLE_STT, AVAILABLE_LLMS, AVAILABLE_RAGS, AVAILABLE_PROMPTS, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, SETTINGS_GROUPS, restore_handlers, restore_prompts
 import threading
 import pickle
 import tempfile
@@ -73,7 +76,7 @@ class ReloadType(Enum):
     Attributes: 
         NONE: Nothing to realod  
         LLM: Reload LLM
-        TTS: Reload TTS 
+        # TTS: Reload TTS  # 已剥离：TTS 组件
         STT: Reload STT 
         PROMPTS: Reload PROMPTS 
         RAG: Reload RAG 
@@ -85,7 +88,7 @@ EXTENSIONS: Reload EXTENSIONS
     """
     NONE = 0
     LLM = 1
-    TTS = 2
+    # TTS = 2  # 已剥离：TTS 组件
     STT = 3
     PROMPTS = 4
     RAG = 5
@@ -497,7 +500,9 @@ class NewelleController(WorkspaceController):
         request_handlers.handlers = {}
         for attribute in (
             "llm", "secondary_llm", "stt", "secondary_stt", "wakeword_handler",
-            "tts", "embedding", "memory", "rag", "websearch", "image_generator",
+            # 已剥离：TTS 组件
+            # "tts",
+            "embedding", "memory", "rag", "websearch", "image_generator",
         ):
             if hasattr(self.handlers, attribute):
                 setattr(
@@ -1472,13 +1477,15 @@ class NewelleController(WorkspaceController):
         # Fix Pip environment
         if os.path.isdir(self.pip_path):
             self.python_path.append(self.pip_path)
-        else:
-            threading.Thread(target=self.init_pip_path, args=(self.python_path,)).start()
+        # 已剥离：运行模块安装器
+        # else:
+        #     threading.Thread(target=self.init_pip_path, args=(self.python_path,)).start()
 
-    def init_pip_path(self, path):
-        """Install a pip module to init a pip path"""
-        install_module("pip-install-test", self.pip_path)
-        self.python_path.append(self.pip_path)
+    # 已剥离：运行模块安装器
+    # def init_pip_path(self, path):
+    #     """Install a pip module to init a pip path"""
+    #     install_module("pip-install-test", self.pip_path)
+    #     self.python_path.append(self.pip_path)
 
     def update_settings(self, apply=True):
         """Update settings"""
@@ -1608,7 +1615,8 @@ class NewelleController(WorkspaceController):
             restore_handlers()
             new_loader.add_handlers(
                 AVAILABLE_LLMS,
-                AVAILABLE_TTS,
+                # 已剥离：TTS 组件
+                # AVAILABLE_TTS,
                 AVAILABLE_STT,
                 AVAILABLE_MEMORIES,
                 AVAILABLE_EMBEDDINGS,
@@ -1633,7 +1641,7 @@ class NewelleController(WorkspaceController):
             new_loader.set_handlers(
                 self.handlers.llm,
                 self.handlers.stt,
-                self.handlers.tts,
+                # self.handlers.tts,  # 已剥离：TTS 组件
                 self.handlers.secondary_llm,
                 self.handlers.embedding,
                 self.handlers.rag,
@@ -1694,7 +1702,7 @@ class NewelleController(WorkspaceController):
             self.handlers.select_handlers(self.newelle_settings)
             if self.newelle_settings.use_secondary_language_model:
                 GLib.timeout_add(100,threading.Thread(target=self.handlers.secondary_llm.load_model, args=(None,)).start)
-        elif reload_type in [ReloadType.TTS, ReloadType.STT, ReloadType.MEMORIES]:
+        elif reload_type in [ReloadType.STT, ReloadType.MEMORIES]:  # 已剥离：TTS 组件（移除 ReloadType.TTS）
             if ReloadType.MEMORIES:
                 self.require_tool_update()
             self.handlers.select_handlers(self.newelle_settings)
@@ -1880,7 +1888,7 @@ class NewelleController(WorkspaceController):
         self.extensionloader = ExtensionLoader(self.extension_path, pip_path=self.pip_path,
                                                extension_cache=self.extensions_cache, settings=self.settings)
         self.extensionloader.load_extensions()
-        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_TTS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
+        self.extensionloader.add_handlers(AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_MEMORIES, AVAILABLE_EMBEDDINGS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS=AVAILABLE_IMAGE_GENERATORS)
         self.extensionloader.add_prompts(PROMPTS, AVAILABLE_PROMPTS)
         self.extensionloader.add_tools(self.tools)
         self.set_ui_controller(self.ui_controller)
@@ -2376,9 +2384,11 @@ class NewelleController(WorkspaceController):
                     return True
                 return False
         request_settings = self._request_settings()
-        if name == "tts_on":
-            return request_settings.tts_enabled
-        elif name == "virtualization_on":
+        # 已剥离：TTS 组件
+        # if name == "tts_on":
+        #     return request_settings.tts_enabled
+        # elif name == "virtualization_on":
+        if name == "virtualization_on":
             # Flatpak support removed
             return False
         elif name == "auto_run":
@@ -2389,8 +2399,8 @@ class NewelleController(WorkspaceController):
             return request_settings.rag_on_documents
         elif name == "local_folder":
             return request_settings.rag_on
-        elif name == "automatic_stt":
-            return request_settings.automatic_stt
+        # elif name == "automatic_stt":  # 已剥离：STT 自动听写
+        #     return request_settings.automatic_stt
         elif name == "profile_name":
             return request_settings.current_profile
         # 已剥离：内置浏览器
@@ -3689,7 +3699,7 @@ class NewelleSettings:
                 self.profile_settings[name] = new_profile_record(parent=None if name == ROOT_PROFILE else ROOT_PROFILE)
 
         # Init variables
-        self.automatic_stt_status = False
+        # self.automatic_stt_status = False  # 已剥离：STT 自动听写
         settings = self.settings
        
         # Get settings variables
@@ -3706,9 +3716,10 @@ class NewelleSettings:
         self.display_latex = settings.get_boolean("display-latex")
         self.compact_mode = settings.get_boolean("compact-mode")
         self.compact_input_bar = settings.get_boolean("compact-input-bar")
-        self.tts_enabled = settings.get_boolean("tts-on")
-        self.tts_program = settings.get_string("tts")
-        self.tts_voice = settings.get_string("tts-voice")
+        # 已剥离：TTS 组件
+        # self.tts_enabled = settings.get_boolean("tts-on")
+        # self.tts_program = settings.get_string("tts")
+        # self.tts_voice = settings.get_string("tts-voice")
         self.direct_audio_input = settings.get_boolean("direct-audio-input")
         self.audio_transcribe = settings.get_boolean("audio-transcribe")
         self.audio_transcription_timing = settings.get_string("audio-transcription-timing")
@@ -3718,7 +3729,7 @@ class NewelleSettings:
         self.secondary_stt_settings = settings.get_string("stt-secondary-settings")
         self.external_terminal = settings.get_string("external-terminal")
         self.external_terminal_on = settings.get_boolean("external-terminal-on")
-        self.automatic_stt = settings.get_boolean("automatic-stt")
+        # self.automatic_stt = settings.get_boolean("automatic-stt")  # 已剥离：STT 自动听写
         self.stt_silence_detection_threshold = settings.get_double("stt-silence-detection-threshold")
         self.stt_silence_detection_duration = settings.get_int("stt-silence-detection-duration")
         self.embedding_model = self.settings.get_string("embedding-model")
@@ -3892,14 +3903,14 @@ class NewelleSettings:
         if self.secondary_language_model != new_settings.secondary_language_model or self.use_secondary_language_model != new_settings.use_secondary_language_model or self.use_secondary_language_model_for_vision != new_settings.use_secondary_language_model_for_vision or self.secondary_language_model_settings != new_settings.secondary_language_model_settings:
             reloads.append(ReloadType.SECONDARY_LLM)
         
-        if self.tts_program != new_settings.tts_program:
-            reloads.append(ReloadType.TTS)
+        # 已剥离：TTS 组件
+        # if self.tts_program != new_settings.tts_program:
+        #     reloads.append(ReloadType.TTS)
 
         if self.stt_engine != new_settings.stt_engine:
             reloads.append(ReloadType.STT)
 
-        if (self.automatic_stt != new_settings.automatic_stt
-                or self.direct_audio_input != new_settings.direct_audio_input):
+        if self.direct_audio_input != new_settings.direct_audio_input:  # 已剥离：STT 自动听写（移除 automatic_stt 比较）
             if self.wakeword_enabled:
                 reloads.append(ReloadType.WAKEWORD)
 
@@ -3967,7 +3978,7 @@ class HandlersManager:
         handlers: Cached handlers 
         llm: LLM Handler 
         stt: STT Handler 
-        tts: TTS Handler
+        # tts: TTS Handler  # 已剥离：TTS 组件
         embedding: Embedding Handler 
         memory: Memory Handler
         rag: RAG Handler 
@@ -4272,8 +4283,9 @@ class HandlersManager:
             newelle_settings.memory_model = list(AVAILABLE_MEMORIES.keys())[0]
         if newelle_settings.rag_model not in AVAILABLE_RAGS:
             newelle_settings.rag_model = list(AVAILABLE_RAGS.keys())[0]
-        if newelle_settings.tts_program not in AVAILABLE_TTS:
-            newelle_settings.tts_program = list(AVAILABLE_TTS.keys())[0]
+        # 已剥离：TTS 组件
+        # if newelle_settings.tts_program not in AVAILABLE_TTS:
+        #     newelle_settings.tts_program = list(AVAILABLE_TTS.keys())[0]
         if newelle_settings.stt_engine not in AVAILABLE_STT:
             newelle_settings.stt_engine = list(AVAILABLE_STT.keys())[0]
         if newelle_settings.secondary_stt_engine not in AVAILABLE_STT:
@@ -4321,7 +4333,7 @@ class HandlersManager:
         # Set wakeword handler based on mode
         self.secondary_stt : STTHandler = self.get_object(AVAILABLE_STT, newelle_settings.secondary_stt_engine, True)
         self.wakeword_handler : STTHandler = None
-        self.tts : TTSHandler = self.get_object(AVAILABLE_TTS, newelle_settings.tts_program)
+        # self.tts : TTSHandler = self.get_object(AVAILABLE_TTS, newelle_settings.tts_program)  # 已剥离：TTS 组件
         self.embedding : EmbeddingHandler= self.get_object(AVAILABLE_EMBEDDINGS, newelle_settings.embedding_model)
         self.memory : MemoryHandler = self.get_object(AVAILABLE_MEMORIES, newelle_settings.memory_model)
         self.memory.set_memory_size(newelle_settings.memory)
@@ -4330,8 +4342,8 @@ class HandlersManager:
         self.image_generator : ImageGeneratorHandler = self.get_object(AVAILABLE_IMAGE_GENERATORS, newelle_settings.image_generator)
         # self.refresh_interfaces(auto_start=not skip_auto_start_interfaces)
         # Assign handlers 
-        self.integrationsloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
-        self.extensionloader.set_handlers(self.llm, self.stt, self.tts, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
+        self.integrationsloader.set_handlers(self.llm, self.stt, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
+        self.extensionloader.set_handlers(self.llm, self.stt, self.secondary_llm, self.embedding, self.rag, self.memory, self.websearch)
         self.memory.set_handlers(self.secondary_llm, self.embedding, self.rag)
 
         self.rag.set_handlers(self.llm, self.embedding)
@@ -4389,7 +4401,7 @@ class HandlersManager:
                 newelle_settings.language_model,
                 newelle_settings.secondary_language_model,
             },
-            "tts": {newelle_settings.tts_program},
+            # "tts": {newelle_settings.tts_program},  # 已剥离：TTS 组件
             "stt": {
                 newelle_settings.stt_engine,
                 newelle_settings.secondary_stt_engine,
@@ -4439,7 +4451,7 @@ class HandlersManager:
             self.extensionloader.set_handlers(
                 self.llm,
                 self.stt,
-                self.tts,
+                # self.tts,  # 已剥离：TTS 组件
                 self.secondary_llm,
                 self.embedding,
                 self.rag,
@@ -4570,7 +4582,7 @@ class HandlersManager:
 
     def install_missing_handlers(self):
         """Install selected handlers that are not installed. Assumes that select_handlers has been called""" 
-        handlers = [self.llm, self.stt, self.tts, self.memory, 
+        handlers = [self.llm, self.stt, self.memory, 
                     self.embedding, self.rag, self.websearch, self.image_generator]
         for handler in handlers:
             if not handler.is_installed():
@@ -4585,8 +4597,9 @@ class HandlersManager:
 
     def cache_handlers(self):
         """Cache handlers"""
-        for key in AVAILABLE_TTS:
-            self.handlers[(key, self.convert_constants(AVAILABLE_TTS), False)] = self.get_object(AVAILABLE_TTS, key)
+        # 已剥离：TTS 组件
+        # for key in AVAILABLE_TTS:
+        #     self.handlers[(key, self.convert_constants(AVAILABLE_TTS), False)] = self.get_object(AVAILABLE_TTS, key)
         for key in AVAILABLE_STT:
             self.handlers[(key, self.convert_constants(AVAILABLE_STT), False)] = self.get_object(AVAILABLE_STT, key)
         for key in AVAILABLE_LLMS:
@@ -4626,8 +4639,8 @@ class HandlersManager:
         """
         if type(constants) is str:
             match constants:
-                case "tts":
-                    return AVAILABLE_TTS
+                # case "tts":  # 已剥离：TTS 组件
+                #     return AVAILABLE_TTS
                 case "stt":
                     return AVAILABLE_STT
                 case "llm":
@@ -4653,8 +4666,8 @@ class HandlersManager:
                 return "llm"
             elif constants == AVAILABLE_STT:
                 return "stt"
-            elif constants == AVAILABLE_TTS:
-                return "tts"
+            # elif constants == AVAILABLE_TTS:  # 已剥离：TTS 组件
+            #     return "tts"
             elif constants == AVAILABLE_MEMORIES:
                 return "memory"
             elif constants == AVAILABLE_EMBEDDINGS:
@@ -4695,8 +4708,8 @@ class HandlersManager:
         elif constants == AVAILABLE_STT:
             model = constants[key]["class"](self.settings,self.directory)
             model.set_secondary_settings(secondary)
-        elif constants == AVAILABLE_TTS:
-            model = constants[key]["class"](self.settings, self.directory)
+        # elif constants == AVAILABLE_TTS:  # 已剥离：TTS 组件
+        #     model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_MEMORIES:
             model = constants[key]["class"](self.settings, self.directory)
         elif constants == AVAILABLE_EMBEDDINGS:
@@ -4729,9 +4742,11 @@ class HandlersManager:
 
         Returns: AVAILABLE_LLMS, AVAILABLE_STT, AVAILABLE_TTS based on the type of the handler 
         """
-        if issubclass(type(handler), TTSHandler):
-            return AVAILABLE_TTS
-        elif issubclass(type(handler), STTHandler):
+        # 已剥离：TTS 组件
+        # if issubclass(type(handler), TTSHandler):
+        #     return AVAILABLE_TTS
+        # elif issubclass(type(handler), STTHandler):
+        if issubclass(type(handler), STTHandler):
             return AVAILABLE_STT
         elif issubclass(type(handler), LLMHandler):
             return AVAILABLE_LLMS

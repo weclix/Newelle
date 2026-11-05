@@ -11,7 +11,8 @@ import threading
 import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Optional, Pattern
+from typing import Optional
+from re import Pattern
 
 GLOB_RESULT_LIMIT = 1000
 GLOB_TIME_LIMIT = 10.0

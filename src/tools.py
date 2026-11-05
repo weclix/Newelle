@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Optional
+from collections.abc import Callable
 import inspect
 import threading
 import json
@@ -106,7 +107,7 @@ class Command:
         description: str,
         func: Callable,
         icon_name: str = None,
-        schema: Dict[str, Any] = None,
+        schema: dict[str, Any] = None,
         restore_func: Callable = None,
     ):
         self.name = name
@@ -117,7 +118,7 @@ class Command:
         self.command = name.lower()
         self.restore_func = restore_func
 
-    def _generate_schema_from_func(self, func: Callable) -> Dict[str, Any]:
+    def _generate_schema_from_func(self, func: Callable) -> dict[str, Any]:
         sig = inspect.signature(func)
         params = {}
         required = []
@@ -162,7 +163,7 @@ class Command:
         return func_to_call(**kwargs)
 
 class Tool:
-    def __init__(self, name: str, description: str, func: Callable, schema: Dict[str, Any] | Callable[[], Dict[str, Any]] = None, run_on_main_thread: bool = False, title: str = None, prompt_editable: bool = True, restore_func: Callable = None, default_on: bool = True, tools_group: str = None, icon_name: str = None, default_lazy_load: bool = False):
+    def __init__(self, name: str, description: str, func: Callable, schema: dict[str, Any] | Callable[[], dict[str, Any]] = None, run_on_main_thread: bool = False, title: str = None, prompt_editable: bool = True, restore_func: Callable = None, default_on: bool = True, tools_group: str = None, icon_name: str = None, default_lazy_load: bool = False):
         self.name = name
         self.description = description
         self.func = func
@@ -177,7 +178,7 @@ class Tool:
         self.default_lazy_load = default_lazy_load
 
     @property
-    def schema(self) -> Dict[str, Any]:
+    def schema(self) -> dict[str, Any]:
         """Return the current schema, resolving dynamic schema factories."""
         schema = self._schema() if callable(self._schema) else self._schema
         if not isinstance(schema, dict):
@@ -200,7 +201,7 @@ class Tool:
         t.set_output(None)
         return t
 
-    def _generate_schema_from_func(self, func: Callable) -> Dict[str, Any]:
+    def _generate_schema_from_func(self, func: Callable) -> dict[str, Any]:
         # Basic schema generation (can be improved)
         sig = inspect.signature(func)
         params = {}
@@ -241,7 +242,7 @@ class Tool:
 
 class ToolRegistry:
     def __init__(self):
-        self._tools: Dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register_tool(self, tool: Tool):
         self._tools[tool.name] = tool
@@ -252,10 +253,10 @@ class ToolRegistry:
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
 
-    def get_all_tools(self) -> List[Tool]:
+    def get_all_tools(self) -> list[Tool]:
         return list(self._tools.values())
 
-    def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
+    def execute_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         tool = self.get_tool(name)
         if not tool:
             raise ValueError(f"Tool '{name}' not found")
@@ -365,9 +366,9 @@ class ToolRegistry:
         invoking a compact tool.
 
         Args:
-            enabled_tools_dict: Dictionary mapping tool names to boolean enabled state.
+            enabled_tools_dict: dictionary mapping tool names to boolean enabled state.
                                 If None, all registered tools are considered enabled.
-            tools_settings: Dictionary containing tool settings (including custom prompts
+            tools_settings: dictionary containing tool settings (including custom prompts
                             and per-tool lazy_load overrides).
             expanded_tools: Optional set of tool names whose schema has already been
                                 fetched via ``tool_search``. These are always emitted with

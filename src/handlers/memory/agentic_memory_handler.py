@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 import json
 import threading
 
@@ -10,7 +10,8 @@ from ...handlers.llm.llm import LLMHandler
 from ...handlers.rag.rag_handler import RAGHandler
 from ...handlers import ExtraSettings
 from ...tools import create_io_tool
-from ...utility.pip import find_module, install_module
+# 已剥离：运行模块安装器
+# from ...utility.pip import find_module, install_module
 from ...utility.strings import clean_prompt, remove_thinking_blocks
 
 
@@ -41,7 +42,7 @@ class AgenticMemoryHandler(MemoryHandler):
         self.llm: Optional[LLMHandler] = None
         self.rag: Optional[RAGHandler] = None
         self.memory_index = None  # RAGIndex from self.rag.build_index
-        self.chunks: List[MemoryChunk] = []
+        self.chunks: list[MemoryChunk] = []
         self._lock = threading.Lock()
         self._index_loaded = False
         self._loading_thread = None
@@ -156,7 +157,7 @@ Recent conversations:
         today = datetime.now().strftime("%Y-%m-%d")
         return os.path.join(self.daily_notes_dir, f"{today}.md")
 
-    def _split_markdown_into_chunks(self, content: str, file_path: str, max_chunk_size: int = 500) -> List[MemoryChunk]:
+    def _split_markdown_into_chunks(self, content: str, file_path: str, max_chunk_size: int = 500) -> list[MemoryChunk]:
         """Split markdown content into chunks by headers and paragraphs"""
         chunks = []
         lines = content.split('\n')
@@ -587,7 +588,7 @@ Recent conversations:
         except Exception as e:
             print(f"Error in RAG memory consolidation: {e}")
 
-    def _semantic_search(self, query: str, threshold: Optional[float] = None) -> List[str]:
+    def _semantic_search(self, query: str, threshold: Optional[float] = None) -> list[str]:
         """Search for similar memories using embeddings
 
         Args:
@@ -614,7 +615,7 @@ Recent conversations:
         # Fallback to simple search
         return self._semantic_search_simple(query, threshold)
 
-    def _semantic_search_simple(self, query: str, threshold: float) -> List[str]:
+    def _semantic_search_simple(self, query: str, threshold: float) -> list[str]:
         """Simple semantic search using numpy (fallback when RAG is not available)"""
         if not self.chunks:
             return []

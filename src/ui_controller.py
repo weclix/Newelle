@@ -80,7 +80,7 @@ class UIController:
             self.window.prompts = self.window.controller.newelle_settings.prompts
         if "handlers" in refreshes:
             handlers = self.window.controller.handlers
-            self.window.tts = handlers.tts
+            # self.window.tts = handlers.tts  # 已剥离：TTS 组件
             self.window.stt = handlers.stt
             self.window.model = handlers.llm
             self.window.secondary_model = handlers.secondary_llm

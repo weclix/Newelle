@@ -2,11 +2,201 @@
 
 ## 项目概述
 
-Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，采用 meson 构建系统。
+Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，以 Python 包（wheel）形式构建。
 
-- **构建系统**：meson（`meson_version >= 0.62.0`）
-- **源码目录**：`src/`
+- **构建系统**：setuptools（`pyproject.toml` + `setup.py`），不使用 meson
+- **源码目录**：`src/`（打包为 `newelle` 包，`package_dir={"newelle": "src"}`）
 - **核心模块**：`controller.py`、`main.py`、`window.py`、`modes.py`、`skills.py`、`tools.py`、`extensions.py`、`ui_controller.py`
+
+## 当前变更记录（2026-11-04）
+
+### 变更主题：TTS 组件剥离与 STT 听写功能收窄
+
+剥离 TTS 全部组件，并把 STT 收窄为"仅供唤醒词使用"。保留 direct audio input 与语音唤醒。功能文件直接删除，引用按既定剥离模式注释保留（`# 已剥离：TTS 组件` / `# 已剥离：STT 自动听写`）。
+
+#### 已删除的功能文件（3 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/handlers/tts/__init__.py`、`tts.py` | `TTSHandler` 基类及包导出 |
+| `src/handlers/tts/custom_openai_tts.py` | `CustomOpenAITTSHandler` |
+
+#### 已修改的文件
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/constants.py` | 注释 TTS 导入、`AVAILABLE_TTS`、`DEFAULT_AVAILABLE_TTS`、`restore_handlers` 中的 TTS 行、`SETTINGS_GROUPS["TTS"]`；STT 组移除 `automatic-stt` |
+| `src/controller.py` | 注释 `TTSHandler` 导入、`ReloadType.TTS`、`tts_enabled/tts_program/tts_voice`、`self.tts`、各处 `AVAILABLE_TTS` 分支；`automatic_stt` 相关读取与比较；`set_handlers`/`add_handlers` 调用去掉 tts 参数 |
+| `src/extensions.py` | `set_handlers`/`add_handlers`/`remove_handlers` 去掉 tts 参数；注释 `get_tts_handlers`；`self.tts` 固定为 `None` 以兼容旧扩展 |
+| `src/window.py` | 注释静音按钮、`mute_tts` 及 TTS 生命周期方法、`tts_enabled/tts` 赋值、`automatic_stt_status`；非 direct audio 的录音不再走 STT，改为提示开启 Direct audio input |
+| `src/ui/voice_mode.py` | 注释全部 TTS 播报逻辑；最终回复只显示文字，经 `_complete_without_tts` 结束本轮；非 direct audio 时报错提示 |
+| `src/ui/widgets/call.py` | 注释 TTS 播放、打断（`can_barge_in` 固定 False）、"播报时监听"按钮；非 direct audio 时提示 |
+| `src/ui/widgets/chat_tab.py` | 注释 TTS 快捷开关、`tts`/`tts_enabled` 属性、回复后的播报与自动重启录音 |
+| `src/ui/settings.py` | 注释 TTS 设置行与 `AVAILABLE_TTS` 分支；"Automatic Speech To Text" 开关去掉，保留静音检测参数 |
+| `src/integrations/default_tools.py` | 注释 `speech_to_text`、`text_to_speech` 两个工具 |
+| `src/main.py`、`src/ui/shortcuts.py`、`src/ui/widgets/chat_history.py`、`src/ui_controller.py` | 注释 `stop_tts` 动作、快捷键说明、TTS 提示卡片、`window.tts` 赋值 |
+| `data/io.github.qwersyk.Newelle.gschema.xml` | XML 注释 `tts-on`/`tts`/`tts-voice`/`automatic-stt` |
+| `po/POTFILES` | 注释 `src/handlers/tts/*` 条目 |
+
+#### 保留的内容
+
+- `clean_message_tts()`（`utility/strings.py`）仍被 voice mode、call 面板用于文本清理
+- `AVAILABLE_STT` 仍为 `openai_sr`、`custom_command`，供唤醒词的主/副 STT 使用
+- `audio-transcribe`、`audio-transcription-timing` 以及 `audio_input.py` 中的 STT 回退保留：纯文本模型收到录音时仍会用 STT 转写
+
+#### 已知行为变化
+
+- `direct-audio-input` 关闭时，聊天输入框麦克风、voice mode、call 面板均不可用（会提示开启），不再有普通听写
+- 之前选了 `custom_openai_tts` 的用户，`tts-*` 设置值留在 dconf 中不再被读取
+- 外部扩展若实现了 `get_tts_handlers` 将被忽略
+
+#### 验证结果
+
+- ✅ `python3 -m compileall src` 通过
+- ✅ `glib-compile-schemas --strict --dry-run data` 通过
+- ✅ 通过临时 `newelle` 包路径导入 constants、extensions、controller、window、voice_mode、call、chat_tab 成功，`ReloadType` 无 `TTS`
+- ❌ 未启动 GUI 实测，唤醒词到 direct audio 的完整链路未运行验证
+
+### 变更主题：STT 引擎 WitAIHandler 剥离
+
+剥离 `witai` STT 引擎，引用按既定剥离模式注释保留。
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/handlers/stt/witai_handler.py` | 已删除（`WitAIHandler`） |
+| `src/handlers/stt/__init__.py` | 注释掉导入及 `__all__` 条目 |
+| `src/constants.py` | 导入行改为不含 `WitAIHandler`；`AVAILABLE_STT` 注释掉 `witai` 条目 |
+| `po/POTFILES` | 注释掉 `src/handlers/stt/witai_handler.py` |
+
+- 当前 `AVAILABLE_STT` 仅保留：`openai_sr`、`custom_command`
+- gschema 的 `stt-engine` 默认值 `whisper` 本就不在 `AVAILABLE_STT` 中（既有状态），`secondary-stt-engine` 默认 `custom_command` 仍有效；已选 `witai` 的用户由 `controller.py` 中 `not in AVAILABLE_STT` 的回退逻辑切换
+- `pyproject.toml` 中无 `speechrecognition` 依赖，无需改动
+
+### 变更主题：meson 构建系统剥离
+
+改用 setuptools 构建 sdist/wheel，并删除全部 meson 构建文件。与其他剥离不同，meson 文件直接删除，未注释保留；恢复需从 git 历史（`HEAD`）取回。
+
+#### 已删除的文件（7 个）
+
+| 文件 | 说明 |
+|------|------|
+| `meson.build`、`meson_options.txt` | 顶层构建定义与 `profile` 选项 |
+| `src/meson.build` | 源码安装清单、gresource 编译、启动脚本配置（工作区中的未提交剥离注释一并删除） |
+| `data/meson.build`、`data/icons/meson.build` | desktop/appdata 翻译合并、schema 与图标安装 |
+| `po/meson.build` | `i18n.gettext` 翻译编译与 `newelle-pot`/`newelle-update-po` 目标 |
+| `src/newelle.in` | meson 配置生成的启动脚本 |
+
+同时删除了 `_build/` 构建目录。
+
+#### 新增的文件（4 个）
+
+| 文件 | 说明 |
+|------|------|
+| `pyproject.toml` | 项目元数据、必需依赖、可选依赖组、`newelle` 入口 |
+| `setup.py` | `build_data` 步骤生成 gresource、编译 schema、`.mo` 翻译、desktop/appdata；`EXCLUDED_MODULES` 排除不打包的模块 |
+| `MANIFEST.in` | sdist 内容（含 `data/`、`po/`，排除截图） |
+| `src/__main__.py` | 启动入口，取代 `newelle.in` |
+
+#### 已修改的文件
+
+| 文件 | 变更内容 |
+|------|----------|
+| `scripts/PKGBUILD` | 改为 `python -m build --wheel --no-isolation` + `python -m installer`；`arch=any`；补全运行依赖 |
+| `scripts/locale-install.bash` | 改为构建 wheel 并安装到 `~/.local/share/newelle-venv`，链接启动器、desktop 文件、图标到 `~/.local` |
+| `README.md` | 安装说明中的 GNOME Builder/`install.sh` 改为源码构建步骤 |
+| `.gitignore` | 新增 `build/`、`dist/`、`*.egg-info/` |
+
+#### 已知行为变化
+
+- 版本号只在 `pyproject.toml` 维护；不再有 `profile=development` 的 git 短哈希版本后缀
+- 翻译模板更新（原 meson 的 `newelle-pot`/`newelle-update-po` 目标）没有替代，需要时手动运行 `xgettext`/`msgmerge`。`po/POTFILES` 仍保留，但其中有 11 个条目指向已删除的文件
+- schema 不再装到系统目录，由启动器通过 `GSETTINGS_SCHEMA_DIR` 指向包内副本，因此 `~/.local/share/glib-2.0/schemas` 中旧 meson 安装留下的 schema 不会覆盖它
+- 旧 meson 安装（`~/.local/bin/newelle`、`~/.local/share/newelle/newelle`、`~/.local/share/newelle/newelle.gresource`、`~/.local/share/glib-2.0/schemas/io.github.qwersyk.Newelle.gschema.xml`）不会被自动清理；`~/.local/share/newelle/storage` 是用户数据，不要删除
+
+#### 验证结果
+
+- ✅ `python -m build` 生成 sdist 与 wheel；wheel 中的 `.py` 文件与 `src/meson.build` 原清单一致（另加 `__main__.py`）
+- ✅ wheel 内含 gresource、编译好的 schema（123 个键）、25 种语言的 `.mo`；desktop/appdata 已合并翻译
+- ✅ 用临时 HOME 运行 `scripts/locale-install.bash` 成功，安装后的 `newelle` 启动 20 秒无报错（仅既有 GTK 警告）
+- ✅ 在 `XDG_DATA_HOME` 放入缺键的旧 schema 时，启动器仍使用包内 schema
+- ✅ 模拟 PKGBUILD 的 `--no-isolation` 构建与 `installer --destdir` 安装成功
+
+## 变更记录（2026-11-03）
+
+### 变更主题：LlamaIndex 长期记忆剥离
+
+剥离长期记忆组件 `LlamaIndexMemoryHandler`（设置中显示为 "Semantic Memory"）。所有引用均按既定剥离模式注释保留（`# 已剥离：LlamaIndex 长期记忆`），保证可逆性。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/handlers/memory/llamaindex_memory_handler.py` | LlamaIndex 长期记忆 `LlamaIndexMemoryHandler`（同日运行模块安装器剥离中曾修改过此文件，现已删除） |
+
+#### 已修改的文件（3 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/handlers/memory/__init__.py` | 注释掉 `LlamaIndexMemoryHandler` 导入及 `__all__` 条目 |
+| `src/constants.py` | 注释掉 import 中的 `LlamaIndexMemoryHandler`；`AVAILABLE_MEMORIES` 注释掉 `llamaindex` 条目 |
+| `src/meson.build` | 注释掉 `memory_sources` 中的 `handlers/memory/llamaindex_memory_handler.py` |
+
+#### 当前记忆模块状态
+
+`AVAILABLE_MEMORIES` 保留：`long_term_memory`、`user-summary`、`agentic_memory_handler`。
+
+- gschema 中 `memory-model` 默认值本就是 `long_term_memory`，无需修改
+- 已选择 `llamaindex` 记忆的用户，会由 `controller.py` 中 `memory_model not in AVAILABLE_MEMORIES` 的回退逻辑切换到第一个可用记忆（`long_term_memory`）
+- RAG 组件 `LlamaIndexHanlder`（`src/handlers/rag/llamaindex_handler.py`）与本次剥离无关，保留；gschema 中 `rag-model` 的 `"llamaindex"` 指向的是该 RAG 组件
+
+#### 验证结果
+
+- ✅ `python3 -m py_compile src/constants.py src/handlers/memory/__init__.py` 通过
+- ✅ `src.handlers.memory.__all__` 为 `['MemoryHandler', 'UserSummaryHandler', 'AgenticMemoryHandler', 'LongTermMemoryHandler']`
+- ✅ `AVAILABLE_MEMORIES` 键为 `['long_term_memory', 'user-summary', 'agentic_memory_handler']`
+- ✅ `src/` 下无残留的非注释引用；`po/POTFILES` 本就不含该文件
+- ✅ 已清理 `__pycache__` 中的过期 `.pyc`
+
+### 变更主题：运行模块安装器剥离
+
+对运行时 pip 依赖安装器进行了剥离，应用不再在运行时安装 Python 依赖。所有引用均按既定剥离模式注释保留（`# 已剥离：运行模块安装器`），保证可逆性。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/utility/pip.py` | 运行时 pip 安装器（`install_module`/`find_module`/`PipProgressParser` 等） |
+
+#### 已修改的文件（10 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/handlers/handler.py` | 注释 `pip` 导入与 `Handler.install()` 中的安装循环；新增仅检测的 `find_module`（基于 `importlib.util.find_spec`），供 `is_installed()` 及子类使用 |
+| `src/controller.py` | 注释 `install_module` 导入、pip 目录不存在时的后台初始化线程及 `init_pip_path` 方法（pip 目录存在时仍加入 `python_path`） |
+| `src/ui/settings.py` | 注释 `install_module` 导入、开发者设置中的 "Delete pip path"/"Install pip module" 两行及 `delete_pip_path` 方法 |
+| `src/handlers/stt/stt.py`、`stt/whisper_handler.py` | `find_module` 改从 `handlers.handler` 导入 |
+| `src/handlers/tts/custom_openai_tts.py` | 注释 `install_module("openai")`，`find_module` 改从 `handlers.handler` 导入 |
+| `src/handlers/rag/llamaindex_handler.py` | 注释 `install()` 中的安装逻辑，`find_module` 改从 `handlers.handler` 导入 |
+| `src/handlers/memory/llamaindex_memory_handler.py` | 同上 |
+| `src/handlers/memory/agentic_memory_handler.py` | 注释未使用的 pip 导入 |
+| `src/meson.build` | 注释掉 `utility_sources` 中的 `utility/pip.py` |
+
+#### 保留的通用逻辑
+
+- `controller.pip_path` 与 `python_path` 追加逻辑保留：已存在的 pip 目录仍可提供已装依赖
+- `Handler.install()`/`install_with_progress()`/`is_installed()` 接口保留（`install()` 现在只重置安装缓存）
+- `download_manager.py` 与 pip 无耦合，不受影响
+
+#### 已知行为变化
+
+- 依赖缺失时 `is_installed()` 仍返回 False，但不会再自动安装；`install_missing_handlers()` 会在 `install_with_progress` 中抛出 "did not finish installing"（已被调用处捕获并打印），需用户自行安装依赖
+
+#### 验证结果
+
+- ✅ `python3 -m py_compile` 对全部 9 个修改的 Python 文件通过
+- ✅ whisper、custom_openai_tts、llamaindex RAG/记忆、agentic 记忆 handler 均可正常导入
+- ✅ `src/` 下无残留的非注释 pip 工具引用（仅剩两处文档字符串提及）
+- ✅ `po/POTFILES` 本就不含 `pip.py`，无需改动
 
 ## 当前变更记录（2026-10-23）
 
@@ -503,16 +693,22 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 
 ## 构建说明
 
+使用 setuptools 构建（`pyproject.toml` + `setup.py`）。构建时需要系统提供 `glib-compile-resources`、`glib-compile-schemas`、`msgfmt`。
+
 ```bash
-# 配置构建
-meson setup _build --prefix=~/.local --buildtype=release
+# 本地安装：构建 wheel，装入 ~/.local/share/newelle-venv，并链接到 ~/.local/bin
+bash scripts/locale-install.bash
 
-# 编译
-meson compile -C _build
-
-# 安装
-meson install -C _build
+# 只构建 sdist 与 wheel（输出到 dist/）
+python -m build
 ```
+
+- GTK4/libadwaita 等 GI 库来自系统，自行安装 wheel 时 venv 需带 `--system-site-packages`
+- 入口为 `src/__main__.py`（`newelle.__main__:main`）：用 `GSETTINGS_SCHEMA_DIR` 指向包内 schema，把包内 `newelle/_data/share` 加到 `XDG_DATA_DIRS` 前面（图标），并从包内加载 gresource 与翻译
+- `setup.py` 的 `build_data` 步骤在 `build/newelle-data/` 生成 gresource、编译好的 schema、`.mo` 翻译、已翻译的 desktop/appdata 文件
+- `setup.py` 的 `EXCLUDED_MODULES` 排除不打包的模块（`divergence.py`、`vision.py`、`llamaindex_memory_handler.py`）。新增或剥离模块时，若不想打包需同步更新该集合；剥离模块不再需要改 `meson.build`
+- 依赖：必需依赖写在 `pyproject.toml` 的 `dependencies`，按需加载的写在 `optional-dependencies`（`web`、`mcp`、`rag`、`stt`、`models`）
+- 新增 gresource 资源需改 `src/newelle.gresource.xml`；新增语言需改 `po/LINGUAS`
 
 ## 注意事项
 
@@ -524,4 +720,4 @@ meson install -C _build
 - 被剥离的图片生成引擎引用同样以注释形式保留（`#` 前缀），便于后续恢复
 - 被剥离的 Flatpak 引用同样以注释形式保留（`#` 前缀），便于后续恢复
 - `po/` 目录下的 `.po` 翻译文件仍可能包含已删除文件的路径引用，这些是自动生成文件，重新构建时会更新
-- 若需恢复某个提供商/模型/引擎，需同时恢复其功能文件、`constants.py` 条目、`__init__.py` 导入及 `meson.build` 引用
+- 若需恢复某个提供商/模型/引擎，需同时恢复其功能文件、`constants.py` 条目及 `__init__.py` 导入（meson 已剥离，无需再改 `meson.build`；若该文件在 `setup.py` 的 `EXCLUDED_MODULES` 中需移除）

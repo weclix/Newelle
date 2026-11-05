@@ -18,7 +18,7 @@ class Shortcuts(Gtk.Window):
         gr.append(Gtk.ShortcutsShortcut(title=_("Start/stop recording"), accelerator='<primary>g'))
         gr.append(Gtk.ShortcutsShortcut(title=_("Stop generation"), accelerator='<primary>q'))
         gr.append(Gtk.ShortcutsShortcut(title=_("Save"), accelerator='<primary>s'))
-        gr.append(Gtk.ShortcutsShortcut(title=_("Stop TTS"), accelerator='<primary>k'))
+        # gr.append(Gtk.ShortcutsShortcut(title=_("Stop TTS"), accelerator='<primary>k'))  # 已剥离：TTS 组件
         gr.append(Gtk.ShortcutsShortcut(title=_("Zoom in"), accelerator='<primary>plus'))
         gr.append(Gtk.ShortcutsShortcut(title=_("Zoom out"), accelerator='<primary>minus'))
         gr.append(Gtk.ShortcutsShortcut(title=_("Switch between full and mini window"), accelerator='<primary>d'))

@@ -3,7 +3,8 @@ import json
 import gettext
 import hashlib
 import re
-from typing import Any, Callable, Optional
+from typing import Any, Optional
+from collections.abc import Callable
 
 _ = gettext.gettext
 

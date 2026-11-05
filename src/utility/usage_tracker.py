@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 import weakref
-from typing import Callable
+from collections.abc import Callable
 
 from gi.repository import GLib
 

@@ -9,7 +9,7 @@ _ = gettext.gettext
 
 
 class ScreenRecorder:
-    """Record via the ScreenCast portal on Wayland, or X11 screen capture."""
+    """Record via the ScreenCast portal (PipeWire)."""
 
     BUS_NAME = "org.freedesktop.portal.Desktop"
     OBJECT_PATH = "/org/freedesktop/portal/desktop"
@@ -44,20 +44,9 @@ class ScreenRecorder:
             from gi.repository import Gst
             self.Gst = Gst
             Gst.init(None)
-            try:
-                gi.require_version("GdkX11", "4.0")
-                from gi.repository import GdkX11
-                # XWayland cannot capture the full Wayland desktop.
-                self.use_x11 = (
-                    isinstance(self.window.get_display(), GdkX11.X11Display)
-                    and os.environ.get("XDG_SESSION_TYPE") != "wayland"
-                    and not os.environ.get("WAYLAND_DISPLAY")
-                )
-            except (ImportError, ValueError):
-                self.use_x11 = False
             self.encoder = next((name for name in ("x264enc", "openh264enc")
                                  if Gst.ElementFactory.find(name)), None)
-            self.source_name = "ximagesrc" if self.use_x11 else "pipewiresrc"
+            self.source_name = "pipewiresrc"
             required = (self.source_name, "videoconvert", "videorate", "queue", "h264parse", "mp4mux", "filesink")
             missing = [name for name in required if not Gst.ElementFactory.find(name)]
             if not self.encoder:
@@ -65,13 +54,6 @@ class ScreenRecorder:
             if missing:
                 raise RuntimeError(_("Missing GStreamer plugins: %s") % ", ".join(missing))
             os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-            if self.use_x11:
-                self._create_pipeline()
-                source = self.pipeline.get_by_name("source")
-                source.set_property("display-name", self.window.get_display().get_name())
-                source.set_property("use-damage", False)
-                self._play_pipeline()
-                return
             Gio.DBusProxy.new_for_bus(
                 Gio.BusType.SESSION, Gio.DBusProxyFlags.NONE, None,
                 self.BUS_NAME, self.OBJECT_PATH, self.INTERFACE,

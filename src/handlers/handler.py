@@ -3,13 +3,30 @@ import json
 import copy
 import gettext
 import threading
+import sys
+import importlib.util
 from gi.repository import GLib
-from ..utility.pip import find_module, install_module
+# 已剥离：运行模块安装器
+# from ..utility.pip import find_module, install_module
 from ..utility.download_manager import DownloadKind, get_download_manager
 from typing import Any
 from enum import Enum
 
 _ = gettext.gettext
+
+
+def find_module(full_module_name):
+    """Check whether a module can be found without importing it.
+
+    Detection-only replacement for the stripped ``utility.pip.find_module``.
+    Returns True when available, None otherwise.
+    """
+    if full_module_name in sys.modules:
+        return True
+    try:
+        return importlib.util.find_spec(full_module_name) is not None or None
+    except (ModuleNotFoundError, ImportError, ValueError):
+        return None
 
 
 class IsolatedSettings:
@@ -313,9 +330,10 @@ class Handler():
 
     def install(self):
         """Install the handler requirements"""
-        pip_path = os.path.join(os.path.abspath(os.path.join(self.path, os.pardir)), "pip")
-        for module in self.get_extra_requirements():
-            install_module(module, pip_path)
+        # 已剥离：运行模块安装器
+        # pip_path = os.path.join(os.path.abspath(os.path.join(self.path, os.pardir)), "pip")
+        # for module in self.get_extra_requirements():
+        #     install_module(module, pip_path)
         self._is_installed_cache = None
 
     def install_with_progress(self, title: str | None = None):

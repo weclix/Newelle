@@ -3,7 +3,6 @@ import subprocess
 # Flatpak support removed
 # from .system import get_spawn_command
 import time
-from .system import is_wayland 
 import re 
 import random 
 
@@ -43,7 +42,7 @@ class ReplaceHelper:
             str: server name
             
         """ 
-        return "Wayland" if is_wayland() else "X11"
+        return "Wayland"
 
     @staticmethod
     def get_desktop_environment() -> str:

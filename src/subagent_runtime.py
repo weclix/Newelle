@@ -7,7 +7,8 @@ import datetime
 import json
 import threading
 import uuid
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from .constants import AVAILABLE_LLMS, PROMPTS
 from .handlers.handler import IsolatedSettings, SettingsCache

@@ -1,6 +1,7 @@
 from .stt import STTHandler
-from ...utility.pip import find_module
-from ..handler import ErrorSeverity
+# 已剥离：运行模块安装器
+# from ...utility.pip import find_module
+from ..handler import ErrorSeverity, find_module
 
 class WhisperHandler(STTHandler):
     key = "whisper"

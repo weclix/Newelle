@@ -16,8 +16,9 @@ from ..utility.util import PerformanceMonitor
 
 from ..handlers import Handler
 
-from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, AVAILABLE_TTS, AVAILABLE_STT, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, SETTINGS_GROUPS
-from ..utility.pip import install_module
+from ..constants import AVAILABLE_EMBEDDINGS, AVAILABLE_LLMS, AVAILABLE_MEMORIES, AVAILABLE_PROMPTS, AVAILABLE_STT, PROMPTS, AVAILABLE_RAGS, AVAILABLE_WEBSEARCH, AVAILABLE_IMAGE_GENERATORS, SETTINGS_GROUPS
+# 已剥离：运行模块安装器
+# from ..utility.pip import install_module
 from ..utility.download_manager import get_download_manager
 from ..utility.mcp_config import MCPConfigError, parse_mcp_servers_json
 from .extension import ExtensionPage
@@ -41,7 +42,7 @@ PROFILE_PAGE_GROUPS = {
     "General": ["interface", "general"],
     "LLM": ["LLM"],
     "Memory": ["Embedding", "memory", "websearch", "image_generator", "rag"],
-    "Voice": ["TTS", "STT", "wakeword", "voice_mode"],
+    "Voice": ["STT", "wakeword", "voice_mode"],  # 已剥离：TTS 组件（移除 "TTS"）
     "Prompts": ["prompts"],
     "Tools": ["tools"],
     "Permissions": ["general", "tools"],
@@ -223,19 +224,20 @@ class Settings(Adw.Window):
         # Build the RAG settings
         self.build_rag_settings()
 
-        # Build the TTS settings
+        # Voice group
         self.Voicegroup = Adw.PreferencesGroup(title=_('Voice'))
         self.VoicePage.add(self.Voicegroup)
-        tts_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("tts-on", tts_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
-        tts_program = Adw.ExpanderRow(title=_('Text To Speech Program'), subtitle=_("Choose which text to speech to use"))
-        tts_program.add_action(tts_enabled)
-        self.Voicegroup.add(tts_program)
-        group = Gtk.CheckButton()
-        selected = self.settings.get_string("tts")
-        for tts_key in AVAILABLE_TTS:
-           row = self.build_row(AVAILABLE_TTS, tts_key, selected, group) 
-           tts_program.add_row(row)
+        # 已剥离：TTS 组件
+        # tts_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
+        # self.settings.bind("tts-on", tts_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
+        # tts_program = Adw.ExpanderRow(title=_('Text To Speech Program'), subtitle=_("Choose which text to speech to use"))
+        # tts_program.add_action(tts_enabled)
+        # self.Voicegroup.add(tts_program)
+        # group = Gtk.CheckButton()
+        # selected = self.settings.get_string("tts")
+        # for tts_key in AVAILABLE_TTS:
+        #    row = self.build_row(AVAILABLE_TTS, tts_key, selected, group) 
+        #    tts_program.add_row(row)
         self.build_audio_input_settings()
         # Build the Speech to Text settings
         stt_engine = Adw.ExpanderRow(title=_('Speech To Text Engine'), subtitle=_("Choose which speech recognition engine you want"))
@@ -247,8 +249,8 @@ class Settings(Adw.Window):
                 row = self.build_row(AVAILABLE_STT, stt_key, selected, group)
                 stt_engine.add_row(row)
 
-        # Automatic STT settings
-        self.auto_stt = Adw.ExpanderRow(title=_('Automatic Speech To Text'), subtitle=_("Automatically restart speech to text at the end of a text/TTS"))
+        # 已剥离：STT 自动听写开关；仅保留录音静音检测参数
+        self.auto_stt = Adw.ExpanderRow(title=_('Recording silence detection'), subtitle=_("Automatically stop recording after silence"))
         self.build_auto_stt()
         self.Voicegroup.add(self.auto_stt)
         # Wakeword Detection
@@ -765,27 +767,28 @@ class Settings(Adw.Window):
         row.add_suffix(button)
         button.connect("clicked", lambda _ : self.window.show_stdout_monitor_dialog(self))
         self.developer.add(row)
-        # Delete pip path
-        row = Adw.ActionRow(title=_("Delete pip path"), subtitle=_("Remove the extra dependencies installed"))
-        button = Gtk.Button(label=_("Delete"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-        row.add_suffix(button)
-        button.connect("clicked", lambda _ : self.delete_pip_path())
-        self.developer.add(row)
-        # Install pip module 
-        row = Adw.ActionRow(title=_("Install pip module"), subtitle=_("Manually install pip module"))
-        entry = Gtk.Entry(valign=Gtk.Align.CENTER)
-        button = Gtk.Button(icon_name="download-symbolic", valign=Gtk.Align.CENTER)
-        row.add_suffix(entry)
-        row.add_suffix(button)
-        def install_custom_module(button):
-            module = entry.get_text()
-            def install_thread():
-                install_module(module, self.controller.pip_path, True)
-            t = threading.Thread(target=install_thread)
-            t.start()
-            self.app.downloads_action()
-        button.connect("clicked", install_custom_module)
-        self.developer.add(row)
+        # 已剥离：运行模块安装器（删除 pip 目录后无法再重装依赖，故一并注释）
+        # # Delete pip path
+        # row = Adw.ActionRow(title=_("Delete pip path"), subtitle=_("Remove the extra dependencies installed"))
+        # button = Gtk.Button(label=_("Delete"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+        # row.add_suffix(button)
+        # button.connect("clicked", lambda _ : self.delete_pip_path())
+        # self.developer.add(row)
+        # # Install pip module
+        # row = Adw.ActionRow(title=_("Install pip module"), subtitle=_("Manually install pip module"))
+        # entry = Gtk.Entry(valign=Gtk.Align.CENTER)
+        # button = Gtk.Button(icon_name="download-symbolic", valign=Gtk.Align.CENTER)
+        # row.add_suffix(entry)
+        # row.add_suffix(button)
+        # def install_custom_module(button):
+        #     module = entry.get_text()
+        #     def install_thread():
+        #         install_module(module, self.controller.pip_path, True)
+        #     t = threading.Thread(target=install_thread)
+        #     t.start()
+        #     self.app.downloads_action()
+        # button.connect("clicked", install_custom_module)
+        # self.developer.add(row)
         
         if self.popup:
             # self.InterfacesPage = Adw.PreferencesPage(
@@ -3811,9 +3814,10 @@ class Settings(Adw.Window):
         direct.set_enable_expansion(self.settings.get_boolean("direct-audio-input"))
 
     def build_auto_stt(self):
-        auto_stt_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.settings.bind("automatic-stt", auto_stt_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
-        self.auto_stt.add_suffix(auto_stt_enabled) 
+        # 已剥离：STT 自动听写开关
+        # auto_stt_enabled = Gtk.Switch(valign=Gtk.Align.CENTER)
+        # self.settings.bind("automatic-stt", auto_stt_enabled, 'active', Gio.SettingsBindFlags.DEFAULT)
+        # self.auto_stt.add_suffix(auto_stt_enabled) 
         def update_scale(scale, label, setting_value, type):
             value = scale.get_value()
             if type is float:
@@ -4021,8 +4025,8 @@ class Settings(Adw.Window):
                 setting_name = "secondary-language-model"
             else:
                 setting_name = "language-model"
-        elif constants == AVAILABLE_TTS:
-            setting_name = "tts"
+        # elif constants == AVAILABLE_TTS:  # 已剥离：TTS 组件
+        #     setting_name = "tts"
         elif constants == AVAILABLE_STT:
             if secondary:
                 setting_name = "secondary-stt-engine"
@@ -4565,13 +4569,14 @@ class Settings(Adw.Window):
     #     # Show the window
     #     dialog.present()
 
-    def delete_pip_path(self):
-        """Delete the pip path folder"""
-        shutil.rmtree(self.controller.pip_path)
-        dialog = Adw.MessageDialog(title=_("Pip path deleted"), body=_("The pip path has been deleted, you can now reinstall the dependencies. This operation requires a restart of the application."))
-        dialog.add_response("close", _("Understood"))
-        dialog.set_default_response("close")
-        dialog.set_close_response("close")
-        dialog.set_response_appearance("close", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect('response', lambda dialog, response_id: dialog.destroy())
-        dialog.present()
+    # 已剥离：运行模块安装器
+    # def delete_pip_path(self):
+    #     """Delete the pip path folder"""
+    #     shutil.rmtree(self.controller.pip_path)
+    #     dialog = Adw.MessageDialog(title=_("Pip path deleted"), body=_("The pip path has been deleted, you can now reinstall the dependencies. This operation requires a restart of the application."))
+    #     dialog.add_response("close", _("Understood"))
+    #     dialog.set_default_response("close")
+    #     dialog.set_close_response("close")
+    #     dialog.set_response_appearance("close", Adw.ResponseAppearance.DESTRUCTIVE)
+    #     dialog.connect('response', lambda dialog, response_id: dialog.destroy())
+    #     dialog.present()

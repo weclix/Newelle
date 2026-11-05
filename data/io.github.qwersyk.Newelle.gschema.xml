@@ -77,6 +77,7 @@
 	      <key name="llm-secondary-settings" type="s">
             <default>"{}"</default>
         </key>
+	      <!-- 已剥离：TTS 组件
 	      <key name="tts-on" type="b">
             <default>false</default>
         </key>
@@ -86,6 +87,7 @@
 	      <key name="tts-voice" type="s">
             <default>"{}"</default>
         </key>
+        -->
         <key name="voice-mode-chat" type="s">
             <choices>
                 <choice value="new"/>
@@ -113,9 +115,6 @@
                 <choice value="full"/>
             </choices>
             <default>"required"</default>
-        </key>
-        <key name="voice-mode-x11-override-dont-show" type="b">
-            <default>false</default>
         </key>
         <key name="voice-pill-theme" type="s">
             <default>"newelle"</default>
@@ -177,9 +176,11 @@
         <key name="documents-context-limit" type="i">
           <default>5000</default>
         </key>
+        <!-- 已剥离：STT 自动听写
         <key name="automatic-stt" type="b">
           <default>false</default>
         </key>
+        -->
         <key name="stt-silence-detection-threshold" type="d">
           <default>0.07</default>
         </key>
