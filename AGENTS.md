@@ -10,6 +10,28 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 
 ## 当前变更记录（2026-11-04）
 
+### 变更主题：合并上游 `qwersyk/Newelle` 至 `8420fcd6`
+
+合入上游 13 个提交（多数为本地已有的 cherry-pick），实际新增：
+
+- `controller.move_chat_to_top_level` 及 `window.py` 拖放调用：把分支聊天拖出后变为顶层聊天
+- `main.py` About 窗口鸣谢更新
+- `data/mcp_servers.json` 新增 Parallel Search、Sem 条目，appdata、图标更新
+
+冲突处理：
+
+| 文件 | 处理 |
+|------|------|
+| `meson.build`、`src/meson.build` | 保持删除（meson 已剥离） |
+| `modules/*.json`（10 个） | 保持删除（Flatpak 已剥离） |
+| `src/constants.py` | 保留本地剥离状态；新增的 Outcrawl 导入与 `AVAILABLE_WEBSEARCH` 条目注释保留 |
+| `src/handlers/websearch/__init__.py` | 保留本地；Outcrawl 导入与 `__all__` 注释保留 |
+| `src/handlers/websearch/outcrawl_handler.py` | 已删除（`# 已剥离：Outcrawl 网页搜索`） |
+
+- 上游的 `deepseek_handler.py` 本地早已删除，未恢复；`AVAILABLE_WEBSEARCH` 仍只有 `searxng`
+- `po/en.po` 合入了 Outcrawl 的翻译条目，属自动生成内容，未处理
+- 上游 HTTPS 地址在本机连接超时，使用 `ssh://git@ssh.github.com:443/qwersyk/Newelle.git` 拉取
+
 ### 变更主题：TTS 组件剥离与 STT 听写功能收窄
 
 剥离 TTS 全部组件，并把 STT 收窄为"仅供唤醒词使用"。保留 direct audio input 与语音唤醒。功能文件直接删除，引用按既定剥离模式注释保留（`# 已剥离：TTS 组件` / `# 已剥离：STT 自动听写`）。

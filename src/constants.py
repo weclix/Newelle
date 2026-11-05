@@ -18,6 +18,8 @@ from .handlers.memory import UserSummaryHandler, AgenticMemoryHandler, LongTermM
 from .handlers.rag import LlamaIndexHanlder
 from .handlers.websearch import SearXNGHandler
 # from .handlers.websearch import DDGSeachHandler, TavilyHandler, TinyFishHandler
+# 已剥离：Outcrawl 网页搜索
+# from .handlers.websearch import OutcrawlSearchHandler
 from .handlers.image_generator import ImageGeneratorHandler, OpenAIImageHandler
 # from .handlers.image_generator import PollinationsHandler, StableDiffusionCPPHandler, OpenRouterImageHandler
 # from .handlers.interfaces.interface import Interface
@@ -408,7 +410,15 @@ AVAILABLE_WEBSEARCH = {
     #     "title": _("TinyFish"),
     #     "description": _("TinyFish web search API"),
     #     "class": TinyFishHandler,
-    # }
+    # },
+    # 已剥离：Outcrawl 网页搜索
+    # "outcrawl": {
+    #     "key": "outcrawl",
+    #     "title": _("Outcrawl"),
+    #     "description": _("Outcrawl web search API"),
+    #     "website": "https://outcrawl.ai/",
+    #     "class": OutcrawlSearchHandler,
+    # },
 }
 
 # AVAILABLE_INTERFACES = {
