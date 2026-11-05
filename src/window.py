@@ -401,7 +401,6 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
 
         def after_transition():
             self.update_history()
-            self.show_chat()
             return False
 
         def start_transition():
@@ -619,13 +618,14 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
                 self.main_path = child.main_path 
 
     # Chat Tab Management
-    def add_chat_tab(self, chat_id: int) -> Adw.TabPage | None:
+    def add_chat_tab(self, chat_id: int, select_tab: bool = True) -> Adw.TabPage | None:
         """Add a new chat tab for the given chat_id.
         
         If a tab for this chat already exists, switch to it instead.
         
         Args:
             chat_id: The ID of the chat to open in a new tab
+            select_tab: Whether to select the tab immediately
             
         Returns:
             The created or existing tab page, or None if failed
@@ -633,7 +633,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         # Check if tab for this chat already exists
         existing_tab = self.get_tab_for_chat(chat_id)
         if existing_tab is not None:
-            self.chat_tabs.set_selected_page(existing_tab)
+            if select_tab:
+                self.chat_tabs.set_selected_page(existing_tab)
             return existing_tab
         
         # Validate chat_id
@@ -641,7 +642,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             return None
         
         # Create new ChatTab widget
-        chat_tab = ChatTab(self, chat_id)
+        chat_tab = ChatTab(self, chat_id, defer_history=self._workspace_ui_switching)
         chat_tab.connect("chat-name-changed", self._on_chat_name_changed)
         # The mini window always uses the compact input bar
         if self._mini_window_active():
@@ -657,7 +658,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         chat_tab.set_tab_page(tab_page)
         
         # Select the new tab
-        self.chat_tabs.set_selected_page(tab_page)
+        if select_tab:
+            self.chat_tabs.set_selected_page(tab_page)
         
         return tab_page
     
@@ -699,9 +701,11 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         if tab is not None:
             # Update global chat_id to match selected tab
             self.chat_id = tab.chat_id
+            GLib.idle_add(tab._populate_visible_history)
 
             # Update UI FIRST before profile switch for instant visual feedback
-            self.update_history()
+            self._update_history_selection()
+            self.focus_input()
             self.refresh_context_indicator()
 
             # Schedule profile switch to happen after UI renders
@@ -736,6 +740,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
                 self.new_chat(None)
                 return True  # Prevent close, we'll handle it via new_chat
             child.remember_draft()
+            child.chat_history.cancel_loading()
             self.controller.save_chats()
         
         return False  # Allow close
@@ -2536,7 +2541,30 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         if row is not None:
             self.on_chat_row_activated(self.chats_list_box, row)
 
-    def update_history(self, focus_input=True):
+    def _update_history_selection(self):
+        """Touch only rows whose selected/open state changed on a tab switch."""
+        if not hasattr(self, "_history_rows"):
+            self.update_history()
+            return
+        open_chats = {self.chat_tabs.get_nth_page(i).get_child().chat_id
+                      for i in range(self.chat_tabs.get_n_pages())}
+        changed = open_chats.symmetric_difference(self._history_open_chats)
+        changed.update((self._history_selected_chat, self.chat_id))
+        selected_row = None
+        for chat_id in changed:
+            for row in self._history_rows.get(chat_id, ()):
+                selected = chat_id == self.chat_id
+                is_open = chat_id in open_chats
+                if (row.is_selected, row.is_open) != (selected, is_open):
+                    row.set_state(selected, is_open)
+                if selected:
+                    selected_row = row
+        self.chats_list_box.select_row(selected_row)
+        self._history_open_chats = open_chats
+        self._history_selected_chat = self.chat_id
+        self.save_workspace_tabs(defer=True)
+
+    def update_history(self, focus_input=True, force=False):
         """Reload chats panel with Adwaita-styled ChatRow/FolderRow widgets, supporting folders and branching"""
         if getattr(self, "_workspace_ui_switching", False):
             return
@@ -2551,6 +2579,30 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         workspace_folders = self.controller.workspace_folders()
         query = self.conversation_search_entry.get_text().strip()
         search_results = self.controller.search_conversations(query) if query else None
+        # Message bodies do not affect an unfiltered sidebar. Keep its GTK
+        # widgets, scroll position, and hover state until row metadata changes.
+        signature = (
+            self.controller.active_workspace_id,
+            self.controller.newelle_settings.reverse_order,
+            len(self.controller.workspaces), query,
+            tuple((cid, chat.get("id"), chat["name"],
+                   chat.get("branched_from"), chat.get("call", False))
+                  for cid, chat in workspace_chats.items()),
+            tuple((fid, folder["name"], folder.get("color"),
+                   folder.get("icon"), folder.get("expanded", True),
+                   tuple(folder.get("chat_ids", ())))
+                  for fid, folder in workspace_folders.items()),
+            tuple(search_results.items()) if search_results is not None else None,
+        )
+        if not force and signature == getattr(self, "_history_signature", None):
+            self._update_history_selection()
+            return
+        self._history_rows = {}
+        self._history_open_chats = {
+            self.chat_tabs.get_nth_page(i).get_child().chat_id
+            for i in range(self.chat_tabs.get_n_pages())
+        }
+        self._history_selected_chat = self.chat_id
 
         list_box = Gtk.ListBox(css_classes=["navigation-sidebar"])
         list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -2610,7 +2662,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             chat_entry = self.chats[chat_id]
             name = chat_entry["name"]
             is_selected = (chat_id == self.chat_id)
-            is_open = self.get_tab_for_chat(chat_id) is not None
+            is_open = chat_id in self._history_open_chats
 
             chat_row = ChatRow(
                 chat_name=name,
@@ -2628,6 +2680,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             )
             self.add_workspace_chat_action(chat_row, chat_id)
             list_box.append(chat_row)
+            self._history_rows.setdefault(chat_id, []).append(chat_row)
             if is_selected:
                 list_box.select_row(chat_row)
 
@@ -2643,7 +2696,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
                 chat_ids.reverse()
             for cid in chat_ids:
                 add_chat_recursive(cid)
-            self.save_workspace_tabs()
+            self._history_signature = signature
+            self.save_workspace_tabs(defer=True)
             return
 
         # Render folders first
@@ -2669,7 +2723,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         # Render top-level (unfoldered) chats
         for cid in top_level_ids:
             add_chat_recursive(cid)
-        self.save_workspace_tabs()
+        self._history_signature = signature
+        self.save_workspace_tabs(defer=True)
 
     def on_chat_row_activated(self, listbox, row):
         """Handle chat/folder row activation"""
@@ -3010,7 +3065,7 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
                 if tab_page:
                     tab_page.set_title(new_name)
 
-            self.update_history()
+            self.update_history(force=True)
              
         entry.connect("activate", on_entry_activate)
         
@@ -3047,6 +3102,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         if existing_tab is not None:
             # Switch to existing tab
             self.chat_tabs.set_selected_page(existing_tab)
+            self.focus_input()
+            return
         else:
             # Switch current tab to the new chat
             current_tab = self.get_active_chat_tab()
@@ -3056,12 +3113,14 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             else:
                 # Current tab is generating, open in new tab
                 self.add_chat_tab(chat_id)
+                return
         
         # Update global chat_id
         self.chat_id = chat_id
 
         # Update UI FIRST before profile switch for instant visual feedback
-        self.update_history()
+        self._update_history_selection()
+        self.focus_input()
         self.refresh_context_indicator()
         tab = self.get_active_chat_tab()
         if tab is not None:
@@ -3470,6 +3529,9 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
             )
             
             def on_complete():
+                # Restore action controls even if generation failed or kept
+                # the same title, so metadata comparison cannot skip them.
+                self._history_signature = None
                 if name is None:
                     button.set_icon_name("warning-outline-symbolic")
                     button.set_can_target(True)

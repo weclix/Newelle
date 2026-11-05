@@ -10,6 +10,23 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 
 ## 当前变更记录（2026-11-04）
 
+### 变更主题：合并上游 `FrancescoCaracciolo/Newelle` 至 `4d776f42`
+
+`qwersyk/Newelle` 无新提交；`FrancescoCaracciolo/Newelle` 新增 2 个提交：
+
+- `4f5d7990` 表格渲染改进（`message_chunk.replace_inline_latex`）与设置页 LLM 连接测试按钮
+- `4d776f42` 聊天切换性能优化：后台标签页延迟加载历史、侧边栏按签名跳过重建、工作区保存合并延迟写入
+
+冲突处理：
+
+| 文件 | 处理 |
+|------|------|
+| `src/utility/message_chunk.py` | 保留上游新增的 `replace_inline_latex`；`process_inline_elements` 返回注解保留本地的 `list[...]`（本地未导入 `List`） |
+| `src/ui/settings.py` | 自动合并，但连接测试中的 `requires_sandbox_escape()` 检查已注释（`# 已剥离：Flatpak 支持`），否则运行时 `AttributeError` |
+
+- 上游 FrancescoCaracciolo 的 master 曾被强制更新（非快进），拉取时用 `+master` 覆盖本地远程跟踪分支
+- 验证：`python3 -m compileall src` 通过；`message`、`chat_history`、`chat_tab`、`chatrow`、`workspaces`、`settings`、`window` 可导入；未启动 GUI 实测
+
 ### 变更主题：合并上游 `qwersyk/Newelle` 至 `8420fcd6`
 
 合入上游 13 个提交（多数为本地已有的 cherry-pick），实际新增：
