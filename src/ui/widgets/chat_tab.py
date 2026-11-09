@@ -979,7 +979,7 @@ class ChatTab(Gtk.Box):
         if draft_id is None:
             return
         self.restore_composer_draft({})
-        self.controller.save_chats()
+        self.controller.schedule_save()
         self.drafts_popover.popdown()
         self.notification_block.add_toast(Adw.Toast(title=_("Draft saved")))
         self.focus_input()
@@ -995,7 +995,7 @@ class ChatTab(Gtk.Box):
                 self._chat_id, self.get_composer_draft(), self._editing_draft_id,
             )
             self.restore_composer_draft(draft)
-            self.controller.save_chats()
+            self.controller.schedule_save()
         self.drafts_popover.popdown()
         self.focus_input()
 
@@ -1746,7 +1746,7 @@ class ChatTab(Gtk.Box):
         
     def save_chat(self):
         """Save the chat to disk."""
-        self.controller.save_chats()
+        self.controller.schedule_save()
         
     def clear_chat(self):
         """Clear the current chat."""

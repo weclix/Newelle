@@ -687,7 +687,18 @@ class ChatHistory(Gtk.Box):
 
     def _build_placeholder_offers(self):
         for text in range(self.offers):
-            button_placeholder = self._create_offer_button(text)
+            button_placeholder = Gtk.Button(css_classes=["card", "placeholder-suggestion"])
+            label = Gtk.Label(
+                label=str(text),
+                xalign=0,
+                wrap=True,
+                wrap_mode=Pango.WrapMode.WORD_CHAR,
+                lines=2,
+                ellipsize=Pango.EllipsizeMode.END,
+            )
+            button_placeholder.set_child(label)
+            button_placeholder.connect("clicked", self.send_bot_response)
+            button_placeholder.set_visible(False)
             self.offers_entry_block_placeholder.append(button_placeholder)
             self.message_suggestion_buttons_array_placeholder.append(button_placeholder)
     
@@ -760,32 +771,48 @@ class ChatHistory(Gtk.Box):
             # {"title": _("Thread Editing"), "subtitle": _("Check the programs and processes you run from Newelle"), "on_click": lambda : self.app.thread_editing_action()},
             {"title": _("Programmable Prompts"), "subtitle": _("You can add dynamic prompts to Newelle, with conditions and probabilities"), "on_click": lambda : open_website("https://github.com/qwersyk/Newelle/wiki/Prompt-variables")},
         ]
-        self.empty_chat_placeholder = Gtk.Box(hexpand=True, vexpand=True, orientation=Gtk.Orientation.VERTICAL)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, spacing=20, vexpand=True)    
-        application_logo = Gtk.Image(icon_name=SCHEMA_ID)
-        application_logo.set_pixel_size(128)
-        box.append(application_logo)
-        title_label = Gtk.Label(label=_("New Chat"), css_classes=["title-1"])
-        box.append(title_label)
         self.tips_section = TipsCarousel(tips, 5)
-        box.append(self.tips_section)
-        
+
         # Offers for placeholder
         self.offers_entry_block_placeholder = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=6,
-            valign=Gtk.Align.END,
-            halign=Gtk.Align.CENTER,
-            margin_bottom=12,
+            halign=Gtk.Align.FILL,
         )
-        self.offers_entry_block_placeholder.set_size_request(-1, 40 * self.controller.newelle_settings.offers)
-        
+
+        hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, halign=Gtk.Align.CENTER)
+        application_logo = Gtk.Image(icon_name=SCHEMA_ID, pixel_size=96, margin_bottom=12, css_classes=["new-chat-logo"])
+        hero.append(application_logo)
+        title_label = Gtk.Label(label=_("New Chat"), css_classes=["title-1"], wrap=True, justify=Gtk.Justification.CENTER)
+        hero.append(title_label)
+        subtitle_label = Gtk.Label(
+            label=_("Ask anything to start a new conversation"),
+            css_classes=["dim-label"],
+            wrap=True,
+            justify=Gtk.Justification.CENTER,
+        )
+        hero.append(subtitle_label)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        content.append(hero)
+        content.append(self.offers_entry_block_placeholder)
+        content.append(self.tips_section)
+
+        clamp = Adw.Clamp(
+            maximum_size=520,
+            tightening_threshold=360,
+            valign=Gtk.Align.CENTER,
+            vexpand=True,
+            margin_top=24,
+            margin_bottom=24,
+            margin_start=18,
+            margin_end=18,
+            child=content,
+        )
+
         # Use a scrolled window for the placeholder to ensure everything is reachable
         self.empty_chat_placeholder = Gtk.ScrolledWindow(hexpand=True, vexpand=True, hscrollbar_policy=Gtk.PolicyType.NEVER)
-        placeholder_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
-        placeholder_layout.append(box)
-        placeholder_layout.append(self.offers_entry_block_placeholder)
-        self.empty_chat_placeholder.set_child(placeholder_layout)
+        self.empty_chat_placeholder.set_child(clamp)
 
     def _finalize_message_display(self, generation_finished=True):
         """Update UI state after message display.
@@ -822,7 +849,7 @@ class ChatHistory(Gtk.Box):
                 self._finalize_message_display()
             GLib.idle_add(self.scrolled_chat)
             if not restore:
-                self.controller.save_chats()
+                self.controller.schedule_save()
             return None
 
         # Handle error messages
@@ -843,7 +870,7 @@ class ChatHistory(Gtk.Box):
                 ),
             )
             GLib.idle_add(self.scrolled_chat)
-            self.controller.save_chats()
+            self.controller.schedule_save()
             return None
 
         # Initialize message UUID for assistant messages
@@ -887,7 +914,7 @@ class ChatHistory(Gtk.Box):
 
         if not restore:
             self._finalize_message_display()
-            self.controller.save_chats()
+            self.controller.schedule_save()
             
         return None
 
@@ -1337,7 +1364,7 @@ class ChatHistory(Gtk.Box):
         self.chat[int(gesture.get_name())]["Message"] = entry.get_text()
         self._tool_call_cache.clear()
         self._tool_chain_starts.clear()
-        self.controller.save_chats()
+        self.controller.schedule_save()
         content_box.remove(entry)
         content_box.append(
             self.show_message(
@@ -1625,7 +1652,7 @@ class ChatHistory(Gtk.Box):
             self.messages_box[:] = [item for item in self.messages_box
                                     if item is not row and item.get_ancestor(Gtk.ListBoxRow) is not row]
             self.chat_list_block.remove(row)
-        self.controller.save_chats()
+        self.controller.schedule_save()
         if not self.chat:
             self.show_placeholder()
         self.update_button_text()
