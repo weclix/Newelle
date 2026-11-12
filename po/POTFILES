@@ -4,8 +4,9 @@ src/handlers/embeddings/ollama_handler.py
 src/handlers/embeddings/openai_handler.py
 src/handlers/embeddings/wordllama_handler.py
 src/handlers/handler.py
+src/handlers/llm/claude_handler.py
 src/handlers/llm/llm.py
-src/handlers/llm/openai_handler.py
+# src/handlers/llm/openai_handler.py
 src/handlers/memory/memoripy_handler.py
 src/handlers/memory/summary_memoripy_handler.py
 src/handlers/memory/user_summary_handler.py

@@ -1,7 +1,8 @@
 from copy import deepcopy
-from .handlers.llm import OpenAIHandler
+# from .handlers.llm import OpenAIHandler, ClaudeHandler
+from .handlers.llm import ClaudeHandler
 # from .handlers.llm import NewelleAPIHandler, G4FHandler
-# from .handlers.llm import ClaudeHandler, DeepseekHandler, GroqHandler, OllamaHandler, OllamaCloudHandler, CustomLLMHandler, GeminiHandler, MistralHandler, OpenRouterHandler, LlamaCPPHandler
+# from .handlers.llm import DeepseekHandler, GroqHandler, OllamaHandler, OllamaCloudHandler, CustomLLMHandler, GeminiHandler, MistralHandler, OpenRouterHandler, LlamaCPPHandler
 # from .handlers.tts import ElevenLabs, gTTSHandler, EspeakHandler, CustomTTSHandler, KokoroTTSHandler, OpenAITTSHandler, GroqTTSHandler, EdgeTTSHandler, MistralTTSHandler
 # 已剥离：TTS 组件
 # from .handlers.tts import CustomOpenAITTSHandler
@@ -119,19 +120,19 @@ AVAILABLE_LLMS = {
     #     "description": "Official APIs for Google Gemini, requires an API Key",
     #     "class": GeminiHandler,
     # },
-    "openai": {
-        "key": "openai",
-        "title": _("OpenAI API"),
-        "description": _("OpenAI API. Custom endpoints supported. Use this for custom providers"),
-        "class": OpenAIHandler,
-    },
-    # "claude": {
-    #     "key": "claude",
-    #     "title": _("Anthropic Claude"),
-    #     "description": _("Official APIs for Anthropic Claude's models, with image and file support, requires an API key"),
-    #     "class": ClaudeHandler,
-    #     "secondary": True
+    # "openai": {
+    #     "key": "openai",
+    #     "title": _("OpenAI API"),
+    #     "description": _("OpenAI API. Custom endpoints supported. Use this for custom providers"),
+    #     "class": OpenAIHandler,
     # },
+    "claude": {
+        "key": "claude",
+        "title": _("Anthropic Claude"),
+        "description": _("Official APIs for Anthropic Claude's models, with image and file support, requires an API key"),
+        "class": ClaudeHandler,
+        "secondary": True
+    },
     # "mistral": {
     #     "key": "mistral",
     #     "title": _("Mistral"),

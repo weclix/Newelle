@@ -17,7 +17,7 @@ dependencies = [
   # GTK draw callbacks (usage charts, context ring) pass a cairo.Context,
   # which PyGObject can only convert when pycairo is installed.
   "pycairo",
-  "openai",
+  "anthropic",
   "requests",
   "numpy",
   "Pillow",
@@ -28,15 +28,11 @@ dependencies = [
   "tldextract",
   "newspaper4k",
   "newspaper4k[nlp]",
-  "beautifulsoup4", 
+  "beautifulsoup4",
   "markdownify",
-  "mcp", 
+  "mcp",
   "httpx",
   "faiss-cpu",
-  "llama-index-core",
-  "llama-index-readers-file",
-  "llama-index-vector-stores-faiss",
-  "llama-index-retrievers-bm25",
   "pysilero-vad"
 ]
 

@@ -8,7 +8,96 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - **源码目录**：`src/`（打包为 `newelle` 包，`package_dir={"newelle": "src"}`）
 - **核心模块**：`controller.py`、`main.py`、`window.py`、`modes.py`、`skills.py`、`tools.py`、`extensions.py`、`ui_controller.py`
 
-## 当前变更记录（2026-11-04）
+## 当前变更记录（2026-11-11）
+
+### 变更主题：剥离 OpenAI LLM 提供商
+
+将 `OpenAIHandler` 从 LLM 模块中剥离，使 `claude` 成为 `AVAILABLE_LLMS` 中仅剩的 LLM 提供商。剥离方式遵循既定的可逆模式：功能文件直接删除，引用以注释形式存续（`#` 前缀），便于后续恢复。
+
+#### 已删除的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/handlers/llm/openai_handler.py` | `OpenAIHandler` |
+
+#### 已修改的文件（3 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/handlers/llm/__init__.py` | 注释掉 `from .openai_handler import OpenAIHandler` 及 `__all__` 中的 `"OpenAIHandler"` |
+| `src/constants.py` | 注释掉 import 中的 `OpenAIHandler`（改为 `from .handlers.llm import ClaudeHandler`）；`AVAILABLE_LLMS` 中 `openai` 条目注释掉 |
+| `po/POTFILES` | 注释掉 `src/handlers/llm/openai_handler.py` 条目 |
+
+#### 保留的内容
+
+- `pyproject.toml` 中的 `openai` 依赖**保留**：`OpenAIEmbeddingHandler`（embeddings）、`OpenAIImageHandler`（image_generator）、`OpenAISRHandler`（stt）仍使用 `openai` 包，不可移除。
+- `setup.py` 的 `EXCLUDED_MODULES` 不含 `openai_handler`（文件已删除，不会打包），无需改动。
+- `controller.py` 中 `"OpenAIResponse"` 存储键、`util.py` 中的 `"openai"` 消息格式代码为通用/历史命名，与 LLM 提供商无关，保留。
+- `ui/settings.py` 的 `on_duplicate_llm` 中 `default_source = "openai" if any(...) else source_options[0][1]` 在 openai 不存在时自动回退到首个源，无需改动。
+
+#### 已知行为变化
+
+- `AVAILABLE_LLMS` 仅剩 `claude`。gschema 中 `language-model`/`secondary-language-model` 默认值本就是 `"newelle"`（不在 `AVAILABLE_LLMS`），已选 `openai` 的用户会由 `controller.py` 的 `fix_handlers_integrity` 回退逻辑切换到 `claude`。
+- LLM 模型回退与选择交由 `AVAILABLE_LLMS` 通用逻辑处理，未引入新无关改动。
+
+#### 验证结果
+
+- ✅ `python3 -m compileall src` 通过
+- ✅ 通过临时 `newelle->src` 符号链接导入 `constants`、`handlers.llm`、`controller`、`ui.settings` 成功；`AVAILABLE_LLMS` 为 `['claude']`，`OpenAIHandler` 不在其中
+- ✅ `data/mcp_servers.json` 解析通过
+- ❌ 未启动 GUI 实测
+
+## 变更记录（2026-11-11）
+
+### 变更主题：恢复 Claude LLM 提供商
+
+将此前剥离的 Claude（Anthropic）LLM 提供商恢复为可用。恢复方式遵循既有剥离/恢复规范：引用存续、可逆，只取消注释并补齐必需依赖。
+
+#### 恢复的功能文件（1 个）
+
+| 文件 | 说明 |
+|------|------|
+| `src/handlers/llm/claude_handler.py` | 从 `upstream/master` 取回完整源文件（含 `a9f29fc5` 性能改进后的模块级 `cached_client` 复用），无需手工适配 |
+
+#### 已修改的文件（4 个）
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/handlers/llm/__init__.py` | 取消注释 `from .claude_handler import ClaudeHandler` 及 `__all__` 中的 `"ClaudeHandler"` |
+| `src/constants.py` | 顶部导入改为 `from .handlers.llm import OpenAIHandler, ClaudeHandler`；`AVAILABLE_LLMS` 中 `claude` 条目取消注释（`secondary: True`） |
+| `pyproject.toml` | `dependencies` 中加入 `"anthropic"`（置于 `"openai"` 之后）。Claude handler 的 `get_extra_requirements()` 返回 `["anthropic"]`，但项目已剥离运行时安装器，因此必须作为硬依赖写入 |
+| `po/POTFILES` | 新增 `src/handlers/llm/claude_handler.py` 条目（置于 `llm.py` 之前，按上游顺序） |
+
+#### 环境事实
+
+- 系统未安装 `anthropic`：`python3 -c "import anthropic"` → `ModuleNotFoundError`。**不阻塞静态验证**，仅影响真实的模型调用；若需实际可用，需 `pip install anthropic`。
+- `setup.py` 的 `EXCLUDED_MODULES` 不含 `claude_handler`（仅排除 divergence/vision/llamaindex），无需改动。
+- 工作区已有的未暂存本地改动（`pyproject.toml` 中剔除 `llama-index-*` 依赖、`AGENTS.md` 合并记录）均予保留，未被覆盖。
+
+#### 验证结果
+
+- ✅ `python3 -m compileall src` 通过
+- ✅ 通过临时 `newelle->src` 符号链接导入 `constants`、`handlers.llm` 成功；`claude` 在 `AVAILABLE_LLMS` 中，`ClaudeHandler` 可导入
+- ✅ `data/mcp_servers.json` 解析通过
+- ❌ 未启动 GUI 实测，未实际调用 Anthropic API（缺 `anthropic` 包）
+
+## 当前变更记录（2026-11-09）
+
+### 变更主题：合并上游 `FrancescoCaracciolo/Newelle` 至 鹤 `dc198afb`、`qwersyk/Newelle` 至 `9c0abc5d`
+
+`FrancescoCaracciolo/Newelle` 新增 3 个提交（`a9f29fc5` 性能改进、`6340a9d7` 新聊天占位提示改进、`dc198afb` 修复切换聊天的 bug），主要内容：
+
+- `llm.py` 新增模块级 `cached_client`，`OpenAIHandler` 复用 SDK 客户端（连接池）
+- `controller.py` 新增 `schedule_save`/`flush_scheduled_save`，聊天保存合并延迟写入，序列化在锁内、fsync 在锁外
+- `chat_history`、`message`、`tipscarousel`、`latex`、`copybox` 等 UI 调整
+
+冲突处理：`claude_handler.py`、`gemini_handler.py`、`llama_cpp_handler.py`、`ollama_handler.py` 保持删除（LLM 提供商已剥离）。合并开始时这一步已解决冲突并暂存但未提交，本次核对后提交。
+
+`qwersyk/Newelle` 新增：`data/mcp_servers.json` 增加 Bowmark 条目；新增越南语翻译 `po/vi.po`，`po/LINGUAS` 加入 `vi`。无冲突。
+
+- 验证：`python3 -m compileall src` 通过；constants、controller、window、chat_history、chat_tab、message、tipscarousel、openai_handler 可导入；`mcp_servers.json` 解析通过；`msgfmt --check po/vi.po` 通过；未启动 GUI 实测
+
+## 变更记录（2026-11-04）
 
 ### 变更主题：合并上游 `FrancescoCaracciolo/Newelle` 至 `4d776f42`
 

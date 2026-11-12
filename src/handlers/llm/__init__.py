@@ -1,5 +1,5 @@
 from .llm import LLMHandler, LLMResponse
-# from .claude_handler import ClaudeHandler
+from .claude_handler import ClaudeHandler
 # from .custom_handler import CustomLLMHandler
 # from .g4f_handler import G4FHandler
 # from .gemini_handler import GeminiHandler
@@ -8,7 +8,7 @@ from .llm import LLMHandler, LLMResponse
 # from .mistral_handler import MistralHandler
 # from .ollama_handler import OllamaHandler
 # from .ollama_cloud_handler import OllamaCloudHandler
-from .openai_handler import OpenAIHandler 
+# from .openai_handler import OpenAIHandler
 # from .openrouter_handler import OpenRouterHandler 
 # from .newelle_handler import NewelleAPIHandler
 # from .deepseek_handler import DeepseekHandler
@@ -17,7 +17,7 @@ from .openai_handler import OpenAIHandler
 __all__ = [
     "LLMHandler",
     "LLMResponse",
-    # "ClaudeHandler",
+    "ClaudeHandler",
     # "CustomLLMHandler",
     # "G4FHandler",
     # "GeminiHandler",
@@ -26,7 +26,7 @@ __all__ = [
     # "MistralHandler",
     # "OllamaHandler",
     # "OllamaCloudHandler",
-    "OpenAIHandler",
+    # "OpenAIHandler",
     # "OpenRouterHandler",
     # "NewelleAPIHandler",
     # "DeepseekHandler",
