@@ -25,10 +25,7 @@ _ = gettext.gettext
 class ClaudeHandler(LLMHandler):
     key = "claude"
     default_models = (
-        ("Claude Sonnet 5", "claude-sonnet-5"),
-        ("Claude Opus 5", "claude-opus-5"),
-        ("Claude Fable 5", "claude-fable-5"),
-        ("Claude Haiku 4.5", "claude-haiku-4-5"),
+
     )
 
     RESPONSE_STATE_VERSION = 1
@@ -870,7 +867,11 @@ class ClaudeHandler(LLMHandler):
         base_url = self.get_setting("endpoint")
         return cached_client(
             ("anthropic", api_key, base_url),
-            lambda: anthropic.Client(api_key=api_key, base_url=base_url),
+            lambda: anthropic.Client(
+                api_key=api_key,
+                base_url=base_url,
+                default_headers={"User-Agent": "claude-cli/1.0.0"},
+            ),
         )
 
     def get_models(self):
@@ -879,7 +880,7 @@ class ClaudeHandler(LLMHandler):
         client = self._get_client()
         result = ()
         for model in client.models.list():
-            result += ((model.display_name, model.id),)
+            result += ((model.display_name or model.id, model.id),)
 
         self.models = result
         self.set_setting("models", result)
