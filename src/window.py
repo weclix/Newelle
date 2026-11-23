@@ -167,6 +167,8 @@ class MainWindow(WorkspaceWindow, Adw.ApplicationWindow):
         # menu.append(_("Thread editing"), "app.thread_editing")
         menu.append(_("Scheduled tasks"), "app.scheduled_tasks")
         menu.append(_("Downloads"), "app.downloads")
+        # 已剥离：运行模块安装器（依赖管理器）
+        # menu.append(_("Dependencies"), "app.dependencies")
         menu.append(_("Settings"), "app.settings")
         menu.append(_("Keyboard shorcuts"), "app.shortcuts")
         

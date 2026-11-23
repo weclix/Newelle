@@ -337,6 +337,17 @@ class Handler():
         """The list of extra pip requirements needed by the handler"""
         return []
 
+    # 已剥离：运行模块安装器（依赖管理器）
+    # def get_dependencies(self) -> list:
+    #     """Components installed by this handler that the user can update or remove.
+    #
+    #     Return ``utility.dependencies.Dependency`` objects. The dependency
+    #     manager lists the installed ones. Python packages declared in
+    #     ``get_extra_requirements`` are listed automatically and must not be
+    #     returned here.
+    #     """
+    #     return []
+
     def install(self):
         """Install the handler requirements"""
         # 已剥离：运行模块安装器

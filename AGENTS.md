@@ -8,7 +8,50 @@ Newelle 是一个 Linux 桌面 AI 助手应用，使用 Python + GTK4 开发，�
 - **源码目录**：`src/`（打包为 `newelle` 包，`package_dir={"newelle": "src"}`）
 - **核心模块**：`controller.py`、`main.py`、`window.py`、`modes.py`、`skills.py`、`tools.py`、`extensions.py`、`ui_controller.py`
 
-## 当前变更记录（2026-11-11）
+## 当前变更记录（2026-11-23）
+
+### 变更主题：合并上游 `FrancescoCaracciolo/Newelle` 至 `652bca4a`
+
+上游新增 9 个提交，主要内容：
+
+- `04492d42`/`c324775b` 共享运行时安装器与依赖管理器（`DependencyManagerWindow`、`utility/dependencies.py`、`utility/runtime_installer.py`、`handlers/llama_cpp_installer.py` 等）
+- `a89563df`/`652bca4a` TTS 朗读 markdown 清理改进，新增 `tts-quoted-only`（仅朗读引号内文本）
+- `e6dda4eb` 修复首次回复为工具调用时不生成聊天名
+- `a9cf19b7` 及其前序提交为 agent tools schema 与 lint 修复（本地已含，无新增差异）
+
+冲突处理：
+
+| 文件 | 处理 |
+|------|------|
+| `llama_cpp_handler.py`（llm/embeddings）、`stablediffusion_cpp_handler.py`、`whispercpp_handler.py`、`kokoro_handler.py`、`utility/pip.py` | 保持删除（后端与运行时 pip 安装器均已剥离） |
+| `src/meson.build` | 保持删除（meson 已剥离） |
+| `src/constants.py`、`src/controller.py`、`data/*.gschema.xml`、`ui/settings.py`、`ui/voice_mode.py`、`ui/widgets/call.py` | 保留本地：上游改动仅涉及已剥离的 TTS 设置 `tts-quoted-only` 或依赖管理器入口 |
+| `src/utility/strings.py` | 采用上游：`clean_message_tts` 重写并新增 `quoted_only` 参数（向后兼容）。该函数仍被 voice mode、call 面板用于文本清理 |
+| `src/ui/widgets/chat_tab.py` | 仅取入 `e6dda4eb`：按用户轮数判断是否生成聊天名，`generate_chat_name` 的 `get_history` 传 `include_last_message=True`；TTS 相关改动保持注释 |
+
+依赖管理器整体剥离（`# 已剥离：运行模块安装器（依赖管理器）`）。合并进行中暂存的 `main.py`、`window.py`、`handler.py` 已引用 `DependencyManagerWindow`，但 6 个上游新文件并未加入，启动会 `ImportError`，因此改为注释保留：
+
+| 文件 | 变更内容 |
+|------|----------|
+| `src/main.py` | 注释 `DependencyManagerWindow` 导入、`dependencies` action 注册、`dependencies_action`/`_dependencies_window_closed` |
+| `src/window.py` | 注释主菜单 "Dependencies" 项 |
+| `src/handlers/handler.py` | 注释 `Handler.get_dependencies()` |
+
+未引入的上游文件（6 个）：`ui/dependency_manager.py`、`ui/widgets/runtime_installer.py`、`utility/dependencies.py`、`utility/dependency_manager.py`、`utility/runtime_installer.py`、`handlers/llama_cpp_installer.py`。恢复依赖管理器需从 `upstream/master` 取回这些文件，同时恢复上述注释，并重新引入 `utility/pip.py`。
+
+已知行为变化：
+
+- 上游 `tts-quoted-only` 设置未引入（gschema、设置页开关、`NewelleSettings.tts_quoted_only` 均不加）。`clean_message_tts` 的 `quoted_only` 默认为 `False`，本地调用方不受影响
+- `po/POTFILES` 未改动
+
+验证结果：
+
+- ✅ `python3 -m compileall src` 通过
+- ✅ 通过临时 `newelle->src` 符号链接导入 `utility.strings`、`constants`、`handlers.handler`、`controller`、`window`、`main`、`ui.widgets.chat_tab`、`ui.settings`、`ui.voice_mode`、`ui.widgets.call` 成功（导入前需注入 `builtins._`，与应用运行时一致）
+- ✅ `git fetch upstream` 后 `upstream/master` 仍为 `652bca4a`，无更新的提交
+- ❌ 未启动 GUI 实测
+
+## 变更记录（2026-11-11，续）
 
 ### 变更主题：剥离 OpenAI LLM 提供商
 
